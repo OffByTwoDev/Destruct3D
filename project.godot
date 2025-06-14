@@ -18,7 +18,3 @@ config/icon="res://icon.svg"
 [dotnet]
 
 project/assembly_name="procedural-destruction"
-
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/destronoi/plugin.cfg")
