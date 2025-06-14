@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://rnwiqt1pxkue"
-path="res://.godot/imported/destronoi_icon.svg-fc223257846934f8bdb57ff117e1bcfd.ctex"
+path="res://.godot/imported/destronoi_icon.svg-73fdf1cade859e8ba84a4900ae276d2d.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/destronoi/destronoi_icon.svg"
-dest_files=["res://.godot/imported/destronoi_icon.svg-fc223257846934f8bdb57ff117e1bcfd.ctex"]
+source_file="res://destronoi/destronoi_icon.svg"
+dest_files=["res://.godot/imported/destronoi_icon.svg-73fdf1cade859e8ba84a4900ae276d2d.ctex"]
 
 [params]
 

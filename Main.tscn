@@ -1,5 +1,7 @@
 [gd_scene load_steps=12 format=3 uid="uid://c7oqy8jsemyg1"]
 
+[ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://destronoi/DestronoiNode.gd" id="1_glv2v"]
+
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
 ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -85,3 +87,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.39157, 1.22465, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="TestingDestronoi/RigidBody3D"]
 mesh = SubResource("ArrayMesh_glv2v")
+
+[node name="Node" type="Node" parent="TestingDestronoi/RigidBody3D"]
+script = ExtResource("1_glv2v")

@@ -1,4 +1,4 @@
-@tool
+
 class_name VSTNode
 """
 Author: George Power <george@georgepower.dev>
