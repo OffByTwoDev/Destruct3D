@@ -348,7 +348,7 @@ func destroy(left_val: int = 1, right_val: int = 1, combust_velocity: float = 0.
 			
 			estim_dir = estim_dir.normalized()
 			
-			new_body.set_axis_velocity(combust_velocity * estim_dir)
+			# new_body.set_axis_velocity(combust_velocity * estim_dir)
 		
 		new_collision_shape.shape = new_body_mesh_instance.mesh.create_convex_shape(false,false)
 		
