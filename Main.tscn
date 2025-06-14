@@ -1,4 +1,7 @@
-[gd_scene load_steps=10 format=3 uid="uid://c7oqy8jsemyg1"]
+[gd_scene load_steps=14 format=3 uid="uid://c7oqy8jsemyg1"]
+
+[ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://destronoi/DestronoiNode.gd" id="1_glv2v"]
+[ext_resource type="Script" uid="uid://cfk1c42r14vbs" path="res://testing_destronoi.gd" id="1_uu6xs"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -28,6 +31,11 @@ size = Vector2(10, 10)
 
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_uu6xs"]
 points = PackedVector3Array(-5, 0, -5, -5, 0, 5, 5, 0, -5, 5, 0, 5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_glv2v"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_cm0pq"]
+points = PackedVector3Array(0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5)
 
 [node name="Main" type="Node3D"]
 
@@ -75,3 +83,22 @@ shape = SubResource("ConvexPolygonShape3D_uu6xs")
 
 [node name="ConeTwistJoint3D" type="ConeTwistJoint3D" parent="Environment"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.575756, 0)
+
+[node name="TestingDestronoi" type="Node" parent="." node_paths=PackedStringArray("destronoi_node")]
+script = ExtResource("1_uu6xs")
+destronoi_node = NodePath("RigidBody3D/DestronoiNode")
+
+[node name="RigidBody3D" type="RigidBody3D" parent="TestingDestronoi"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.39157, 1.22465, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="TestingDestronoi/RigidBody3D"]
+mesh = SubResource("BoxMesh_glv2v")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="TestingDestronoi/RigidBody3D"]
+shape = SubResource("ConvexPolygonShape3D_cm0pq")
+
+[node name="DestronoiNode" type="Node" parent="TestingDestronoi/RigidBody3D" node_paths=PackedStringArray("mesh_instance")]
+script = ExtResource("1_glv2v")
+tree_height = 2
+mesh_instance = NodePath("../MeshInstance3D")
+metadata/_custom_type_script = "uid://du0auwhgemk8f"
