@@ -32,15 +32,26 @@ var _laterality: int = Laterality.NONE
 
 ## Initializes a VSTNode using mesh data, a depth level, and a laterality value. 
 func _init(mesh_instance: MeshInstance3D, level: int = 0, lat: int = Laterality.NONE):
-	_mesh_instance = mesh_instance
+
+	var surface_tool := SurfaceTool.new()
+	surface_tool.create_from(mesh_instance.mesh,0)
+	var array_mesh := surface_tool.commit()
+	
+	var new_mesh_instance := MeshInstance3D.new()
+	new_mesh_instance.mesh = array_mesh
+
+	_mesh_instance = new_mesh_instance
 	_level = level
 	_laterality = lat
+
+
 
 ## Returns the [Material] for a specified surface by index (0 by default).
 ## Returns [code]null[/code] if index is out of bounds.
 func get_override_material(index: int = 0):
 	if index > _mesh_instance.get_surface_override_material_count() - 1: return null 
 	var mat := _mesh_instance.get_surface_override_material(index)
+
 	return mat
 
 ## Returns the number of sites. Should be 0 or 2, otherwise something has gone wrong.

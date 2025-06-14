@@ -23,16 +23,13 @@ var _root: VSTNode = null
 ## The [DestronoiNode] generates [code]2^n[/code] fragments, where [code]n[/code] is the [param tree_height] of the VST.
 @export_range(1,8) var tree_height: int = 1
 
+@export var mesh_instance : MeshInstance3D
+
 ## Initializes the [param _root] with a copy of the sibling [MeshInstance3D].
 ## The mesh is subdivided according to the [param tree_height].
 func _ready():
 	# Set root geometry to sibling MeshInstance3D
-	var parent = get_parent()
-	var mesh_instance = null
-	for child in parent.get_children():
-		if(child is MeshInstance3D):
-			mesh_instance = child
-			break
+	# var parent = get_parent()
 	
 	if(mesh_instance == null):
 		print("[Destronoi] No MeshInstance3D sibling found")
