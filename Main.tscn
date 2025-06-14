@@ -1,0 +1,77 @@
+[gd_scene load_steps=10 format=3 uid="uid://c7oqy8jsemyg1"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
+sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+
+[sub_resource type="Sky" id="Sky_glv2v"]
+sky_material = SubResource("ProceduralSkyMaterial_rxg2q")
+
+[sub_resource type="Environment" id="Environment_uu6xs"]
+background_mode = 2
+sky = SubResource("Sky_glv2v")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_rxg2q"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_glv2v"]
+points = PackedVector3Array(0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5)
+
+[sub_resource type="BoxMesh" id="BoxMesh_uu6xs"]
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_r0du0"]
+points = PackedVector3Array(0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_rxg2q"]
+size = Vector2(10, 10)
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_uu6xs"]
+points = PackedVector3Array(-5, 0, -5, -5, 0, 5, 5, 0, -5, 5, 0, 5)
+
+[node name="Main" type="Node3D"]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_uu6xs")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.877583, -0.229849, 0.420735, 0, 0.877583, 0.479426, -0.479426, -0.420736, 0.770151, 1.68294, 1.9177, 3.0806)
+
+[node name="Environment" type="Node" parent="."]
+
+[node name="Box" type="RigidBody3D" parent="Environment"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.93658, 1.26081, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Box"]
+mesh = SubResource("BoxMesh_rxg2q")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Box"]
+shape = SubResource("ConvexPolygonShape3D_glv2v")
+
+[node name="Box2" type="RigidBody3D" parent="Environment"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.26081, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Box2"]
+mesh = SubResource("BoxMesh_uu6xs")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Box2"]
+shape = SubResource("ConvexPolygonShape3D_r0du0")
+
+[node name="Generic6DOFJoint3D" type="Generic6DOFJoint3D" parent="Environment"]
+node_a = NodePath("../Box")
+node_b = NodePath("../Box2")
+
+[node name="Floor" type="StaticBody3D" parent="Environment"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Floor"]
+mesh = SubResource("PlaneMesh_rxg2q")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Floor"]
+shape = SubResource("ConvexPolygonShape3D_uu6xs")
+
+[node name="ConeTwistJoint3D" type="ConeTwistJoint3D" parent="Environment"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.575756, 0)
