@@ -1,4 +1,6 @@
-[gd_scene load_steps=10 format=3 uid="uid://c7oqy8jsemyg1"]
+[gd_scene load_steps=12 format=3 uid="uid://c7oqy8jsemyg1"]
+
+[ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://addons/destronoi/DestronoiNode.gd" id="1_glv2v"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -28,6 +30,8 @@ size = Vector2(10, 10)
 
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_uu6xs"]
 points = PackedVector3Array(-5, 0, -5, -5, 0, 5, 5, 0, -5, 5, 0, 5)
+
+[sub_resource type="ArrayMesh" id="ArrayMesh_glv2v"]
 
 [node name="Main" type="Node3D"]
 
@@ -75,3 +79,15 @@ shape = SubResource("ConvexPolygonShape3D_uu6xs")
 
 [node name="ConeTwistJoint3D" type="ConeTwistJoint3D" parent="Environment"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.575756, 0)
+
+[node name="TestingDestronoi" type="Node" parent="."]
+
+[node name="RigidBody3D" type="RigidBody3D" parent="TestingDestronoi"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.39157, 1.22465, 0)
+
+[node name="DestronoiNode" type="Node" parent="TestingDestronoi/RigidBody3D"]
+script = ExtResource("1_glv2v")
+metadata/_custom_type_script = "uid://du0auwhgemk8f"
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="TestingDestronoi/RigidBody3D"]
+mesh = SubResource("ArrayMesh_glv2v")
