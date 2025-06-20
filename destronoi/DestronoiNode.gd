@@ -6,9 +6,8 @@ Author: George Power <george@georgepower.dev>
 """
 ## Subdivides a convex [ArrayMesh] belonging to a [RigidBody3D] by generating a Voronoi Subdivision Tree (VST).
 ##
-## A [DestronoiNode] must be a child of a [RigidBody3D] with a single
-## [MeshInstance3D] as a sibling. The [MeshInstance3D] must have the default name
-## "MeshInstance3D". The mesh data [b]must[/b] be an [ArrayMesh]. Using an imported
+## A [DestronoiNode] must export a [RigidBody3D] abd a
+## [MeshInstance3D]. The mesh data [b]must[/b] can be an [ArrayMesh] or a [PrimitiveMesh]. Using an imported
 ## mesh as an [code].obj[/code] file should suffice. When the Destronoi node is loaded
 ## it will create a VST which is accessible through the [param vst_root].
 ## [br]See the demo scene for an example.
@@ -28,6 +27,10 @@ var vst_root: VSTNode = null
 @export var fragment_container: Node
 
 @export var base_object : RigidBody3D
+
+func _unhandled_input(_event: InputEvent) -> void:
+	if Input.is_action_just_pressed("debug_explode"):
+		destroy(2,2, 1)
 
 ## Initializes the [param vst_root] with a copy of the sibling [MeshInstance3D].
 ## The mesh is subdivided according to the [param tree_height].

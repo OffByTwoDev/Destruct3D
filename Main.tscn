@@ -1,7 +1,6 @@
-[gd_scene load_steps=14 format=3 uid="uid://c7oqy8jsemyg1"]
+[gd_scene load_steps=13 format=3 uid="uid://c7oqy8jsemyg1"]
 
 [ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://destronoi/DestronoiNode.gd" id="1_glv2v"]
-[ext_resource type="Script" uid="uid://cfk1c42r14vbs" path="res://testing_destronoi.gd" id="1_uu6xs"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -81,25 +80,21 @@ mesh = SubResource("PlaneMesh_rxg2q")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Floor"]
 shape = SubResource("ConvexPolygonShape3D_uu6xs")
 
-[node name="Object" type="Node" parent="." node_paths=PackedStringArray("destronoi_node")]
-script = ExtResource("1_uu6xs")
-destronoi_node = NodePath("DestronoiNode")
-
-[node name="DestronoiNode" type="Node" parent="Object" node_paths=PackedStringArray("mesh_instance", "fragment_container", "base_object")]
+[node name="DestronoiNode" type="Node" parent="." node_paths=PackedStringArray("mesh_instance", "fragment_container", "base_object")]
 script = ExtResource("1_glv2v")
 tree_height = 5
-mesh_instance = NodePath("../OriginalObject/MeshInstance3D")
-fragment_container = NodePath("../FragmentContainer")
-base_object = NodePath("../OriginalObject")
+mesh_instance = NodePath("OriginalObject/MeshInstance3D")
+fragment_container = NodePath("FragmentContainer")
+base_object = NodePath("OriginalObject")
 metadata/_custom_type_script = "uid://du0auwhgemk8f"
 
-[node name="OriginalObject" type="RigidBody3D" parent="Object"]
+[node name="OriginalObject" type="RigidBody3D" parent="DestronoiNode"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.39157, 1.22465, 0)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Object/OriginalObject"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="DestronoiNode/OriginalObject"]
 mesh = SubResource("BoxMesh_glv2v")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Object/OriginalObject"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DestronoiNode/OriginalObject"]
 shape = SubResource("ConvexPolygonShape3D_cm0pq")
 
-[node name="FragmentContainer" type="Node" parent="Object"]
+[node name="FragmentContainer" type="Node" parent="DestronoiNode"]
