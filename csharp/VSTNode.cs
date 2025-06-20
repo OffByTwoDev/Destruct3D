@@ -1,6 +1,12 @@
 using Godot;
-using Godot.Collections;
 using System.Collections.Generic;
+
+public enum Laterality
+{
+	NONE = 0,
+	LEFT,
+	RIGHT
+}
 
 /// <summary>
 /// A node in a Voronoi Subdivision Tree.
@@ -8,20 +14,12 @@ using System.Collections.Generic;
 /// </summary>
 public class VSTNode
 {
-	/// <summary>Enum to define laterality.</summary>
-	public enum Laterality
-	{
-		NONE = 0,
-		LEFT,
-		RIGHT
-	}
-
 	public MeshInstance3D _meshInstance;
-	public Vector3[] _sites;
-	private VSTNode _left;
-	private VSTNode _right;
-	private int _level;
-	private Laterality _laterality;
+	public List<Vector3> _sites;
+	public VSTNode _left;
+	public VSTNode _right;
+	public int _level;
+	public Laterality _laterality;
 
 	/// <summary>
 	/// Initializes a VSTNode using mesh data, a depth level, and a laterality value.
@@ -30,7 +28,7 @@ public class VSTNode
 	{
 		var surfaceTool = new SurfaceTool();
 		surfaceTool.CreateFrom(meshInstance.Mesh, 0);
-		var arrayMesh = surfaceTool.Commit() as ArrayMesh;
+		ArrayMesh arrayMesh = surfaceTool.Commit();
 
 		var newMeshInstance = new MeshInstance3D
 		{
@@ -55,7 +53,7 @@ public class VSTNode
 	/// <summary>Returns the number of sites (should be 0 or 2).</summary>
 	public int GetSiteCount()
 	{
-		return _sites.Length;
+		return _sites.Count;
 	}
 
 	/// <summary>
