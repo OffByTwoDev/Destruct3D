@@ -10,7 +10,7 @@ Author: George Power <george@georgepower.dev>
 ## [MeshInstance3D] as a sibling. The [MeshInstance3D] must have the default name
 ## "MeshInstance3D". The mesh data [b]must[/b] be an [ArrayMesh]. Using an imported
 ## mesh as an [code].obj[/code] file should suffice. When the Destronoi node is loaded
-## it will create a VST which is accessible through the [param _root].
+## it will create a VST which is accessible through the [param vst_root].
 ## [br]See the demo scene for an example.
 
 ## An enum to define laterality. A root VSTNode would have no laterality as it
@@ -18,32 +18,34 @@ Author: George Power <george@georgepower.dev>
 enum Laterality {NONE = 0, LEFT, RIGHT}
 
 ## The root node of the VST. Contains a copy of the sibling [MeshInstance3D]. 
-var _root: VSTNode = null
+var vst_root: VSTNode = null
 
 ## The [DestronoiNode] generates [code]2^n[/code] fragments, where [code]n[/code] is the [param tree_height] of the VST.
 @export_range(1,8) var tree_height: int = 1
 
 @export var mesh_instance : MeshInstance3D
 
-## Initializes the [param _root] with a copy of the sibling [MeshInstance3D].
+@export var fragment_container: Node
+
+@export var base_object : RigidBody3D
+
+## Initializes the [param vst_root] with a copy of the sibling [MeshInstance3D].
 ## The mesh is subdivided according to the [param tree_height].
 func _ready():
-	# Set root geometry to sibling MeshInstance3D
-	# var parent = get_parent()
-	
 	if(mesh_instance == null):
-		print("[Destronoi] No MeshInstance3D sibling found")
-		return # no mesh; return early
-	_root = VSTNode.new(mesh_instance)
+		print("[Destronoi] No MeshInstance3D set")
+		return
+	
+	vst_root = VSTNode.new(mesh_instance)
 	
 	# Plot 2 sites for the subdivision
-	plot_sites_random(_root)
+	plot_sites_random(vst_root)
 	# Generate 2 children from the root
-	bisect(_root)
+	bisect(vst_root)
 	# Perform additional subdivisions depending on tree height
 	for i in range(tree_height - 1):
 		var leaves = []
-		_root.get_leaf_nodes(_root,leaves);
+		vst_root.get_leaf_nodes(vst_root,leaves);
 		for leaf in range(leaves.size()):
 			plot_sites_random(leaves[leaf])
 			bisect(leaves[leaf])
@@ -297,13 +299,12 @@ func bisect(vst_node: VSTNode) -> bool:
 ## be used, resulting in 2 fragments being placed.
 ## [br][color=yellow]Warning:[/color] You must have left and right values of 1 or greater.
 func destroy(left_val: int = 1, right_val: int = 1, combust_velocity: float = 0.0):
-	var base_object = get_parent()
 	var vst_leaves := []
-	var current_node: VSTNode = _root
+	var current_node: VSTNode = vst_root
 	current_node.get_left_leaf_nodes(current_node, vst_leaves, left_val)
 	current_node.get_right_leaf_nodes(current_node, vst_leaves, right_val)
 	
-	var new_rigid_bodies := []
+	var new_rigid_bodies : Array[RigidBody3D] = []
 	var sum_mass = 0
 	
 	for vst_leaf in range(vst_leaves.size()):
@@ -348,7 +349,7 @@ func destroy(left_val: int = 1, right_val: int = 1, combust_velocity: float = 0.
 			
 			estim_dir = estim_dir.normalized()
 			
-			# new_body.set_axis_velocity(combust_velocity * estim_dir)
+			new_body.set_axis_velocity(combust_velocity * estim_dir)
 		
 		new_collision_shape.shape = new_body_mesh_instance.mesh.create_convex_shape(false,false)
 		
@@ -356,8 +357,9 @@ func destroy(left_val: int = 1, right_val: int = 1, combust_velocity: float = 0.
 		new_rigid_bodies.append(new_body)
 	
 	# scale masses to match the base object
-	for body in new_rigid_bodies:
-		body.mass = body.mass * (base_object.mass/sum_mass)
-		base_object.get_parent().add_child(body)
+	for rigid_body : RigidBody3D in new_rigid_bodies:
+		rigid_body.mass = rigid_body.mass * (base_object.mass/sum_mass)
+		
+		fragment_container.add_child(rigid_body)
 	
 	base_object.free()

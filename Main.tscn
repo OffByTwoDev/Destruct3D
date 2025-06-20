@@ -27,10 +27,10 @@ points = PackedVector3Array(0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 
 points = PackedVector3Array(0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_rxg2q"]
-size = Vector2(10, 10)
+size = Vector2(50, 50)
 
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_uu6xs"]
-points = PackedVector3Array(-5, 0, -5, -5, 0, 5, 5, 0, -5, 5, 0, 5)
+points = PackedVector3Array(-25, 0, -25, -25, 0, 25, 25, 0, -25, 25, 0, 25)
 
 [sub_resource type="BoxMesh" id="BoxMesh_glv2v"]
 
@@ -47,7 +47,7 @@ shadow_enabled = true
 environment = SubResource("Environment_uu6xs")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.877583, -0.229849, 0.420735, 0, 0.877583, 0.479426, -0.479426, -0.420736, 0.770151, 1.68294, 1.9177, 3.0806)
+transform = Transform3D(0.877583, -0.229849, 0.420736, 0, 0.877583, 0.479426, -0.479425, -0.420735, 0.770151, 4.23699, 4.82802, 7.75575)
 
 [node name="Environment" type="Node" parent="."]
 
@@ -81,24 +81,25 @@ mesh = SubResource("PlaneMesh_rxg2q")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Floor"]
 shape = SubResource("ConvexPolygonShape3D_uu6xs")
 
-[node name="ConeTwistJoint3D" type="ConeTwistJoint3D" parent="Environment"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.575756, 0)
-
-[node name="TestingDestronoi" type="Node" parent="." node_paths=PackedStringArray("destronoi_node")]
+[node name="Object" type="Node" parent="." node_paths=PackedStringArray("destronoi_node")]
 script = ExtResource("1_uu6xs")
-destronoi_node = NodePath("RigidBody3D/DestronoiNode")
+destronoi_node = NodePath("DestronoiNode")
 
-[node name="RigidBody3D" type="RigidBody3D" parent="TestingDestronoi"]
+[node name="DestronoiNode" type="Node" parent="Object" node_paths=PackedStringArray("mesh_instance", "fragment_container", "base_object")]
+script = ExtResource("1_glv2v")
+tree_height = 5
+mesh_instance = NodePath("../OriginalObject/MeshInstance3D")
+fragment_container = NodePath("../FragmentContainer")
+base_object = NodePath("../OriginalObject")
+metadata/_custom_type_script = "uid://du0auwhgemk8f"
+
+[node name="OriginalObject" type="RigidBody3D" parent="Object"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.39157, 1.22465, 0)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="TestingDestronoi/RigidBody3D"]
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Object/OriginalObject"]
 mesh = SubResource("BoxMesh_glv2v")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="TestingDestronoi/RigidBody3D"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Object/OriginalObject"]
 shape = SubResource("ConvexPolygonShape3D_cm0pq")
 
-[node name="DestronoiNode" type="Node" parent="TestingDestronoi/RigidBody3D" node_paths=PackedStringArray("mesh_instance")]
-script = ExtResource("1_glv2v")
-tree_height = 2
-mesh_instance = NodePath("../MeshInstance3D")
-metadata/_custom_type_script = "uid://du0auwhgemk8f"
+[node name="FragmentContainer" type="Node" parent="Object"]
