@@ -44,8 +44,6 @@ func _init(mesh_instance: MeshInstance3D, level: int = 0, lat: int = Laterality.
 	_level = level
 	_laterality = lat
 
-
-
 ## Returns the [Material] for a specified surface by index (0 by default).
 ## Returns [code]null[/code] if index is out of bounds.
 func get_override_material(index: int = 0):
