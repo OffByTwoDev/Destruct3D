@@ -20,7 +20,7 @@ public partial class DestronoiNode : Node3D
 
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if (Input.IsActionJustPressed("debug_explode"))
+		if (Input.IsActionJustPressed("cs_debug_explode"))
 		{
 			Destroy(5, 5, 5f);
 		}
@@ -222,27 +222,7 @@ public partial class DestronoiNode : Node3D
 					surfaceTool.AddVertex((Vector3)intersects[1]);
 					continue;
 				}
-
-				// INTERSECTION CASE 2: TWO points above the plane
-				// if (above.Count == 2)
-				// {
-				// 	int belowIdx = face[0] != above[0] && face[0] != above[1] ? 0 :
-				// 				   face[1] != above[0] && face[1] != above[1] ? 1 : 2;
-				// 	var pA = plane.IntersectsSegment(data.GetVertex(above[1]), data.GetVertex(face[belowIdx]));
-				// 	var pB = plane.IntersectsSegment(data.GetVertex(above[0]), data.GetVertex(face[belowIdx]));
-				// 	intersects.Add(pA);
-				// 	intersects.Add(pB);
-				// 	coplanar.Add(pA);
-				// 	coplanar.Add(pB);
-
-				// 	surfaceTool.AddVertex(data.GetVertex(above[0]));
-				// 	surfaceTool.AddVertex(data.GetVertex(above[1]));
-				// 	surfaceTool.AddVertex((Vector3)intersects[0]);
-				// 	surfaceTool.AddVertex((Vector3)intersects[0]);
-				// 	surfaceTool.AddVertex((Vector3)intersects[1]);
-				// 	surfaceTool.AddVertex(data.GetVertex(above[1]));
-				// 	continue;
-				// }
+				
 				if (verticesAbovePlane.Count == 2)
 				{
 					int indexRemaining;
@@ -342,18 +322,29 @@ public partial class DestronoiNode : Node3D
 
 		foreach (VSTNode leaf in leaves)
 		{
-			var body = new RigidBody3D();
-			body.Name = $"VFragment_{fragments.Count}";
-			body.Position = Transform.Origin;
+			RigidBody3D body = new()
+			{
+				Name = $"VFragment_{fragments.Count}",
+				Position = Transform.Origin
+			};
 
-			var meshInstance = leaf.meshInstance;
+			MeshInstance3D meshInstance = leaf.meshInstance;
 			meshInstance.Name = "MeshInstance3D";
 			body.AddChild(meshInstance);
 
-			var shape = new CollisionShape3D { Name = "CollisionShape3D" };
+			var shape = new CollisionShape3D
+			{
+				Name = "CollisionShape3D",
+				Shape = meshInstance.Mesh.CreateConvexShape(false, false)
+			};
+
+			body.AddChild(shape);
 
 			float mass = Mathf.Max(meshInstance.Mesh.GetAabb().Size.Length(), 0.1f);
 			body.Mass = mass; totalMass += mass;
+
+			body.CenterOfMassMode = RigidBody3D.CenterOfMassModeEnum.Custom;
+			body.CenterOfMass = (meshInstance.Mesh.GetAabb().End + meshInstance.Mesh.GetAabb().Position)/2.0f;
 
 			if (!Mathf.IsZeroApprox(combustVelocity))
 			{
@@ -363,8 +354,6 @@ public partial class DestronoiNode : Node3D
 				body.LinearVelocity = dir.Normalized() * combustVelocity;
 			}
 
-			shape.Shape = meshInstance.Mesh.CreateConvexShape(false, false);
-			body.AddChild(shape);
 			fragmentContainer.AddChild(body);
 			fragments.Add(body);
 		}

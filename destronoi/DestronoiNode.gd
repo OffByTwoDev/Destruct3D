@@ -29,7 +29,7 @@ var vst_root: VSTNode = null
 @export var base_object : RigidBody3D
 
 func _unhandled_input(_event: InputEvent) -> void:
-	if Input.is_action_just_pressed("debug_explode"):
+	if Input.is_action_just_pressed("gd_debug_explode"):
 		destroy(5,5, 5)
 
 ## Initializes the [param vst_root] with a copy of the sibling [MeshInstance3D].
