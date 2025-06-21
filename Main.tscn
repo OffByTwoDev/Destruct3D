@@ -1,6 +1,7 @@
-[gd_scene load_steps=13 format=3 uid="uid://c7oqy8jsemyg1"]
+[gd_scene load_steps=15 format=3 uid="uid://c7oqy8jsemyg1"]
 
 [ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://destronoi/DestronoiNode.gd" id="1_glv2v"]
+[ext_resource type="Script" uid="uid://co7g407u2vd1x" path="res://csharp/DestronoiNode.cs" id="2_uu6xs"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -36,6 +37,8 @@ points = PackedVector3Array(-25, 0, -25, -25, 0, 25, 25, 0, -25, 25, 0, 25)
 [sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_cm0pq"]
 points = PackedVector3Array(0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5)
 
+[sub_resource type="BoxMesh" id="BoxMesh_r0du0"]
+
 [node name="Main" type="Node3D"]
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
@@ -46,7 +49,7 @@ shadow_enabled = true
 environment = SubResource("Environment_uu6xs")
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.877583, -0.229849, 0.420736, 0, 0.877583, 0.479426, -0.479425, -0.420735, 0.770151, 4.23699, 4.82802, 7.75575)
+transform = Transform3D(0.973786, -0.0783492, 0.213546, 0, 0.938807, 0.344445, -0.227466, -0.335415, 0.914197, 6.84713, 2.23563, 4.60651)
 
 [node name="Environment" type="Node" parent="."]
 
@@ -80,16 +83,15 @@ mesh = SubResource("PlaneMesh_rxg2q")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Floor"]
 shape = SubResource("ConvexPolygonShape3D_uu6xs")
 
-[node name="DestronoiNode" type="Node" parent="." node_paths=PackedStringArray("mesh_instance", "fragment_container", "base_object")]
+[node name="DestronoiNode" type="Node3D" parent="." node_paths=PackedStringArray("mesh_instance", "fragment_container", "base_object")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.40281, 0.5, 0)
 script = ExtResource("1_glv2v")
 tree_height = 5
 mesh_instance = NodePath("OriginalObject/MeshInstance3D")
 fragment_container = NodePath("FragmentContainer")
 base_object = NodePath("OriginalObject")
-metadata/_custom_type_script = "uid://du0auwhgemk8f"
 
 [node name="OriginalObject" type="RigidBody3D" parent="DestronoiNode"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.39157, 1.22465, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="DestronoiNode/OriginalObject"]
 mesh = SubResource("BoxMesh_glv2v")
@@ -98,3 +100,21 @@ mesh = SubResource("BoxMesh_glv2v")
 shape = SubResource("ConvexPolygonShape3D_cm0pq")
 
 [node name="FragmentContainer" type="Node" parent="DestronoiNode"]
+
+[node name="CSharpDestronoiNode" type="Node3D" parent="." node_paths=PackedStringArray("meshInstance", "fragmentContainer", "baseObject")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.7711, 0.5, 0)
+script = ExtResource("2_uu6xs")
+treeHeight = 2
+meshInstance = NodePath("OriginalObject/MeshInstance3D")
+fragmentContainer = NodePath("FragmentContainer2")
+baseObject = NodePath("OriginalObject")
+
+[node name="OriginalObject" type="RigidBody3D" parent="CSharpDestronoiNode"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="CSharpDestronoiNode/OriginalObject"]
+mesh = SubResource("BoxMesh_r0du0")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="CSharpDestronoiNode/OriginalObject"]
+shape = SubResource("ConvexPolygonShape3D_cm0pq")
+
+[node name="FragmentContainer2" type="Node" parent="CSharpDestronoiNode"]

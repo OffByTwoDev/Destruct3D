@@ -1,5 +1,5 @@
 
-extends Node
+extends Node3D
 class_name DestronoiNode
 """
 Author: George Power <george@georgepower.dev>
@@ -314,7 +314,7 @@ func destroy(left_val: int = 1, right_val: int = 1, combust_velocity: float = 0.
 		var new_body: RigidBody3D = RigidBody3D.new()
 		new_body.name = "VFragment_{id}".format({"id": vst_leaf})
 		
-		new_body.position = base_object.transform.origin
+		new_body.position = transform.origin
 		
 		var new_mesh_instance = vst_leaves[vst_leaf]._mesh_instance
 		new_mesh_instance.name = "MeshInstance3D"

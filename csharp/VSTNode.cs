@@ -14,46 +14,43 @@ public enum Laterality
 /// </summary>
 public class VSTNode
 {
-	public MeshInstance3D _meshInstance;
-	public List<Vector3> _sites;
-	public VSTNode _left;
-	public VSTNode _right;
-	public int _level;
-	public Laterality _laterality;
+	public MeshInstance3D meshInstance;
+	public List<Vector3> sites;
+	public VSTNode left;
+	public VSTNode right;
+	public int level;
+	public Laterality laterality;
 
 	/// <summary>
 	/// Initializes a VSTNode using mesh data, a depth level, and a laterality value.
 	/// </summary>
-	public VSTNode(MeshInstance3D meshInstance, int level = 0, Laterality lat = Laterality.NONE)
+	public VSTNode(MeshInstance3D inputMeshInstance, int lev = 0, Laterality lat = Laterality.NONE)
 	{
-		var surfaceTool = new SurfaceTool();
-		surfaceTool.CreateFrom(meshInstance.Mesh, 0);
+		SurfaceTool surfaceTool = new();
+		surfaceTool.CreateFrom(inputMeshInstance.Mesh, 0);
 		ArrayMesh arrayMesh = surfaceTool.Commit();
 
-		var newMeshInstance = new MeshInstance3D
-		{
-			Mesh = arrayMesh
-		};
+		MeshInstance3D newMeshInstance = new();
+		newMeshInstance.Mesh = arrayMesh;
 
-		_meshInstance = newMeshInstance;
-		_level = level;
-		_laterality = lat;
 
-		_sites = [];
+		meshInstance = newMeshInstance;
+		level = lev;
+		laterality = lat;
 	}
 
 	/// <summary>Returns the override material at the given surface index, or null if out of range.</summary>
 	public Material GetOverrideMaterial(int index = 0)
 	{
-		if (_meshInstance.GetSurfaceOverrideMaterialCount() - 1 < index)
+		if (meshInstance.GetSurfaceOverrideMaterialCount() - 1 < index)
 			return null;
-		return _meshInstance.GetSurfaceOverrideMaterial(index);
+		return meshInstance.GetSurfaceOverrideMaterial(index);
 	}
 
 	/// <summary>Returns the number of sites (should be 0 or 2).</summary>
 	public int GetSiteCount()
 	{
-		return _sites.Count;
+		return sites.Count;
 	}
 
 	/// <summary>
@@ -66,15 +63,15 @@ public class VSTNode
 		if (root == null)
 			return [];
 
-		if (root._left == null && root._right == null)
+		if (root.left == null && root.right == null)
 		{
 			outArr.Add(root);
 			return outArr;
 		}
-		if (root._left != null)
-			GetLeafNodes(root._left, outArr);
-		if (root._right != null)
-			GetLeafNodes(root._right, outArr);
+		if (root.left != null)
+			GetLeafNodes(root.left, outArr);
+		if (root.right != null)
+			GetLeafNodes(root.right, outArr);
 
 		return outArr;
 	}
@@ -89,15 +86,15 @@ public class VSTNode
 		if (root == null)
 			return [];
 
-		if ((root._left == null && root._right == null) || level == lim)
+		if ((root.left == null && root.right == null) || level == lim)
 		{
 			outArr.Add(root);
 			return outArr;
 		}
-		if (root._left != null && level > 0)
-			GetRightLeafNodes(root._left, outArr, lim, level + 1);
-		if (root._right != null)
-			GetRightLeafNodes(root._right, outArr, lim, level + 1);
+		if (root.left != null && level > 0)
+			GetRightLeafNodes(root.left, outArr, lim, level + 1);
+		if (root.right != null)
+			GetRightLeafNodes(root.right, outArr, lim, level + 1);
 
 		return outArr;
 	}
@@ -112,21 +109,21 @@ public class VSTNode
 		if (root == null)
 			return [];
 
-		if ((root._left == null && root._right == null) || level == lim)
+		if ((root.left == null && root.right == null) || level == lim)
 		{
 			outArr.Add(root);
 			return outArr;
 		}
-		if (root._left != null)
-			GetLeftLeafNodes(root._left, outArr, lim, level + 1);
-		if (root._right != null && level > 0)
-			GetLeftLeafNodes(root._right, outArr, lim, level + 1);
+		if (root.left != null)
+			GetLeftLeafNodes(root.left, outArr, lim, level + 1);
+		if (root.right != null && level > 0)
+			GetLeftLeafNodes(root.right, outArr, lim, level + 1);
 
 		return outArr;
 	}
 
 	public override string ToString()
 	{
-		return $"VSTNode {_meshInstance}";
+		return $"VSTNode {meshInstance}";
 	}
 }
