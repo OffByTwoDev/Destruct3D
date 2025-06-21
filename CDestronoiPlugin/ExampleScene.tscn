@@ -1,8 +1,8 @@
 [gd_scene load_steps=16 format=3 uid="uid://c7oqy8jsemyg1"]
 
-[ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://destronoi/DestronoiNode.gd" id="1_glv2v"]
-[ext_resource type="Script" uid="uid://co7g407u2vd1x" path="res://csharp/DestronoiNode.cs" id="2_uu6xs"]
-[ext_resource type="Script" uid="uid://cy0lbch8hfx72" path="res://FragmentationComponent.cs" id="3_r0du0"]
+[ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://original_gdscript_destronoi/DestronoiNode.gd" id="1_xvrj6"]
+[ext_resource type="Script" uid="uid://co7g407u2vd1x" path="res://CDestronoi_Plugin/csharp/DestronoiNode.cs" id="2_epgrm"]
+[ext_resource type="Script" uid="uid://cy0lbch8hfx72" path="res://CDestronoi_Plugin/csharp/FragmentationComponent.cs" id="3_fhs12"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -87,7 +87,7 @@ shape = SubResource("ConvexPolygonShape3D_uu6xs")
 
 [node name="GDDestronoiNode" type="Node3D" parent="." node_paths=PackedStringArray("mesh_instance", "fragment_container", "base_object")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.40281, 0.5, 0)
-script = ExtResource("1_glv2v")
+script = ExtResource("1_xvrj6")
 tree_height = 5
 mesh_instance = NodePath("OriginalObject/MeshInstance3D")
 fragment_container = NodePath("FragmentContainer")
@@ -105,14 +105,14 @@ shape = SubResource("ConvexPolygonShape3D_cm0pq")
 
 [node name="CSharpDestronoiNode" type="Node3D" parent="." node_paths=PackedStringArray("meshInstance", "fragmentContainer", "baseObject")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.7711, 0.5, 0)
-script = ExtResource("2_uu6xs")
+script = ExtResource("2_epgrm")
 treeHeight = 7
 meshInstance = NodePath("OriginalObject/MeshInstance3D")
 fragmentContainer = NodePath("FragmentContainer2")
 baseObject = NodePath("OriginalObject")
 
 [node name="FragmentationComponent" type="Node" parent="CSharpDestronoiNode" node_paths=PackedStringArray("destronoiNode")]
-script = ExtResource("3_r0du0")
+script = ExtResource("3_fhs12")
 destronoiNode = NodePath("..")
 destructionFragmentsLeft = 4
 destructionFragmentsRight = 4
