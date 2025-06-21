@@ -104,7 +104,7 @@ shape = SubResource("ConvexPolygonShape3D_cm0pq")
 [node name="CSharpDestronoiNode" type="Node3D" parent="." node_paths=PackedStringArray("meshInstance", "fragmentContainer", "baseObject")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.7711, 0.5, 0)
 script = ExtResource("2_uu6xs")
-treeHeight = 2
+treeHeight = 5
 meshInstance = NodePath("OriginalObject/MeshInstance3D")
 fragmentContainer = NodePath("FragmentContainer2")
 baseObject = NodePath("OriginalObject")

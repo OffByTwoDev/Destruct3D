@@ -30,7 +30,7 @@ var vst_root: VSTNode = null
 
 func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed("debug_explode"):
-		destroy(2,2, 1)
+		destroy(5,5, 5)
 
 ## Initializes the [param vst_root] with a copy of the sibling [MeshInstance3D].
 ## The mesh is subdivided according to the [param tree_height].

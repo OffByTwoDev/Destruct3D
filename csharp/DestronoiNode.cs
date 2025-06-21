@@ -1,6 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 
 /// <summary>
 /// Subdivides a convex ArrayMesh belonging to a RigidBody3D by generating a Voronoi Subdivision Tree (VST).
@@ -21,16 +22,11 @@ public partial class DestronoiNode : Node3D
 	{
 		if (Input.IsActionJustPressed("debug_explode"))
 		{
-			Destroy(2, 2, 1f);
-		}
-
-		if (Input.IsActionJustPressed("debug_ready"))
-		{
-			TempFunc();
+			Destroy(5, 5, 5f);
 		}
 	}
 
-	public void TempFunc()
+	public override void _Ready()
 	{
 		if (meshInstance is null)
 		{
@@ -138,36 +134,39 @@ public partial class DestronoiNode : Node3D
 		}
 	}
 
-	public bool Bisect(VSTNode node)
+	public static bool Bisect(VSTNode node)
 	{
 		if (node.GetSiteCount() != 2)
 			return false;
 
-		var a = node.sites[0];
-		var b = node.sites[1];
-		var normal = (b - a).Normalized();
-		var pos = a + (b - a) * 0.5f;
-		var plane = new Plane(normal, pos);
+		var siteA = node.sites[0];
+		var siteB = node.sites[1];
+		var planeNormal = (siteB - siteA).Normalized();
+		var planePosition = siteA + (siteB - siteA) * 0.5f;
+		var plane = new Plane(planeNormal, planePosition);
 
-		var data = new MeshDataTool();
-		data.CreateFromSurface(node.meshInstance.Mesh as ArrayMesh, 0);
+		MeshDataTool dataTool = new();
+		dataTool.CreateFromSurface(node.meshInstance.Mesh as ArrayMesh, 0);
 
-		var surfA = new SurfaceTool();
+		SurfaceTool surfA = new();
 		surfA.Begin(Mesh.PrimitiveType.Triangles);
 		surfA.SetMaterial(node.GetOverrideMaterial());
 		surfA.SetSmoothGroup(UInt32.MaxValue);
 
-		var surfB = new SurfaceTool();
+		SurfaceTool surfB = new();
 		surfB.Begin(Mesh.PrimitiveType.Triangles);
 		surfB.SetMaterial(node.GetOverrideMaterial());
 		surfB.SetSmoothGroup(UInt32.MaxValue);
-
+		
+		// GENERATE SUB MESHES
+		// ITERATE OVER EACH FACE OF THE BASE MESH
+		// 2 iterations for 2 sub meshes (above/below)
 		for (int side = 0; side < 2; side++)
 		{
-			var st = new SurfaceTool();
-			st.Begin(Mesh.PrimitiveType.Triangles);
-			st.SetMaterial(node.meshInstance.GetActiveMaterial(0));
-			st.SetSmoothGroup(UInt32.MaxValue);
+			SurfaceTool surfaceTool = new();
+			surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
+			surfaceTool.SetMaterial(node.meshInstance.GetActiveMaterial(0));
+			surfaceTool.SetSmoothGroup(UInt32.MaxValue);
 
 			if (side == 1)
 			{
@@ -175,85 +174,158 @@ public partial class DestronoiNode : Node3D
 				plane.D = -plane.D;
 			}
 
+			// for new vertices which intersect the plane
 			List<Vector3?> coplanar = [];
 
-			for (int f = 0; f < data.GetFaceCount(); f++)
+			for (int f = 0; f < dataTool.GetFaceCount(); f++)
 			{
-				var face = new int[] { data.GetFaceVertex(f, 0), data.GetFaceVertex(f, 1), data.GetFaceVertex(f, 2) };
-				List<int> above = [];
+				var faceVertices = new int[] { dataTool.GetFaceVertex(f, 0), dataTool.GetFaceVertex(f, 1), dataTool.GetFaceVertex(f, 2) };
+				List<int> verticesAbovePlane = [];
 				List<Vector3?> intersects = [];
-				foreach (var vid in face)
-				{
-					if (plane.IsPointOver(data.GetVertex((int)vid)))
-						above.Add(vid);
-				}
-				if (above.Count == 0)
-					continue;
-				if (above.Count == 3)
-				{
-					foreach (var vid in face)
-						st.AddVertex(data.GetVertex(vid));
-					continue;
-				}
-				if (above.Count == 1)
-				{
-					int vid = (int)above[0];
-					int i0 = (Array.IndexOf(face,vid) + 1) % 3;
-					int i1 = (Array.IndexOf(face,vid) + 2) % 3;
-					Vector3? pA = plane.IntersectsSegment(data.GetVertex(vid), data.GetVertex(face[i0]));
-					Vector3? pB = plane.IntersectsSegment(data.GetVertex(vid), data.GetVertex(face[i1]));
-					intersects.Add(pA);
-					intersects.Add(pB);
-					coplanar.Add(pA);
-					coplanar.Add(pB);
-					st.AddVertex(data.GetVertex(vid));
-					st.AddVertex((Vector3)intersects[0]);
-					st.AddVertex((Vector3)intersects[1]);
-					continue;
-				}
-				if (above.Count == 2)
-				{
-					int belowIdx = face[0] != (int)above[0] && face[0] != (int)above[1] ? 0 :
-								   face[1] != (int)above[0] && face[1] != (int)above[1] ? 1 : 2;
-					var pA = plane.IntersectsSegment(data.GetVertex((int)above[1]), data.GetVertex(face[belowIdx]));
-					var pB = plane.IntersectsSegment(data.GetVertex((int)above[0]), data.GetVertex(face[belowIdx]));
-					intersects.Add(pA);
-					intersects.Add(pB);
-					coplanar.Add(pA);
-					coplanar.Add(pB);
 
-					st.AddVertex(data.GetVertex((int)above[0]));
-					st.AddVertex(data.GetVertex((int)above[1]));
-					st.AddVertex((Vector3)intersects[0]);
-					st.AddVertex((Vector3)intersects[0]);
-					st.AddVertex((Vector3)intersects[1]);
-					st.AddVertex(data.GetVertex((int)above[1]));
+				// ITERATE OVER EACH VERTEX AND DETERMINE "ABOVENESS"
+				foreach (var vertexIndex in faceVertices)
+				{
+					if (plane.IsPointOver(dataTool.GetVertex(vertexIndex)))
+					{
+						verticesAbovePlane.Add(vertexIndex);
+					}
+				}
+
+				// INTERSECTION CASE 0/0.5: ALL or NOTHING above the plane
+				if (verticesAbovePlane.Count == 0)
+					continue;
+				if (verticesAbovePlane.Count == 3)
+				{
+					foreach (var vid in faceVertices)
+						surfaceTool.AddVertex(dataTool.GetVertex(vid));
+					continue;
+				}
+
+				// INTERSECTION CASE 1: ONE point above the plane
+				// Find intersection points and append them in cw winding order
+				if (verticesAbovePlane.Count == 1)
+				{
+					int vid = verticesAbovePlane[0];
+					int indexAfter = (Array.IndexOf(faceVertices, vid) + 1) % 3;
+					int indexBefore = (Array.IndexOf(faceVertices, vid) + 2) % 3;
+					Vector3? intersectionAfter = plane.IntersectsSegment(dataTool.GetVertex(vid), dataTool.GetVertex(faceVertices[indexAfter]));
+					Vector3? intersectionBefore = plane.IntersectsSegment(dataTool.GetVertex(vid), dataTool.GetVertex(faceVertices[indexBefore]));
+					intersects.Add(intersectionAfter);
+					intersects.Add(intersectionBefore);
+					coplanar.Add(intersectionAfter);
+					coplanar.Add(intersectionBefore);
+
+					// TRIANGLE CREATION
+					surfaceTool.AddVertex(dataTool.GetVertex(vid));
+					surfaceTool.AddVertex((Vector3)intersects[0]);
+					surfaceTool.AddVertex((Vector3)intersects[1]);
+					continue;
+				}
+
+				// INTERSECTION CASE 2: TWO points above the plane
+				// if (above.Count == 2)
+				// {
+				// 	int belowIdx = face[0] != above[0] && face[0] != above[1] ? 0 :
+				// 				   face[1] != above[0] && face[1] != above[1] ? 1 : 2;
+				// 	var pA = plane.IntersectsSegment(data.GetVertex(above[1]), data.GetVertex(face[belowIdx]));
+				// 	var pB = plane.IntersectsSegment(data.GetVertex(above[0]), data.GetVertex(face[belowIdx]));
+				// 	intersects.Add(pA);
+				// 	intersects.Add(pB);
+				// 	coplanar.Add(pA);
+				// 	coplanar.Add(pB);
+
+				// 	surfaceTool.AddVertex(data.GetVertex(above[0]));
+				// 	surfaceTool.AddVertex(data.GetVertex(above[1]));
+				// 	surfaceTool.AddVertex((Vector3)intersects[0]);
+				// 	surfaceTool.AddVertex((Vector3)intersects[0]);
+				// 	surfaceTool.AddVertex((Vector3)intersects[1]);
+				// 	surfaceTool.AddVertex(data.GetVertex(above[1]));
+				// 	continue;
+				// }
+				if (verticesAbovePlane.Count == 2)
+				{
+					int indexRemaining;
+					if (verticesAbovePlane[0] != faceVertices[1] &&
+						verticesAbovePlane[1] != faceVertices[1])
+					{
+						verticesAbovePlane.Reverse();
+						indexRemaining = 1;
+					}
+					else if (verticesAbovePlane[0] != faceVertices[0] &&
+						verticesAbovePlane[1] != faceVertices[0])
+					{
+						indexRemaining = 0;
+					}
+					else
+					{
+						indexRemaining = 2;
+					}
+
+					var intersectionAfter = plane.IntersectsSegment(
+						dataTool.GetVertex(verticesAbovePlane[1]),
+						dataTool.GetVertex(faceVertices[indexRemaining]));
+
+					var intersectionBefore = plane.IntersectsSegment(
+						dataTool.GetVertex(verticesAbovePlane[0]),
+						dataTool.GetVertex(faceVertices[indexRemaining]));
+
+					intersects.Add(intersectionAfter);
+					intersects.Add(intersectionBefore);
+					coplanar.Add(intersectionAfter);
+					coplanar.Add(intersectionBefore);
+
+					// find shortest 'cross-length' to make 2 triangles from 4 points
+
+					int indexShortest = 0;
+
+					float distance0 = dataTool.GetVertex(verticesAbovePlane[0]).DistanceTo((Vector3)intersects[0]);
+					float distance1 = dataTool.GetVertex(verticesAbovePlane[1]).DistanceTo((Vector3)intersects[1]);
+
+					if (distance1 > distance0)
+					{
+						indexShortest = 1;
+					}
+
+					// TRIANGLE 1
+					surfaceTool.AddVertex(dataTool.GetVertex(verticesAbovePlane[0]));
+					surfaceTool.AddVertex(dataTool.GetVertex(verticesAbovePlane[1]));
+
+					surfaceTool.AddVertex((Vector3)intersects[indexShortest]);
+
+					// TRIANGLE 2
+
+					surfaceTool.AddVertex((Vector3)intersects[0]);
+					surfaceTool.AddVertex((Vector3)intersects[1]);
+
+					surfaceTool.AddVertex(dataTool.GetVertex(verticesAbovePlane[indexShortest]));
 					continue;
 				}
 			}
+			// END for face in range(data_tool.get_face_count())
 
 			// cap polygon
 			var center = Vector3.Zero;
-			foreach (Vector3 v in coplanar)
+			foreach (Vector3 v in coplanar.Select(v => (Vector3)v))
 				center += v;
 			center /= coplanar.Count;
 			for (int i = 0; i < coplanar.Count - 1; i += 2)
 			{
-				st.AddVertex((Vector3)coplanar[i + 1]);
-				st.AddVertex((Vector3)coplanar[i]);
-				st.AddVertex(center);
+				surfaceTool.AddVertex((Vector3)coplanar[i + 1]);
+				surfaceTool.AddVertex((Vector3)coplanar[i]);
+				surfaceTool.AddVertex(center);
 			}
 
-			if (side == 0) surfA = st; else surfB = st;
+			if (side == 0) surfA = surfaceTool; else surfB = surfaceTool;
 		}
 
 		surfA.Index(); surfA.GenerateNormals();
 		surfB.Index(); surfB.GenerateNormals();
 
-		var meshUp = new MeshInstance3D { Mesh = (ArrayMesh)surfA.Commit() };
+		var meshUp = new MeshInstance3D { Mesh = surfA.Commit() };
 		node.left = new VSTNode(meshUp, node.level + 1, Laterality.LEFT);
 
-		var meshDown = new MeshInstance3D { Mesh = (ArrayMesh)surfB.Commit() };
+		var meshDown = new MeshInstance3D { Mesh = surfB.Commit() };
 		node.right = new VSTNode(meshDown, node.level + 1, Laterality.RIGHT);
 
 		return true;
@@ -272,26 +344,26 @@ public partial class DestronoiNode : Node3D
 		{
 			var body = new RigidBody3D();
 			body.Name = $"VFragment_{fragments.Count}";
-			body.Position = Position;
+			body.Position = Transform.Origin;
 
-			var mi = leaf.meshInstance;
-			mi.Name = "MeshInstance3D";
-			body.AddChild(mi);
+			var meshInstance = leaf.meshInstance;
+			meshInstance.Name = "MeshInstance3D";
+			body.AddChild(meshInstance);
 
 			var shape = new CollisionShape3D { Name = "CollisionShape3D" };
 
-			float mass = Mathf.Max(mi.Mesh.GetAabb().Size.Length(), 0.1f);
+			float mass = Mathf.Max(meshInstance.Mesh.GetAabb().Size.Length(), 0.1f);
 			body.Mass = mass; totalMass += mass;
 
 			if (!Mathf.IsZeroApprox(combustVelocity))
 			{
 				// simple outward velocity
-				var dir = mi.Mesh.GetAabb().Position - baseObject.Position;
+				var dir = meshInstance.Mesh.GetAabb().Position - baseObject.Position;
 				// was .axisvelocity, i just replaced it with linearvelocity idk if thats correct
 				body.LinearVelocity = dir.Normalized() * combustVelocity;
 			}
 
-			shape.Shape = mi.Mesh.CreateConvexShape(false, false);
+			shape.Shape = meshInstance.Mesh.CreateConvexShape(false, false);
 			body.AddChild(shape);
 			fragmentContainer.AddChild(body);
 			fragments.Add(body);
