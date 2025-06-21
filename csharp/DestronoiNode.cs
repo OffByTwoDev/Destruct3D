@@ -22,7 +22,7 @@ public partial class DestronoiNode : Node3D
 	{
 		if (Input.IsActionJustPressed("cs_debug_explode"))
 		{
-			Destroy(5, 5, 5f);
+			Destroy(5, 5, 10f);
 		}
 	}
 
@@ -222,7 +222,7 @@ public partial class DestronoiNode : Node3D
 					surfaceTool.AddVertex((Vector3)intersects[1]);
 					continue;
 				}
-				
+
 				if (verticesAbovePlane.Count == 2)
 				{
 					int indexRemaining;
@@ -343,8 +343,8 @@ public partial class DestronoiNode : Node3D
 			float mass = Mathf.Max(meshInstance.Mesh.GetAabb().Size.Length(), 0.1f);
 			body.Mass = mass; totalMass += mass;
 
-			body.CenterOfMassMode = RigidBody3D.CenterOfMassModeEnum.Custom;
-			body.CenterOfMass = (meshInstance.Mesh.GetAabb().End + meshInstance.Mesh.GetAabb().Position)/2.0f;
+			// body.CenterOfMassMode = RigidBody3D.CenterOfMassModeEnum.Custom;
+			// body.CenterOfMass = (meshInstance.Mesh.GetAabb().End + meshInstance.Mesh.GetAabb().Position)/2.0f;
 
 			if (!Mathf.IsZeroApprox(combustVelocity))
 			{
