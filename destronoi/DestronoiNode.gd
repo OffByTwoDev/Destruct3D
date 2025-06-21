@@ -1,5 +1,5 @@
 
-extends Node
+extends Node3D
 class_name DestronoiNode
 """
 Author: George Power <george@georgepower.dev>
@@ -30,7 +30,7 @@ var vst_root: VSTNode = null
 
 func _unhandled_input(_event: InputEvent) -> void:
 	if Input.is_action_just_pressed("debug_explode"):
-		destroy(2,2, 1)
+		destroy(5,5, 5)
 
 ## Initializes the [param vst_root] with a copy of the sibling [MeshInstance3D].
 ## The mesh is subdivided according to the [param tree_height].
@@ -314,7 +314,7 @@ func destroy(left_val: int = 1, right_val: int = 1, combust_velocity: float = 0.
 		var new_body: RigidBody3D = RigidBody3D.new()
 		new_body.name = "VFragment_{id}".format({"id": vst_leaf})
 		
-		new_body.position = base_object.transform.origin
+		new_body.position = transform.origin
 		
 		var new_mesh_instance = vst_leaves[vst_leaf]._mesh_instance
 		new_mesh_instance.name = "MeshInstance3D"
