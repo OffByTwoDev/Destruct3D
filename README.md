@@ -1,5 +1,7 @@
 # Inversion-v2
 
+Note: Jolt is highly recommended when using this plugin. Using the default engine leads to fragments oscillating unphysically (might be something to do with Centre of Mass calculations).
+
 # Commit Convention
 
 ## Commit Types
