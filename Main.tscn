@@ -1,7 +1,8 @@
-[gd_scene load_steps=15 format=3 uid="uid://c7oqy8jsemyg1"]
+[gd_scene load_steps=16 format=3 uid="uid://c7oqy8jsemyg1"]
 
 [ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://destronoi/DestronoiNode.gd" id="1_glv2v"]
 [ext_resource type="Script" uid="uid://co7g407u2vd1x" path="res://csharp/DestronoiNode.cs" id="2_uu6xs"]
+[ext_resource type="Script" uid="uid://cy0lbch8hfx72" path="res://FragmentationComponent.cs" id="3_r0du0"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -105,10 +106,16 @@ shape = SubResource("ConvexPolygonShape3D_cm0pq")
 [node name="CSharpDestronoiNode" type="Node3D" parent="." node_paths=PackedStringArray("meshInstance", "fragmentContainer", "baseObject")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.7711, 0.5, 0)
 script = ExtResource("2_uu6xs")
-treeHeight = 5
+treeHeight = 7
 meshInstance = NodePath("OriginalObject/MeshInstance3D")
 fragmentContainer = NodePath("FragmentContainer2")
 baseObject = NodePath("OriginalObject")
+
+[node name="FragmentationComponent" type="Node" parent="CSharpDestronoiNode" node_paths=PackedStringArray("destronoiNode")]
+script = ExtResource("3_r0du0")
+destronoiNode = NodePath("..")
+destructionFragmentsLeft = 4
+destructionFragmentsRight = 4
 
 [node name="OriginalObject" type="RigidBody3D" parent="CSharpDestronoiNode"]
 

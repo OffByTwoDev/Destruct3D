@@ -18,14 +18,6 @@ public partial class DestronoiNode : Node3D
 	[Export] public Node fragmentContainer;
 	[Export] public RigidBody3D baseObject;
 
-	public override void _UnhandledInput(InputEvent @event)
-	{
-		if (Input.IsActionJustPressed("cs_debug_explode"))
-		{
-			Destroy(5, 5, 10f);
-		}
-	}
-
 	public override void _Ready()
 	{
 		if (meshInstance is null)
