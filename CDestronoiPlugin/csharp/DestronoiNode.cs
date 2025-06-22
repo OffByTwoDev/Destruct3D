@@ -317,7 +317,7 @@ public partial class DestronoiNode : Node3D
 			RigidBody3D body = new()
 			{
 				Name = $"VFragment_{fragments.Count}",
-				Position = Transform.Origin
+				Position = baseObject.GlobalPosition
 			};
 
 			MeshInstance3D meshInstance = leaf.meshInstance;
@@ -335,8 +335,9 @@ public partial class DestronoiNode : Node3D
 			float mass = Mathf.Max(meshInstance.Mesh.GetAabb().Size.Length(), 0.1f);
 			body.Mass = mass; totalMass += mass;
 
-			// body.CenterOfMassMode = RigidBody3D.CenterOfMassModeEnum.Custom;
-			// body.CenterOfMass = (meshInstance.Mesh.GetAabb().End + meshInstance.Mesh.GetAabb().Position)/2.0f;
+			// needed for detecting explosions from RPGs
+			body.ContactMonitor = true;
+			body.MaxContactsReported = 5_000;
 
 			if (!Mathf.IsZeroApprox(combustVelocity))
 			{
