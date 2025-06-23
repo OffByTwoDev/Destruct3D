@@ -83,12 +83,18 @@ shape = SubResource("ConvexPolygonShape3D_cm0pq")
 
 [node name="FragmentContainer" type="Node" parent="Environment/GDDestronoiNode"]
 
+[node name="FragmentationComponent" type="Node" parent="Environment" node_paths=PackedStringArray("destronoiNode")]
+script = ExtResource("3_fhs12")
+destronoiNode = NodePath("../OriginalObject")
+destructionFragmentsLeft = 4
+destructionFragmentsRight = 4
+
 [node name="OriginalObject" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.59674, 0.5, 0)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("CSharpMesh")
 fragmentContainer = NodePath("..")
-treeHeight = 7
+treeHeight = 6
 
 [node name="CSharpMesh" type="MeshInstance3D" parent="Environment/OriginalObject"]
 mesh = SubResource("BoxMesh_r0du0")
@@ -96,16 +102,10 @@ mesh = SubResource("BoxMesh_r0du0")
 [node name="CSharpCollisionShape" type="CollisionShape3D" parent="Environment/OriginalObject"]
 shape = SubResource("ConvexPolygonShape3D_cm0pq")
 
-[node name="FragmentationComponent" type="Node" parent="Environment/OriginalObject" node_paths=PackedStringArray("destronoiNode")]
-script = ExtResource("3_fhs12")
-destronoiNode = NodePath("..")
-destructionFragmentsLeft = 4
-destructionFragmentsRight = 4
-
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("meshInstance3D")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.79232, 0, 0)
 script = ExtResource("4_fgqed")
-explosionDepth = 7
+explosionDepth = 4
 meshInstance3D = NodePath("MeshInstance3D")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Explosion"]

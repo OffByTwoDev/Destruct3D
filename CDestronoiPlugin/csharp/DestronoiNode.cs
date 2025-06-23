@@ -23,7 +23,7 @@ public partial class DestronoiNode : RigidBody3D
 	{
 		if (meshInstance is null)
 		{
-			GD.Print("[Destronoi] No MeshInstance3D set");
+			GD.PrintErr("[Destronoi] No MeshInstance3D set");
 			return;
 		}
 
@@ -65,49 +65,42 @@ public partial class DestronoiNode : RigidBody3D
 
 		if (node.meshInstance.Mesh is not ArrayMesh arrayMesh)
 		{
-			GD.Print("arraymesh must be passed to plotsitesrandom, not any other type of mesh");
+			GD.PushError("arraymesh must be passed to plotsitesrandom, not any other type of mesh");
 			return;
 		}
 
 		mdt.CreateFromSurface(arrayMesh, 0);
 
-		var aabb = node.meshInstance.GetAabb();
-		var min = aabb.Position;
-		var max = aabb.End;
-		// aabb.GetCenter();
-
-		float avgX = (min.X + max.X) * 0.5f;
-		float avgY = (min.Y + max.Y) * 0.5f;
-		float avgZ = (min.Z + max.Z) * 0.5f;
+		Vector3 centre = node.meshInstance.GetAabb().GetCenter();
 
 		float deviation = 0.1f;
 
 		if (mdt.GetFaceCount() == 0)
 		{
-			GD.Print("no faces found in meshdatatool, plotsitesrandom will loop forever. returning early");
+			GD.PushWarning("no faces found in meshdatatool, plotsitesrandom will loop forever. returning early");
 			return;
 		}
 
 		int tries = 0;
+
+		var direction = Vector3.Up;
 
 		while (node.sites.Count < 2)
 		{
 			tries++;
 			if (tries > 5000)
 			{
-				GD.Print("over 5k tries exceeded, exiting PlotSitesRandom");
+				GD.PushWarning("over 5k tries exceeded, exiting PlotSitesRandom");
 				return;
 			}
 
 			var site = new Vector3(
-				(float)GD.Randfn(avgX, deviation),
-				(float)GD.Randfn(avgY, deviation),
-				(float)GD.Randfn(avgZ, deviation)
+				(float)GD.Randfn(centre.X, deviation),
+				(float)GD.Randfn(centre.Y, deviation),
+				(float)GD.Randfn(centre.Z, deviation)
 			);
 
 			int intersections = 0;
-
-			var direction = Vector3.Up;
 
 			for (int face = 0; face < mdt.GetFaceCount(); face++)
 			{
@@ -322,7 +315,6 @@ public partial class DestronoiNode : RigidBody3D
 		foreach (VSTNode leaf in leaves)
 		{
 			RigidBody3D body = CreateBody(leaf.meshInstance, $"Fragment_{fragmentNumber}");
-
 
 			// destruction velocity
 			if (!Mathf.IsZeroApprox(combustVelocity))

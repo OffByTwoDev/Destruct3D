@@ -55,7 +55,9 @@ public partial class VSTSplittingComponent : Area3D
 				continue;
 			}
 
+
 			VSTNode vstRoot = destronoiNode.vstRoot;
+
 			List<VSTNode> fragmentsAtGivenDepth = [];
 
 			InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, vstRoot);
@@ -101,9 +103,12 @@ public partial class VSTSplittingComponent : Area3D
 			.Select(f => f.meshInstance)
 			.ToList();
 
-			MeshInstance3D combinedMeshesToKeep = CombineMeshes(meshInstances);
-			RigidBody3D rigidBodyToKeep = destronoiNode.CreateBody(combinedMeshesToKeep,"combined_fragment");
+			MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
 
+			// MeshInstance3D finalCombinedMeshes = ConvertOverlappingMeshToExternalMesh(overlappingCombinedMeshesToKeep);
+
+			RigidBody3D rigidBodyToKeep = destronoiNode.CreateBody(overlappingCombinedMeshesToKeep,"combined_fragment");
+			
 			destronoiNode.fragmentContainer.AddChild(rigidBodyToKeep);
 
 			// rigidBodyToKeep.Freeze = true;
@@ -137,16 +142,7 @@ public partial class VSTSplittingComponent : Area3D
 				continue;
 			}
 
-			// Keep the same material as the first mesh instance
-			// var material = meshInstance.GetActiveMaterial(0);
-			// if (material is not null)
-			// {
-			// 	surfaceTool.SetMaterial(material);
-			// }
-
 			// Append all surfaces from this mesh with the MeshInstance's transform
-			// THIS IS NOT NECESSARILY A GOOD WAY TO DO THINGS
-			// should prolly only be adding the external faces lmao... but this works for now
 			int surfaceCount = mesh.GetSurfaceCount();
 			for (int s = 0; s < surfaceCount; s++)
 			{
@@ -162,5 +158,83 @@ public partial class VSTSplittingComponent : Area3D
 		{
 			Mesh = combinedArrayMesh
 		};
+	}
+
+	// removes all internal vertices from a mesh
+	public static MeshInstance3D ConvertOverlappingMeshToExternalMesh(MeshInstance3D overlappingMeshInstance)
+	{
+		// list of all vertices that are on the surface of a mesh and not inside the mesh boundary
+		List<Vector3> boundaryPoints = GetBoundaryPoints(overlappingMeshInstance);
+
+		var surfaceTool = new SurfaceTool();
+		surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
+
+		foreach (Vector3 vertex in boundaryPoints)
+		{
+			surfaceTool.AddVertex(vertex);
+		}
+
+		ArrayMesh arrayMesh = surfaceTool.Commit();
+
+		return new MeshInstance3D()
+		{
+			Mesh = arrayMesh
+		};
+	}
+
+	public static List<Vector3> GetBoundaryPoints(MeshInstance3D meshInstance)
+	{
+		List<Vector3> boundaryPoints = [];
+
+		var mdt = new MeshDataTool();
+
+		if (meshInstance.Mesh is not ArrayMesh arrayMesh)
+		{
+			GD.PushError("arraymesh must be passed to GetInteriorPoints, not any other type of mesh");
+			return null;
+		}
+
+		mdt.CreateFromSurface(arrayMesh, 0);
+
+		if (mdt.GetFaceCount() == 0)
+		{
+			GD.PushWarning("no faces found in meshdatatool, GetBoundaryPoints will loop forever. returning early");
+			return null;
+		}
+
+		var direction = Vector3.Up;
+
+		for (int i = 0; i < mdt.GetVertexCount(); i++)
+		{
+			Vector3 currentVertex = mdt.GetVertex(i);
+
+			int intersections = 0;
+
+			for (int face = 0; face < mdt.GetFaceCount(); face++)
+			{
+				int v0 = mdt.GetFaceVertex(face, 0);
+				int v1 = mdt.GetFaceVertex(face, 1);
+				int v2 = mdt.GetFaceVertex(face, 2);
+				var p0 = mdt.GetVertex(v0);
+				var p1 = mdt.GetVertex(v1);
+				var p2 = mdt.GetVertex(v2);
+
+				Variant intersectionPoint = Geometry3D.RayIntersectsTriangle(currentVertex, direction, p0, p1, p2);
+				if (intersectionPoint.VariantType != Variant.Type.Nil)
+				{
+					intersections++;
+				}
+			}
+
+			
+			// if number of intersections is odd, its inside
+			// if number of intersections is even, its outside
+			if (intersections % 2 == 0)
+			{
+				boundaryPoints.Add(currentVertex);
+			}
+		}
+
+		return boundaryPoints;
 	}
 }
