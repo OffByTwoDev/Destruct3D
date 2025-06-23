@@ -39,7 +39,8 @@ public partial class DestronoiNode : RigidBody3D
 			return;
 		}
 
-		vstRoot = new VSTNode(meshInstance, 1, 1);
+		// the topmost node has no parent hence null & no laterality
+		vstRoot = new VSTNode(meshInstance, 1, 1, null, 0, Laterality.NONE);
 
 		// Plot 2 sites for the subdivision
 		PlotSitesRandom(vstRoot);
@@ -307,10 +308,10 @@ public partial class DestronoiNode : RigidBody3D
 		surfB.Index(); surfB.GenerateNormals();
 
 		var meshUp = new MeshInstance3D { Mesh = surfA.Commit() };
-		node.left = new VSTNode(meshUp, node.ID * 2, node.ownerID, node.level + 1, Laterality.LEFT);
+		node.left = new VSTNode(meshUp, node.ID * 2, node.ownerID, node, node.level + 1, Laterality.LEFT);
 
 		var meshDown = new MeshInstance3D { Mesh = surfB.Commit() };
-		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node.ownerID, node.level + 1, Laterality.RIGHT);
+		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node.ownerID, node, node.level + 1, Laterality.RIGHT);
 
 		return true;
 	}

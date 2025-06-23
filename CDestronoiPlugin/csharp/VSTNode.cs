@@ -13,12 +13,14 @@ public enum Laterality
 /// A node in a Voronoi Subdivision Tree.
 /// Despite the name, VSTNode does not inherit from Node and therefore cannot be used as a scene object.
 /// </summary>
+/// <param name="laterality">whether this node is a left or right child of its parent</param>
 public class VSTNode
 {
 	public MeshInstance3D meshInstance;
 	public List<Vector3> sites;
 	public VSTNode left;
 	public VSTNode right;
+	public VSTNode parent;
 	// i believe the initial level is 0 (i.e. for the vstNode that represents the whole object)
 	public int level;
 	public Laterality laterality;
@@ -33,8 +35,9 @@ public class VSTNode
 	public VSTNode(MeshInstance3D inputMeshInstance,
 					int inputID,
 					int inputOwnerID,
-					int lev = 0,
-					Laterality lat = Laterality.NONE)
+					VSTNode inputParent,
+					int lev,
+					Laterality lat)
 	{
 		SurfaceTool surfaceTool = new();
 		surfaceTool.CreateFrom(inputMeshInstance.Mesh, 0);
@@ -45,6 +48,8 @@ public class VSTNode
             Mesh = arrayMesh
         };
 
+
+		parent = inputParent;
 
         meshInstance = newMeshInstance;
 		level = lev;
