@@ -84,7 +84,6 @@ public partial class VSTSplittingComponent : Area3D
 				{
 					SplitExplode(destronoiNode, explosionDistances[i-1], explosionDistances[i], explosionTreeDepths[i]);
 				}
-				
 			}
 		}
 	}
@@ -98,13 +97,10 @@ public partial class VSTSplittingComponent : Area3D
 
 		if (destronoiNode.treeHeight < explosionTreeDepth)
 		{
-			GD.Print("tree not large enough for required explosion depth - queuefreeing this destronoinode");
 			// destronoiNode.QueueFree();
 			// replace with some particle effects
 			return;
 		}
-
-		GD.Print("carrying on with split explosion");
 
 		List<VSTNode> fragmentsAtGivenDepth = [];
 
@@ -139,6 +135,13 @@ public partial class VSTSplittingComponent : Area3D
 			}
 		}
 
+		// if we are removing no fragments, then the rest of this code is just gonna create a duplicate of the current node
+		// so we can save some computation and skip it. also prevents bodies moving about weirdly (duplicating them resets their position)
+		if (fragmentsToRemove.Count == 0)
+		{
+			return;
+		}
+
 		// remove original object
 		destronoiNode.QueueFree();
 
@@ -169,9 +172,7 @@ public partial class VSTSplittingComponent : Area3D
 
 		// create single body from fragmentstokeep
 
-		var meshInstances = fragmentsToKeep
-		.Select(f => f.meshInstance)
-		.ToList();
+		List<MeshInstance3D> meshInstances = [.. fragmentsToKeep.Select(f => f.meshInstance)];
 
 		MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
 
@@ -179,6 +180,7 @@ public partial class VSTSplittingComponent : Area3D
 
 		string combinedFragmentName = destronoiNode.Name + "_remaining_fragment";
 
+		GD.Print("creatingDN");
 		DestronoiNode destronoiNodeToKeep = destronoiNode.CreateDestronoiNode(originalVSTRoot,
 																			overlappingCombinedMeshesToKeep,
 																			destronoiNode.treeHeight,

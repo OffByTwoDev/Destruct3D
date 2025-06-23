@@ -115,8 +115,8 @@ shape = SubResource("ConvexPolygonShape3D_xpmf3")
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("explosionMeshes")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.93372, 0.792343, 0.138725)
 script = ExtResource("4_fgqed")
-explosionMeshes = [NodePath("MediumMesh")]
-explosionTreeDepths = Array[int]([2])
+explosionMeshes = [NodePath("MediumMesh"), NodePath("LargeMesh")]
+explosionTreeDepths = Array[int]([7, 3])
 
 [node name="SmallMesh" type="MeshInstance3D" parent="Explosion"]
 visible = false
