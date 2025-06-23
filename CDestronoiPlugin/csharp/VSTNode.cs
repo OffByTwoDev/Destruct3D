@@ -1,5 +1,6 @@
 using Godot;
 using System.Collections.Generic;
+using System;
 
 public enum Laterality
 {
@@ -18,25 +19,39 @@ public class VSTNode
 	public List<Vector3> sites;
 	public VSTNode left;
 	public VSTNode right;
+	// i believe the initial level is 0 (i.e. for the vstNode that represents the whole object)
 	public int level;
 	public Laterality laterality;
+
+	// IDS start at 1 (not 0, idk why, i actually believe it doesnt matter it probably doesn't change any behaviour)
+	public int ID;
+	public int ownerID;
 
 	/// <summary>
 	/// Initializes a VSTNode using mesh data, a depth level, and a laterality value.
 	/// </summary>
-	public VSTNode(MeshInstance3D inputMeshInstance, int lev = 0, Laterality lat = Laterality.NONE)
+	public VSTNode(MeshInstance3D inputMeshInstance,
+					int inputID,
+					int inputOwnerID,
+					int lev = 0,
+					Laterality lat = Laterality.NONE)
 	{
 		SurfaceTool surfaceTool = new();
 		surfaceTool.CreateFrom(inputMeshInstance.Mesh, 0);
 		ArrayMesh arrayMesh = surfaceTool.Commit();
 
-		MeshInstance3D newMeshInstance = new();
-		newMeshInstance.Mesh = arrayMesh;
+        MeshInstance3D newMeshInstance = new()
+        {
+            Mesh = arrayMesh
+        };
 
 
-		meshInstance = newMeshInstance;
+        meshInstance = newMeshInstance;
 		level = lev;
 		laterality = lat;
+
+		ID = inputID;
+		ownerID = inputOwnerID;
 	}
 
 	/// <summary>Returns the override material at the given surface index, or null if out of range.</summary>
@@ -56,7 +71,7 @@ public class VSTNode
 	/// <summary>
 	/// Recursively populates outArr with each leaf VSTNode and returns the list of leaves.
 	/// </summary>
-	public List<VSTNode> GetLeafNodes(VSTNode root = null, List<VSTNode> outArr = null)
+	public static List<VSTNode> GetLeafNodes(VSTNode root = null, List<VSTNode> outArr = null)
 	{
 		if (outArr == null)
 			outArr = [];
@@ -69,9 +84,9 @@ public class VSTNode
 			return outArr;
 		}
 		if (root.left != null)
-			GetLeafNodes(root.left, outArr);
+            GetLeafNodes(root.left, outArr);
 		if (root.right != null)
-			GetLeafNodes(root.right, outArr);
+            GetLeafNodes(root.right, outArr);
 
 		return outArr;
 	}
@@ -79,7 +94,7 @@ public class VSTNode
 	/// <summary>
 	/// Recursively populates outArr with VSTNodes of right laterality at a certain depth.
 	/// </summary>
-	public List<VSTNode> GetRightLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
+	public static List<VSTNode> GetRightLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
 	{
 		if (outArr == null)
 			outArr = [];
@@ -92,9 +107,9 @@ public class VSTNode
 			return outArr;
 		}
 		if (root.left != null && level > 0)
-			GetRightLeafNodes(root.left, outArr, lim, level + 1);
+            GetRightLeafNodes(root.left, outArr, lim, level + 1);
 		if (root.right != null)
-			GetRightLeafNodes(root.right, outArr, lim, level + 1);
+            GetRightLeafNodes(root.right, outArr, lim, level + 1);
 
 		return outArr;
 	}
@@ -102,7 +117,7 @@ public class VSTNode
 	/// <summary>
 	/// Recursively populates outArr with VSTNodes of left laterality at a certain depth.
 	/// </summary>
-	public List<VSTNode> GetLeftLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
+	public static List<VSTNode> GetLeftLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
 	{
 		if (outArr == null)
 			outArr = [];
@@ -115,9 +130,9 @@ public class VSTNode
 			return outArr;
 		}
 		if (root.left != null)
-			GetLeftLeafNodes(root.left, outArr, lim, level + 1);
+            GetLeftLeafNodes(root.left, outArr, lim, level + 1);
 		if (root.right != null && level > 0)
-			GetLeftLeafNodes(root.right, outArr, lim, level + 1);
+            GetLeftLeafNodes(root.right, outArr, lim, level + 1);
 
 		return outArr;
 	}

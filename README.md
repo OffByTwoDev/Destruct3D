@@ -19,7 +19,11 @@ Note: Jolt is highly recommended when using this plugin. Using the default engin
 
 ## Branch Names
 
-Branch names can follow the same names, but are formatted like "feat/adding-x-from-y" (as ":" would have to be escaped and branch names cannot have whitespace).
+Branch names can follow the same names, but are formatted like
+- **`feat/adding-x-from-y`**
+- **`fix-enemymeshes/removing-extraneous-faces`**
+
+(as ":" would have to be escaped and branch names cannot have whitespace).
 
 ## Example Messages
 

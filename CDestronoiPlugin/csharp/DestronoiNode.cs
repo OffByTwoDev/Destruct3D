@@ -6,27 +6,40 @@ using System.Linq;
 /// <summary>
 /// Subdivides a convex ArrayMesh belonging to a RigidBody3D by generating a Voronoi Subdivision Tree (VST).
 /// </summary>
-public partial class DestronoiNode : Node3D
+public partial class DestronoiNode : RigidBody3D
 {
-	// The root node of the VST.
-	private VSTNode vstRoot;
-
+	// --- Exports --- //
+	[Export] public MeshInstance3D meshInstance;
+	// node under which fragments will be instanced
+	[Export] public Node fragmentContainer;
 	// Generates 2^n fragments, where n is treeHeight.
 	[Export(PropertyHint.Range, "1,8")] public int treeHeight = 1;
 
-	[Export] public MeshInstance3D meshInstance;
-	[Export] public Node fragmentContainer;
-	[Export] public RigidBody3D baseObject;
+	// --- internal variables --- //
+	public VSTNode vstRoot;
+	private float baseObjectDensity;
+	// this should be true if the node needs its own vstRoot created
+	// if you are creating a fragment and are passing in a known vstRoot, mesh etc, then this flag should be false
+	private bool needsInitialising = true;
 
 	public override void _Ready()
 	{
-		if (meshInstance is null)
+		base._Ready();
+
+		if (!needsInitialising)
 		{
-			GD.Print("[Destronoi] No MeshInstance3D set");
 			return;
 		}
 
-		vstRoot = new VSTNode(meshInstance);
+		// --- create filled VST and find density --- //
+
+		if (meshInstance is null)
+		{
+			GD.PrintErr("[Destronoi] No MeshInstance3D set");
+			return;
+		}
+
+		vstRoot = new VSTNode(meshInstance, 1, 1);
 
 		// Plot 2 sites for the subdivision
 		PlotSitesRandom(vstRoot);
@@ -36,70 +49,69 @@ public partial class DestronoiNode : Node3D
 		for (int i = 0; i < treeHeight - 1; i++)
 		{
 			List<VSTNode> leaves = [];
-			vstRoot.GetLeafNodes(vstRoot, leaves);
+			VSTNode.GetLeafNodes(vstRoot, leaves);
 			foreach (VSTNode leaf in leaves)
 			{
 				PlotSitesRandom(leaf);
 				Bisect(leaf);
 			}
 		}
+
+		float volume = meshInstance.Mesh.GetAabb().Size.X *
+								 meshInstance.Mesh.GetAabb().Size.Y *
+								 meshInstance.Mesh.GetAabb().Size.Z;
+		
+		baseObjectDensity = Mass / volume;
 	}
 
 	public void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
 	{
-		node.sites = new List<Vector3> { node.meshInstance.Position + site1, node.meshInstance.Position + site2 };
+		node.sites = [node.meshInstance.Position + site1, node.meshInstance.Position + site2];
 	}
 
-	public void PlotSitesRandom(VSTNode node)
+	public static void PlotSitesRandom(VSTNode node)
 	{
 		node.sites = [];
 		var mdt = new MeshDataTool();
 
 		if (node.meshInstance.Mesh is not ArrayMesh arrayMesh)
 		{
-			GD.Print("arraymesh must be passed to plotsitesrandom, not any other type of mesh");
+			GD.PushError("arraymesh must be passed to plotsitesrandom, not any other type of mesh");
 			return;
 		}
 
 		mdt.CreateFromSurface(arrayMesh, 0);
 
-		var aabb = node.meshInstance.GetAabb();
-		var min = aabb.Position;
-		var max = aabb.End;
-		aabb.GetCenter();
-
-		float avgX = (min.X + max.X) * 0.5f;
-		float avgY = (min.Y + max.Y) * 0.5f;
-		float avgZ = (min.Z + max.Z) * 0.5f;
+		Vector3 centre = node.meshInstance.GetAabb().GetCenter();
 
 		float deviation = 0.1f;
 
 		if (mdt.GetFaceCount() == 0)
 		{
-			GD.Print("no faces found in meshdatatool, plotsitesrandom will loop forever. returning early");
+			GD.PushWarning("no faces found in meshdatatool, plotsitesrandom will loop forever. returning early");
 			return;
 		}
 
 		int tries = 0;
+
+		var direction = Vector3.Up;
 
 		while (node.sites.Count < 2)
 		{
 			tries++;
 			if (tries > 5000)
 			{
-				GD.Print("over 5k tries exceeded, exiting PlotSitesRandom");
+				GD.PushWarning("over 5k tries exceeded, exiting PlotSitesRandom");
 				return;
 			}
 
 			var site = new Vector3(
-				(float)GD.Randfn(avgX, deviation),
-				(float)GD.Randfn(avgY, deviation),
-				(float)GD.Randfn(avgZ, deviation)
+				(float)GD.Randfn(centre.X, deviation),
+				(float)GD.Randfn(centre.Y, deviation),
+				(float)GD.Randfn(centre.Z, deviation)
 			);
 
 			int intersections = 0;
-
-			var direction = Vector3.Up;
 
 			for (int face = 0; face < mdt.GetFaceCount(); face++)
 			{
@@ -295,10 +307,10 @@ public partial class DestronoiNode : Node3D
 		surfB.Index(); surfB.GenerateNormals();
 
 		var meshUp = new MeshInstance3D { Mesh = surfA.Commit() };
-		node.left = new VSTNode(meshUp, node.level + 1, Laterality.LEFT);
+		node.left = new VSTNode(meshUp, node.ID * 2, node.ownerID, node.level + 1, Laterality.LEFT);
 
 		var meshDown = new MeshInstance3D { Mesh = surfB.Commit() };
-		node.right = new VSTNode(meshDown, node.level + 1, Laterality.RIGHT);
+		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node.ownerID, node.level + 1, Laterality.RIGHT);
 
 		return true;
 	}
@@ -306,54 +318,120 @@ public partial class DestronoiNode : Node3D
 	public void Destroy(int leftVal = 1, int rightVal = 1, float combustVelocity = 0f)
 	{
 		List<VSTNode> leaves = [];
-		vstRoot.GetLeftLeafNodes(vstRoot, leaves, leftVal);
-		vstRoot.GetRightLeafNodes(vstRoot, leaves, rightVal);
+		VSTNode.GetLeftLeafNodes(vstRoot, leaves, leftVal);
+		VSTNode.GetRightLeafNodes(vstRoot, leaves, rightVal);
 
-		List<RigidBody3D> fragments = [];
-		float totalMass = 0f;
+		int fragmentNumber = 0;
 
 		foreach (VSTNode leaf in leaves)
 		{
+			RigidBody3D body = CreateBody(leaf.meshInstance, $"Fragment_{fragmentNumber}");
+
+			// destruction velocity
+			if (!Mathf.IsZeroApprox(combustVelocity))
+			{
+				// simple outward velocity
+				var dir = meshInstance.Mesh.GetAabb().Position - Position;
+				// was .axisvelocity, i just replaced it with linearvelocity idk if thats correct
+				body.LinearVelocity = dir.Normalized() * combustVelocity;
+			}
+			// add to scene
+			fragmentContainer.AddChild(body);
+
+			fragmentNumber++;
+		}
+
+		QueueFree();
+	}
+	
+	// DEPRECATED
+	/// <summary>
+	/// creates a rigidbody from the given meshInstance
+	/// </summary>
+	public RigidBody3D CreateBody(MeshInstance3D leafMeshInstance, String name)
+	{
+			// initialise rigidbody
 			RigidBody3D body = new()
 			{
-				Name = $"VFragment_{fragments.Count}",
-				Position = baseObject.GlobalPosition
+				Name = name,
+				Position = GlobalPosition
 			};
 
-			MeshInstance3D meshInstance = leaf.meshInstance;
+			// mesh instance
+			MeshInstance3D meshInstance = leafMeshInstance;
 			meshInstance.Name = "MeshInstance3D";
 			body.AddChild(meshInstance);
 
+			// collisionshape
 			var shape = new CollisionShape3D
 			{
 				Name = "CollisionShape3D",
 				Shape = meshInstance.Mesh.CreateConvexShape(false, false)
 			};
-
 			body.AddChild(shape);
 
-			float mass = Mathf.Max(meshInstance.Mesh.GetAabb().Size.Length(), 0.1f);
-			body.Mass = mass; totalMass += mass;
+			// mass
+			float volume =  meshInstance.Mesh.GetAabb().Size.X *
+							meshInstance.Mesh.GetAabb().Size.Y *
+							meshInstance.Mesh.GetAabb().Size.Z;
+			body.Mass = baseObjectDensity * volume;
 
-			// needed for detecting explosions from RPGs
+			// needed (idk why lmao ?) for detecting explosions from RPGs
 			body.ContactMonitor = true;
 			body.MaxContactsReported = 5_000;
 
-			if (!Mathf.IsZeroApprox(combustVelocity))
+			return body;
+	}
+
+	/// <summary>
+	/// creates a Destronoi Node from the given meshInstance and vstnode
+	/// </summary>
+	public DestronoiNode CreateDestronoiNode(VSTNode subVST,
+											MeshInstance3D subVSTmeshInstance,
+											int remainingTreeDepth,
+											String name)
+	{
+			DestronoiNode destronoiNode = new()
 			{
-				// simple outward velocity
-				var dir = meshInstance.Mesh.GetAabb().Position - baseObject.Position;
-				// was .axisvelocity, i just replaced it with linearvelocity idk if thats correct
-				body.LinearVelocity = dir.Normalized() * combustVelocity;
-			}
+				Name = name,
+				Position = GlobalPosition
+			};
 
-			fragmentContainer.AddChild(body);
-			fragments.Add(body);
-		}
+			// --- rigidbody initialisation --- //
 
-		foreach (RigidBody3D frag in fragments)
-			frag.Mass *= baseObject.Mass / totalMass;
+			// mesh instance
+			MeshInstance3D meshInstance = subVSTmeshInstance;
+			meshInstance.Name = $"{name}_MeshInstance3D";
+			destronoiNode.AddChild(meshInstance);
 
-		baseObject.QueueFree();
+			// collisionshape
+			var shape = new CollisionShape3D
+			{
+				Name = "CollisionShape3D",
+				Shape = meshInstance.Mesh.CreateConvexShape(false, false)
+			};
+			destronoiNode.AddChild(shape);
+
+			// mass
+			float volume =  meshInstance.Mesh.GetAabb().Size.X *
+							meshInstance.Mesh.GetAabb().Size.Y *
+							meshInstance.Mesh.GetAabb().Size.Z;
+			destronoiNode.Mass = Math.Max(baseObjectDensity * volume, 0.01f);
+
+			// needed (idk why lmao ?) for detecting explosions from RPGs
+			destronoiNode.ContactMonitor = true;
+			destronoiNode.MaxContactsReported = 5_000;
+
+
+			// --- destronoi node initialisation --- //
+
+			destronoiNode.meshInstance = subVSTmeshInstance;
+			destronoiNode.fragmentContainer = fragmentContainer;
+			destronoiNode.treeHeight = remainingTreeDepth;
+			destronoiNode.vstRoot = subVST;
+			destronoiNode.baseObjectDensity = baseObjectDensity;
+			destronoiNode.needsInitialising = false;
+
+			return destronoiNode;
 	}
 }
