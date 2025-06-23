@@ -76,31 +76,38 @@ public partial class VSTSplittingComponent : Area3D
 				}
 			}
 
+			// remove original object
+			destronoiNode.baseObject.QueueFree();
+
+			// create small fragments
+
 			int fragmentNumber = 0;
 
 			foreach (VSTNode leaf in fragmentsToRemove)
 			{
-				RigidBody3D body = destronoiNode.CreateBody(leaf, $"Fragment_{fragmentNumber}");
+				RigidBody3D body = destronoiNode.CreateBody(leaf.meshInstance, $"Fragment_{fragmentNumber}");
 
 				destronoiNode.fragmentContainer.AddChild(body);
 
-				body.ApplyCentralImpulse(new Vector3(1,1,1));
+				// body.ApplyCentralImpulse(new Vector3(1,1,1));
 
 				fragmentNumber++;
 			}
 
-			// create body from fragmentstokeep
+			// create single body from fragmentstokeep
+
 			var meshInstances = fragmentsToKeep
 			.Select(f => f.meshInstance)
 			.ToList();
 
 			MeshInstance3D combinedMeshesToKeep = CombineMeshes(meshInstances);
+			RigidBody3D rigidBodyToKeep = destronoiNode.CreateBody(combinedMeshesToKeep,"combined_fragment");
 
-			destronoiNode.fragmentContainer.AddChild(combinedMeshesToKeep);
+			destronoiNode.fragmentContainer.AddChild(rigidBodyToKeep);
 
-			combinedMeshesToKeep.GlobalPosition = destronoiNode.GlobalPosition;
+			// rigidBodyToKeep.Freeze = true;
 
-			destronoiNode.baseObject.QueueFree();
+			// rigidBodyToKeep.GlobalPosition = destronoiNode.GlobalPosition;
 		}
 	}
 
@@ -116,11 +123,6 @@ public partial class VSTSplittingComponent : Area3D
 		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.right);
 	}
 
-	/// <summary>
-	/// Combines multiple MeshInstance3D nodes into a single MeshInstance3D using SurfaceTool.
-	/// </summary>
-	/// <param name="meshInstances">List of MeshInstance3D to combine.</param>
-	/// <returns>A new MeshInstance3D containing the combined mesh.</returns>
 	public static MeshInstance3D CombineMeshes(List<MeshInstance3D> meshInstances)
 	{
 		var surfaceTool = new SurfaceTool();
@@ -135,11 +137,11 @@ public partial class VSTSplittingComponent : Area3D
 			}
 
 			// Keep the same material as the first mesh instance
-			var material = meshInstance.GetActiveMaterial(0);
-			if (material is not null)
-			{
-				surfaceTool.SetMaterial(material);
-			}
+			// var material = meshInstance.GetActiveMaterial(0);
+			// if (material is not null)
+			// {
+			// 	surfaceTool.SetMaterial(material);
+			// }
 
 			// Append all surfaces from this mesh with the MeshInstance's transform
 			int surfaceCount = mesh.GetSurfaceCount();
@@ -151,15 +153,11 @@ public partial class VSTSplittingComponent : Area3D
 			}
 		}
 
-		// Commit to ArrayMesh
 		var combinedArrayMesh = surfaceTool.Commit();
 
-		// Create and configure the new MeshInstance3D
-		var combinedInstance = new MeshInstance3D
+		return new MeshInstance3D
 		{
 			Mesh = combinedArrayMesh
 		};
-
-		return combinedInstance;
 	}
 }

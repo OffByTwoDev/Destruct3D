@@ -323,7 +323,7 @@ public partial class DestronoiNode : Node3D
 
 		foreach (VSTNode leaf in leaves)
 		{
-			RigidBody3D body = CreateBody(leaf, $"Fragment_{fragmentNumber}");
+			RigidBody3D body = CreateBody(leaf.meshInstance, $"Fragment_{fragmentNumber}");
 
 
 			// destruction velocity
@@ -343,10 +343,12 @@ public partial class DestronoiNode : Node3D
 		baseObject.QueueFree();
 	}
 
-	// creates the given leaf as a rigidbody;
-	public RigidBody3D CreateBody(VSTNode leaf, String name)
+	/// <summary>
+	/// creates a rigidbody from the given meshInstance
+	/// </summary>
+	public RigidBody3D CreateBody(MeshInstance3D leafMeshInstance, String name)
 	{
-			// initialise leaf body
+			// initialise rigidbody
 			RigidBody3D body = new()
 			{
 				Name = name,
@@ -354,7 +356,7 @@ public partial class DestronoiNode : Node3D
 			};
 
 			// mesh instance
-			MeshInstance3D meshInstance = leaf.meshInstance;
+			MeshInstance3D meshInstance = leafMeshInstance;
 			meshInstance.Name = "MeshInstance3D";
 			body.AddChild(meshInstance);
 

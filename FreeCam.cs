@@ -5,9 +5,9 @@ public partial class FreeCam : Camera3D
 	// if true, this script will deactivate all collisions for the player after the first use of the freecam
 	[Export] private bool PlayerDebugMode = false;
 
-	private float Speed = 15.0f;
+	[Export] private float Speed = 15.0f;
 
-	private const float SPRINT_FACTOR = 5.0f;
+	[Export] private float SPRINT_FACTOR = 5.0f;
 
 	private bool Sprinting = false;
 
