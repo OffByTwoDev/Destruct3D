@@ -1,8 +1,9 @@
-[gd_scene load_steps=20 format=3 uid="uid://c7oqy8jsemyg1"]
+[gd_scene load_steps=21 format=3 uid="uid://c7oqy8jsemyg1"]
 
 [ext_resource type="Script" uid="uid://k0jup8gwalph" path="res://ExampleScene.cs" id="1_n7n8g"]
 [ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://original_gdscript_destronoi/DestronoiNode.gd" id="1_xvrj6"]
 [ext_resource type="Script" uid="uid://co7g407u2vd1x" path="res://CDestronoiPlugin/csharp/DestronoiNode.cs" id="2_epgrm"]
+[ext_resource type="Script" uid="uid://bvae885dfsom2" path="res://FreeCam.cs" id="2_xpmf3"]
 [ext_resource type="Script" uid="uid://cy0lbch8hfx72" path="res://CDestronoiPlugin/csharp/FragmentationComponent.cs" id="3_fhs12"]
 [ext_resource type="Script" uid="uid://beevd6g3rmhxp" path="res://CDestronoiPlugin/csharp/VSTSplittingComponent.cs" id="4_fgqed"]
 
@@ -61,6 +62,7 @@ environment = SubResource("Environment_uu6xs")
 
 [node name="Camera3D" type="Camera3D" parent="."]
 transform = Transform3D(0.973786, -0.0783492, 0.213546, 0, 0.938807, 0.344445, -0.227466, -0.335415, 0.914197, 6.84713, 2.23563, 4.60651)
+script = ExtResource("2_xpmf3")
 
 [node name="Environment" type="Node" parent="."]
 
@@ -139,7 +141,7 @@ shape = SubResource("ConvexPolygonShape3D_cm0pq")
 [node name="FragmentContainer2" type="Node" parent="CSharpDestronoiNode"]
 
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("meshInstance3D")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.45316, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.79232, 0, 0)
 script = ExtResource("4_fgqed")
 explosionDepth = 7
 meshInstance3D = NodePath("MeshInstance3D")
