@@ -1,5 +1,6 @@
 using Godot;
 using System.Collections.Generic;
+using System.Linq;
 
 // the area3d uses the collisionshape3d
 // this script uses values from the meshinstance3d
@@ -83,10 +84,21 @@ public partial class VSTSplittingComponent : Area3D
 
 				destronoiNode.fragmentContainer.AddChild(body);
 
+				body.ApplyCentralImpulse(new Vector3(1,1,1));
+
 				fragmentNumber++;
 			}
 
 			// create body from fragmentstokeep
+			var meshInstances = fragmentsToKeep
+			.Select(f => f.meshInstance)
+			.ToList();
+
+			MeshInstance3D combinedMeshesToKeep = CombineMeshes(meshInstances);
+
+			destronoiNode.fragmentContainer.AddChild(combinedMeshesToKeep);
+
+			combinedMeshesToKeep.GlobalPosition = destronoiNode.GlobalPosition;
 
 			destronoiNode.baseObject.QueueFree();
 		}
@@ -102,5 +114,52 @@ public partial class VSTSplittingComponent : Area3D
 
 		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.left);
 		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.right);
+	}
+
+	/// <summary>
+	/// Combines multiple MeshInstance3D nodes into a single MeshInstance3D using SurfaceTool.
+	/// </summary>
+	/// <param name="meshInstances">List of MeshInstance3D to combine.</param>
+	/// <returns>A new MeshInstance3D containing the combined mesh.</returns>
+	public static MeshInstance3D CombineMeshes(List<MeshInstance3D> meshInstances)
+	{
+		var surfaceTool = new SurfaceTool();
+		surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
+
+		foreach (var meshInstance in meshInstances)
+		{
+			var mesh = meshInstance.Mesh;
+			if (mesh is null)
+			{
+				continue;
+			}
+
+			// Keep the same material as the first mesh instance
+			var material = meshInstance.GetActiveMaterial(0);
+			if (material is not null)
+			{
+				surfaceTool.SetMaterial(material);
+			}
+
+			// Append all surfaces from this mesh with the MeshInstance's transform
+			int surfaceCount = mesh.GetSurfaceCount();
+			for (int s = 0; s < surfaceCount; s++)
+			{
+				// maybe this should be baseObject.GlobalPosition + meshInstance.Transform?
+				// or maybe its fine as is idk...
+				surfaceTool.AppendFrom(mesh, s, meshInstance.Transform);
+			}
+		}
+
+		// Commit to ArrayMesh
+		var combinedArrayMesh = surfaceTool.Commit();
+
+		// Create and configure the new MeshInstance3D
+		var combinedInstance = new MeshInstance3D
+		{
+			Mesh = combinedArrayMesh
+		};
+
+		return combinedInstance;
 	}
 }
