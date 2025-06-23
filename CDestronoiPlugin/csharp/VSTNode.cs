@@ -56,7 +56,7 @@ public class VSTNode
 	/// <summary>
 	/// Recursively populates outArr with each leaf VSTNode and returns the list of leaves.
 	/// </summary>
-	public List<VSTNode> GetLeafNodes(VSTNode root = null, List<VSTNode> outArr = null)
+	public static List<VSTNode> GetLeafNodes(VSTNode root = null, List<VSTNode> outArr = null)
 	{
 		if (outArr == null)
 			outArr = [];
@@ -69,9 +69,9 @@ public class VSTNode
 			return outArr;
 		}
 		if (root.left != null)
-			GetLeafNodes(root.left, outArr);
+            GetLeafNodes(root.left, outArr);
 		if (root.right != null)
-			GetLeafNodes(root.right, outArr);
+            GetLeafNodes(root.right, outArr);
 
 		return outArr;
 	}
@@ -79,7 +79,7 @@ public class VSTNode
 	/// <summary>
 	/// Recursively populates outArr with VSTNodes of right laterality at a certain depth.
 	/// </summary>
-	public List<VSTNode> GetRightLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
+	public static List<VSTNode> GetRightLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
 	{
 		if (outArr == null)
 			outArr = [];
@@ -92,9 +92,9 @@ public class VSTNode
 			return outArr;
 		}
 		if (root.left != null && level > 0)
-			GetRightLeafNodes(root.left, outArr, lim, level + 1);
+            GetRightLeafNodes(root.left, outArr, lim, level + 1);
 		if (root.right != null)
-			GetRightLeafNodes(root.right, outArr, lim, level + 1);
+            GetRightLeafNodes(root.right, outArr, lim, level + 1);
 
 		return outArr;
 	}
@@ -102,7 +102,7 @@ public class VSTNode
 	/// <summary>
 	/// Recursively populates outArr with VSTNodes of left laterality at a certain depth.
 	/// </summary>
-	public List<VSTNode> GetLeftLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
+	public static List<VSTNode> GetLeftLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
 	{
 		if (outArr == null)
 			outArr = [];
@@ -115,9 +115,9 @@ public class VSTNode
 			return outArr;
 		}
 		if (root.left != null)
-			GetLeftLeafNodes(root.left, outArr, lim, level + 1);
+            GetLeftLeafNodes(root.left, outArr, lim, level + 1);
 		if (root.right != null && level > 0)
-			GetLeftLeafNodes(root.right, outArr, lim, level + 1);
+            GetLeftLeafNodes(root.right, outArr, lim, level + 1);
 
 		return outArr;
 	}

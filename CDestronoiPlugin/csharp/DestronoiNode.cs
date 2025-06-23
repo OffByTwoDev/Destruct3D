@@ -9,7 +9,7 @@ using System.Linq;
 public partial class DestronoiNode : Node3D
 {
 	// The root node of the VST.
-	private VSTNode vstRoot;
+	public VSTNode vstRoot;
 
 	// Generates 2^n fragments, where n is treeHeight.
 	[Export(PropertyHint.Range, "1,8")] public int treeHeight = 1;
@@ -17,6 +17,9 @@ public partial class DestronoiNode : Node3D
 	[Export] public MeshInstance3D meshInstance;
 	[Export] public Node fragmentContainer;
 	[Export] public RigidBody3D baseObject;
+
+	[Export] MeshInstance3D baseObjectMeshInstance;
+	float baseObjectDensity;
 
 	public override void _Ready()
 	{
@@ -36,21 +39,28 @@ public partial class DestronoiNode : Node3D
 		for (int i = 0; i < treeHeight - 1; i++)
 		{
 			List<VSTNode> leaves = [];
-			vstRoot.GetLeafNodes(vstRoot, leaves);
+			VSTNode.GetLeafNodes(vstRoot, leaves);
 			foreach (VSTNode leaf in leaves)
 			{
 				PlotSitesRandom(leaf);
 				Bisect(leaf);
 			}
 		}
+
+		float baseObjectVolume = baseObjectMeshInstance.Mesh.GetAabb().Size.X *
+								 baseObjectMeshInstance.Mesh.GetAabb().Size.Y *
+								 baseObjectMeshInstance.Mesh.GetAabb().Size.Z;
+		
+		baseObjectDensity = baseObject.Mass / baseObjectVolume;
+
 	}
 
 	public void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
 	{
-		node.sites = new List<Vector3> { node.meshInstance.Position + site1, node.meshInstance.Position + site2 };
+		node.sites = [node.meshInstance.Position + site1, node.meshInstance.Position + site2];
 	}
 
-	public void PlotSitesRandom(VSTNode node)
+	public static void PlotSitesRandom(VSTNode node)
 	{
 		node.sites = [];
 		var mdt = new MeshDataTool();
@@ -66,7 +76,7 @@ public partial class DestronoiNode : Node3D
 		var aabb = node.meshInstance.GetAabb();
 		var min = aabb.Position;
 		var max = aabb.End;
-		aabb.GetCenter();
+		// aabb.GetCenter();
 
 		float avgX = (min.X + max.X) * 0.5f;
 		float avgY = (min.Y + max.Y) * 0.5f;
@@ -306,39 +316,17 @@ public partial class DestronoiNode : Node3D
 	public void Destroy(int leftVal = 1, int rightVal = 1, float combustVelocity = 0f)
 	{
 		List<VSTNode> leaves = [];
-		vstRoot.GetLeftLeafNodes(vstRoot, leaves, leftVal);
-		vstRoot.GetRightLeafNodes(vstRoot, leaves, rightVal);
+		VSTNode.GetLeftLeafNodes(vstRoot, leaves, leftVal);
+		VSTNode.GetRightLeafNodes(vstRoot, leaves, rightVal);
 
-		List<RigidBody3D> fragments = [];
-		float totalMass = 0f;
+		int fragmentNumber = 0;
 
 		foreach (VSTNode leaf in leaves)
 		{
-			RigidBody3D body = new()
-			{
-				Name = $"VFragment_{fragments.Count}",
-				Position = baseObject.GlobalPosition
-			};
+			RigidBody3D body = CreateBody(leaf, $"Fragment_{fragmentNumber}");
 
-			MeshInstance3D meshInstance = leaf.meshInstance;
-			meshInstance.Name = "MeshInstance3D";
-			body.AddChild(meshInstance);
 
-			var shape = new CollisionShape3D
-			{
-				Name = "CollisionShape3D",
-				Shape = meshInstance.Mesh.CreateConvexShape(false, false)
-			};
-
-			body.AddChild(shape);
-
-			float mass = Mathf.Max(meshInstance.Mesh.GetAabb().Size.Length(), 0.1f);
-			body.Mass = mass; totalMass += mass;
-
-			// needed for detecting explosions from RPGs
-			body.ContactMonitor = true;
-			body.MaxContactsReported = 5_000;
-
+			// destruction velocity
 			if (!Mathf.IsZeroApprox(combustVelocity))
 			{
 				// simple outward velocity
@@ -346,14 +334,48 @@ public partial class DestronoiNode : Node3D
 				// was .axisvelocity, i just replaced it with linearvelocity idk if thats correct
 				body.LinearVelocity = dir.Normalized() * combustVelocity;
 			}
-
+			// add to scene
 			fragmentContainer.AddChild(body);
-			fragments.Add(body);
+
+			fragmentNumber++;
 		}
 
-		foreach (RigidBody3D frag in fragments)
-			frag.Mass *= baseObject.Mass / totalMass;
-
 		baseObject.QueueFree();
+	}
+
+	// creates the given leaf as a rigidbody;
+	public RigidBody3D CreateBody(VSTNode leaf, String name)
+	{
+			// initialise leaf body
+			RigidBody3D body = new()
+			{
+				Name = name,
+				Position = baseObject.GlobalPosition
+			};
+
+			// mesh instance
+			MeshInstance3D meshInstance = leaf.meshInstance;
+			meshInstance.Name = "MeshInstance3D";
+			body.AddChild(meshInstance);
+
+			// collisionshape
+			var shape = new CollisionShape3D
+			{
+				Name = "CollisionShape3D",
+				Shape = meshInstance.Mesh.CreateConvexShape(false, false)
+			};
+			body.AddChild(shape);
+
+			// mass
+			float volume =  meshInstance.Mesh.GetAabb().Size.X *
+							meshInstance.Mesh.GetAabb().Size.Y *
+							meshInstance.Mesh.GetAabb().Size.Z;
+			body.Mass = baseObjectDensity * volume;
+
+			// needed (idk why lmao ?) for detecting explosions from RPGs
+			body.ContactMonitor = true;
+			body.MaxContactsReported = 5_000;
+
+			return body;
 	}
 }
