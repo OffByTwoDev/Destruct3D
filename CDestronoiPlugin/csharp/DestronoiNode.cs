@@ -6,20 +6,18 @@ using System.Linq;
 /// <summary>
 /// Subdivides a convex ArrayMesh belonging to a RigidBody3D by generating a Voronoi Subdivision Tree (VST).
 /// </summary>
-public partial class DestronoiNode : Node3D
+public partial class DestronoiNode : RigidBody3D
 {
-	// The root node of the VST.
-	public VSTNode vstRoot;
-
+	// --- Exports --- //
+	[Export] public MeshInstance3D meshInstance;
+	// node under which fragments will be instanced
+	[Export] public Node fragmentContainer;
 	// Generates 2^n fragments, where n is treeHeight.
 	[Export(PropertyHint.Range, "1,8")] public int treeHeight = 1;
 
-	[Export] public MeshInstance3D meshInstance;
-	[Export] public Node fragmentContainer;
-	[Export] public RigidBody3D baseObject;
-
-	[Export] MeshInstance3D baseObjectMeshInstance;
-	float baseObjectDensity;
+	// --- internal variables --- //
+	public VSTNode vstRoot;
+	private float baseObjectDensity;
 
 	public override void _Ready()
 	{
@@ -47,11 +45,11 @@ public partial class DestronoiNode : Node3D
 			}
 		}
 
-		float baseObjectVolume = baseObjectMeshInstance.Mesh.GetAabb().Size.X *
-								 baseObjectMeshInstance.Mesh.GetAabb().Size.Y *
-								 baseObjectMeshInstance.Mesh.GetAabb().Size.Z;
+		float volume = meshInstance.Mesh.GetAabb().Size.X *
+								 meshInstance.Mesh.GetAabb().Size.Y *
+								 meshInstance.Mesh.GetAabb().Size.Z;
 		
-		baseObjectDensity = baseObject.Mass / baseObjectVolume;
+		baseObjectDensity = Mass / volume;
 
 	}
 
@@ -330,7 +328,7 @@ public partial class DestronoiNode : Node3D
 			if (!Mathf.IsZeroApprox(combustVelocity))
 			{
 				// simple outward velocity
-				var dir = meshInstance.Mesh.GetAabb().Position - baseObject.Position;
+				var dir = meshInstance.Mesh.GetAabb().Position - Position;
 				// was .axisvelocity, i just replaced it with linearvelocity idk if thats correct
 				body.LinearVelocity = dir.Normalized() * combustVelocity;
 			}
@@ -340,7 +338,7 @@ public partial class DestronoiNode : Node3D
 			fragmentNumber++;
 		}
 
-		baseObject.QueueFree();
+		QueueFree();
 	}
 
 	/// <summary>
@@ -352,7 +350,7 @@ public partial class DestronoiNode : Node3D
 			RigidBody3D body = new()
 			{
 				Name = name,
-				Position = baseObject.GlobalPosition
+				Position = GlobalPosition
 			};
 
 			// mesh instance

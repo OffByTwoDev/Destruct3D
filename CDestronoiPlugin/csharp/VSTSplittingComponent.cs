@@ -41,6 +41,7 @@ public partial class VSTSplittingComponent : Area3D
 		
 		if (Input.IsActionJustPressed("splitting_explosion"))
 		{
+			GD.Print("splitting_explosion");
 			SplitExplode();
 		}
 	}
@@ -49,7 +50,7 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		foreach (Node3D node in GetOverlappingBodies())
 		{
-			if (node.GetParent() is not DestronoiNode destronoiNode)
+			if (node is not DestronoiNode destronoiNode)
 			{
 				continue;
 			}
@@ -64,7 +65,7 @@ public partial class VSTSplittingComponent : Area3D
 
 			foreach (VSTNode vstnode in fragmentsAtGivenDepth)
 			{
-				Vector3 leafPosition = destronoiNode.baseObject.GlobalTransform * vstnode.meshInstance.GetAabb().GetCenter();
+				Vector3 leafPosition = destronoiNode.GlobalTransform * vstnode.meshInstance.GetAabb().GetCenter();
 
 				if ((leafPosition - GlobalPosition).Length() < explosionDistance)
 				{
@@ -77,7 +78,7 @@ public partial class VSTSplittingComponent : Area3D
 			}
 
 			// remove original object
-			destronoiNode.baseObject.QueueFree();
+			destronoiNode.QueueFree();
 
 			// create small fragments
 
@@ -144,6 +145,8 @@ public partial class VSTSplittingComponent : Area3D
 			// }
 
 			// Append all surfaces from this mesh with the MeshInstance's transform
+			// THIS IS NOT NECESSARILY A GOOD WAY TO DO THINGS
+			// should prolly only be adding the external faces lmao... but this works for now
 			int surfaceCount = mesh.GetSurfaceCount();
 			for (int s = 0; s < surfaceCount; s++)
 			{
