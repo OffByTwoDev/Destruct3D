@@ -64,8 +64,6 @@ public partial class VSTSplittingComponent : Area3D
 				return;
 			}
 
-			GD.Print("tree height: ", destronoiNode.treeHeight);
-
 			List<VSTNode> fragmentsAtGivenDepth = [];
 
 			InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, originalVSTRoot, explosionDepth, originalVSTRoot.ownerID);
@@ -86,9 +84,6 @@ public partial class VSTSplittingComponent : Area3D
 					fragmentsToKeep.Add(vstnode);
 				}
 			}
-
-			GD.Print("fragmentsToRemove: ",fragmentsToRemove.Count);
-			GD.Print("fragmentsToKeep: ",fragmentsToKeep.Count);
 
 			// remove original object
 			destronoiNode.QueueFree();
