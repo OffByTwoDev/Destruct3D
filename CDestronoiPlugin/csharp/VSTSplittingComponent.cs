@@ -14,7 +14,7 @@ public partial class VSTSplittingComponent : Area3D
 	[Export] MeshInstance3D meshInstance3D;
 
 	// this is set to be the radius of the sphere for now
-	float explosionDistance = 1;
+	float explosionDistance = 0;
 
 	public override void _Ready()
 	{
@@ -41,7 +41,7 @@ public partial class VSTSplittingComponent : Area3D
 		
 		if (Input.IsActionJustPressed("splitting_explosion"))
 		{
-			GD.Print("splitting_explosion");
+			GD.Print("carrying out splitting_explosion...");
 			SplitExplode();
 		}
 	}
@@ -55,12 +55,19 @@ public partial class VSTSplittingComponent : Area3D
 				continue;
 			}
 
+			VSTNode originalVSTRoot = destronoiNode.vstRoot;
 
-			VSTNode vstRoot = destronoiNode.vstRoot;
+			if (destronoiNode.treeHeight < explosionDepth)
+			{
+				GD.Print("tree not large enough for required explosion depth");
+				return;
+			}
+
+			GD.Print("tree height: ", destronoiNode.treeHeight);
 
 			List<VSTNode> fragmentsAtGivenDepth = [];
 
-			InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, vstRoot);
+			InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, originalVSTRoot, explosionDepth, originalVSTRoot.ownerID);
 
 			List<VSTNode> fragmentsToRemove = [];
 			List<VSTNode> fragmentsToKeep = [];
@@ -79,6 +86,9 @@ public partial class VSTSplittingComponent : Area3D
 				}
 			}
 
+			GD.Print("fragmentsToRemove: ",fragmentsToRemove.Count);
+			GD.Print("fragmentsToKeep: ",fragmentsToKeep.Count);
+
 			// remove original object
 			destronoiNode.QueueFree();
 
@@ -88,7 +98,14 @@ public partial class VSTSplittingComponent : Area3D
 
 			foreach (VSTNode leaf in fragmentsToRemove)
 			{
-				RigidBody3D body = destronoiNode.CreateBody(leaf.meshInstance, $"Fragment_{fragmentNumber}");
+				string leafName = destronoiNode.Name + $"_fragment_{fragmentNumber}";
+				
+				RigidBody3D body = destronoiNode.CreateDestronoiNode(leaf,
+																	leaf.meshInstance,
+																	destronoiNode.treeHeight - leaf.level,
+																	leafName);
+				
+				ReduceLevelsAndReplaceOwnership(leaf, 0, leaf.ownerID);
 
 				destronoiNode.fragmentContainer.AddChild(body);
 
@@ -96,6 +113,27 @@ public partial class VSTSplittingComponent : Area3D
 
 				fragmentNumber++;
 			}
+
+			// --- remove fragmentsToRemove from originalVST --- //
+			// List<VSTNode> parentsOfFragmentsAtGivenDepth = [];
+			// InitialiseFragmentsAtGivenDepth(parentsOfFragmentsAtGivenDepth, originalVSTRoot, explosionDepth-1);
+
+			// foreach (VSTNode leafParent in parentsOfFragmentsAtGivenDepth)
+			// {
+			// 	foreach (VSTNode leaf in fragmentsToRemove)
+			// 	{
+			// 		if (leafParent.left == leaf)
+			// 		{
+			// 			leafParent.left = null;
+			// 		}
+			// 		else if (leafParent.right == leaf)
+			// 		{
+			// 			leafParent.left = null;
+			// 		}
+			// 	}
+			// }
+
+			// --- //
 
 			// create single body from fragmentstokeep
 
@@ -107,26 +145,45 @@ public partial class VSTSplittingComponent : Area3D
 
 			// MeshInstance3D finalCombinedMeshes = ConvertOverlappingMeshToExternalMesh(overlappingCombinedMeshesToKeep);
 
-			RigidBody3D rigidBodyToKeep = destronoiNode.CreateBody(overlappingCombinedMeshesToKeep,"combined_fragment");
-			
-			destronoiNode.fragmentContainer.AddChild(rigidBodyToKeep);
+			string combinedFragmentName = destronoiNode.Name + "_remaining_fragment";
 
-			// rigidBodyToKeep.Freeze = true;
+			DestronoiNode destronoiNodeToKeep = destronoiNode.CreateDestronoiNode(originalVSTRoot,
+																				overlappingCombinedMeshesToKeep,
+																				destronoiNode.treeHeight,
+																				combinedFragmentName);
+
+			destronoiNode.fragmentContainer.AddChild(destronoiNodeToKeep);
 
 			// rigidBodyToKeep.GlobalPosition = destronoiNode.GlobalPosition;
 		}
 	}
 
-	public void InitialiseFragmentsAtGivenDepth(List<VSTNode> fragmentsAtGivenDepth, VSTNode currentVSTNode)
+	public void InitialiseFragmentsAtGivenDepth(List<VSTNode> fragmentsAtGivenDepth,
+												VSTNode currentVSTNode,
+												int depth,
+												int rootOwnerID)
 	{
-		if (currentVSTNode.level == explosionDepth)
+		// represents leaving the tree
+		if (currentVSTNode is null)
+		{
+			return;
+		}
+
+		// if this node has been removed from the tree, it will have a different ownerID
+		// in that case, this leaf is unphysical (i.e. its part of a distinct object now) and we should return nothing
+		if (currentVSTNode.ownerID != rootOwnerID)
+		{
+			return;
+		}
+
+		if (currentVSTNode.level == depth)
 		{
 			fragmentsAtGivenDepth.Add(currentVSTNode);
 			return;
 		}
 
-		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.left);
-		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.right);
+		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.left, depth, rootOwnerID);
+		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.right, depth, rootOwnerID);
 	}
 
 	public static MeshInstance3D CombineMeshes(List<MeshInstance3D> meshInstances)
@@ -236,5 +293,24 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		return boundaryPoints;
+	}
+
+	// a function which renumbers the levels of a given leaf
+	// so that the given leaf and all its children have the correct level as per the initial input currentLevel
+	public static void ReduceLevelsAndReplaceOwnership(VSTNode leaf, int currentLevel, int newOwnerID)
+	{
+
+		leaf.level = currentLevel;
+		leaf.ownerID = newOwnerID;
+
+		// exit at end of tree
+		if (leaf.left is null || leaf.right is null)
+		{
+			return;
+		}
+
+		ReduceLevelsAndReplaceOwnership(leaf.left,currentLevel + 1, newOwnerID);
+		ReduceLevelsAndReplaceOwnership(leaf.right,currentLevel + 1, newOwnerID);
+
 	}
 }

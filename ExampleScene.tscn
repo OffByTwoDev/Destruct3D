@@ -90,11 +90,11 @@ destructionFragmentsLeft = 4
 destructionFragmentsRight = 4
 
 [node name="OriginalObject" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.59674, 0.5, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.59674, 2.54331, 0)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("CSharpMesh")
 fragmentContainer = NodePath("..")
-treeHeight = 6
+treeHeight = 8
 
 [node name="CSharpMesh" type="MeshInstance3D" parent="Environment/OriginalObject"]
 mesh = SubResource("BoxMesh_r0du0")
@@ -103,7 +103,7 @@ mesh = SubResource("BoxMesh_r0du0")
 shape = SubResource("ConvexPolygonShape3D_cm0pq")
 
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("meshInstance3D")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.79232, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.39427, 0, -0.0129507)
 script = ExtResource("4_fgqed")
 explosionDepth = 4
 meshInstance3D = NodePath("MeshInstance3D")

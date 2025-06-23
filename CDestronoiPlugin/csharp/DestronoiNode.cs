@@ -18,16 +18,28 @@ public partial class DestronoiNode : RigidBody3D
 	// --- internal variables --- //
 	public VSTNode vstRoot;
 	private float baseObjectDensity;
+	// this should be true if the node needs its own vstRoot created
+	// if you are creating a fragment and are passing in a known vstRoot, mesh etc, then this flag should be false
+	private bool needsInitialising = true;
 
 	public override void _Ready()
 	{
+		base._Ready();
+
+		if (!needsInitialising)
+		{
+			return;
+		}
+
+		// --- create filled VST and find density --- //
+
 		if (meshInstance is null)
 		{
 			GD.PrintErr("[Destronoi] No MeshInstance3D set");
 			return;
 		}
 
-		vstRoot = new VSTNode(meshInstance);
+		vstRoot = new VSTNode(meshInstance, 1, 1);
 
 		// Plot 2 sites for the subdivision
 		PlotSitesRandom(vstRoot);
@@ -50,7 +62,6 @@ public partial class DestronoiNode : RigidBody3D
 								 meshInstance.Mesh.GetAabb().Size.Z;
 		
 		baseObjectDensity = Mass / volume;
-
 	}
 
 	public void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
@@ -296,10 +307,10 @@ public partial class DestronoiNode : RigidBody3D
 		surfB.Index(); surfB.GenerateNormals();
 
 		var meshUp = new MeshInstance3D { Mesh = surfA.Commit() };
-		node.left = new VSTNode(meshUp, node.level + 1, Laterality.LEFT);
+		node.left = new VSTNode(meshUp, node.ID * 2, node.ownerID, node.level + 1, Laterality.LEFT);
 
 		var meshDown = new MeshInstance3D { Mesh = surfB.Commit() };
-		node.right = new VSTNode(meshDown, node.level + 1, Laterality.RIGHT);
+		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node.ownerID, node.level + 1, Laterality.RIGHT);
 
 		return true;
 	}
@@ -332,7 +343,8 @@ public partial class DestronoiNode : RigidBody3D
 
 		QueueFree();
 	}
-
+	
+	// DEPRECATED
 	/// <summary>
 	/// creates a rigidbody from the given meshInstance
 	/// </summary>
@@ -369,5 +381,57 @@ public partial class DestronoiNode : RigidBody3D
 			body.MaxContactsReported = 5_000;
 
 			return body;
+	}
+
+	/// <summary>
+	/// creates a Destronoi Node from the given meshInstance and vstnode
+	/// </summary>
+	public DestronoiNode CreateDestronoiNode(VSTNode subVST,
+											MeshInstance3D subVSTmeshInstance,
+											int remainingTreeDepth,
+											String name)
+	{
+			DestronoiNode destronoiNode = new()
+			{
+				Name = name,
+				Position = GlobalPosition
+			};
+
+			// --- rigidbody initialisation --- //
+
+			// mesh instance
+			MeshInstance3D meshInstance = subVSTmeshInstance;
+			meshInstance.Name = $"{name}_MeshInstance3D";
+			destronoiNode.AddChild(meshInstance);
+
+			// collisionshape
+			var shape = new CollisionShape3D
+			{
+				Name = "CollisionShape3D",
+				Shape = meshInstance.Mesh.CreateConvexShape(false, false)
+			};
+			destronoiNode.AddChild(shape);
+
+			// mass
+			float volume =  meshInstance.Mesh.GetAabb().Size.X *
+							meshInstance.Mesh.GetAabb().Size.Y *
+							meshInstance.Mesh.GetAabb().Size.Z;
+			destronoiNode.Mass = Math.Max(baseObjectDensity * volume, 0.01f);
+
+			// needed (idk why lmao ?) for detecting explosions from RPGs
+			destronoiNode.ContactMonitor = true;
+			destronoiNode.MaxContactsReported = 5_000;
+
+
+			// --- destronoi node initialisation --- //
+
+			destronoiNode.meshInstance = subVSTmeshInstance;
+			destronoiNode.fragmentContainer = fragmentContainer;
+			destronoiNode.treeHeight = remainingTreeDepth;
+			destronoiNode.vstRoot = subVST;
+			destronoiNode.baseObjectDensity = baseObjectDensity;
+			destronoiNode.needsInitialising = false;
+
+			return destronoiNode;
 	}
 }

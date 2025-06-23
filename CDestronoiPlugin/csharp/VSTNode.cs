@@ -1,5 +1,6 @@
 using Godot;
 using System.Collections.Generic;
+using System;
 
 public enum Laterality
 {
@@ -18,25 +19,39 @@ public class VSTNode
 	public List<Vector3> sites;
 	public VSTNode left;
 	public VSTNode right;
+	// i believe the initial level is 0 (i.e. for the vstNode that represents the whole object)
 	public int level;
 	public Laterality laterality;
+
+	// IDS start at 1 (not 0, idk why, i actually believe it doesnt matter it probably doesn't change any behaviour)
+	public int ID;
+	public int ownerID;
 
 	/// <summary>
 	/// Initializes a VSTNode using mesh data, a depth level, and a laterality value.
 	/// </summary>
-	public VSTNode(MeshInstance3D inputMeshInstance, int lev = 0, Laterality lat = Laterality.NONE)
+	public VSTNode(MeshInstance3D inputMeshInstance,
+					int inputID,
+					int inputOwnerID,
+					int lev = 0,
+					Laterality lat = Laterality.NONE)
 	{
 		SurfaceTool surfaceTool = new();
 		surfaceTool.CreateFrom(inputMeshInstance.Mesh, 0);
 		ArrayMesh arrayMesh = surfaceTool.Commit();
 
-		MeshInstance3D newMeshInstance = new();
-		newMeshInstance.Mesh = arrayMesh;
+        MeshInstance3D newMeshInstance = new()
+        {
+            Mesh = arrayMesh
+        };
 
 
-		meshInstance = newMeshInstance;
+        meshInstance = newMeshInstance;
 		level = lev;
 		laterality = lat;
+
+		ID = inputID;
+		ownerID = inputOwnerID;
 	}
 
 	/// <summary>Returns the override material at the given surface index, or null if out of range.</summary>
