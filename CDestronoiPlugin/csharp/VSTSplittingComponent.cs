@@ -1,6 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
+using System.Collections;
 
 // the area3d uses the collisionshape3d
 // this script uses values from the meshinstance3d
@@ -105,35 +106,14 @@ public partial class VSTSplittingComponent : Area3D
 																	destronoiNode.treeHeight - leaf.level,
 																	leafName);
 				
-				ReduceLevelsAndReplaceOwnership(leaf, 0, leaf.ownerID);
+				ReduceLevelsAndReplaceOwnership(leaf, 0, leaf.ID);
 
 				destronoiNode.fragmentContainer.AddChild(body);
 
-				// body.ApplyCentralImpulse(new Vector3(1,1,1));
+				// body.ApplyCentralImpulse(new Vector3(1,1,1) * 0.01f);
 
 				fragmentNumber++;
 			}
-
-			// --- remove fragmentsToRemove from originalVST --- //
-			// List<VSTNode> parentsOfFragmentsAtGivenDepth = [];
-			// InitialiseFragmentsAtGivenDepth(parentsOfFragmentsAtGivenDepth, originalVSTRoot, explosionDepth-1);
-
-			// foreach (VSTNode leafParent in parentsOfFragmentsAtGivenDepth)
-			// {
-			// 	foreach (VSTNode leaf in fragmentsToRemove)
-			// 	{
-			// 		if (leafParent.left == leaf)
-			// 		{
-			// 			leafParent.left = null;
-			// 		}
-			// 		else if (leafParent.right == leaf)
-			// 		{
-			// 			leafParent.left = null;
-			// 		}
-			// 	}
-			// }
-
-			// --- //
 
 			// create single body from fragmentstokeep
 
@@ -143,7 +123,7 @@ public partial class VSTSplittingComponent : Area3D
 
 			MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
 
-			// MeshInstance3D finalCombinedMeshes = ConvertOverlappingMeshToExternalMesh(overlappingCombinedMeshesToKeep);
+			// MeshInstance3D finalCombinedMeshes = RemoveDuplicateSurfaces(overlappingCombinedMeshesToKeep);
 
 			string combinedFragmentName = destronoiNode.Name + "_remaining_fragment";
 
@@ -158,7 +138,7 @@ public partial class VSTSplittingComponent : Area3D
 		}
 	}
 
-	public void InitialiseFragmentsAtGivenDepth(List<VSTNode> fragmentsAtGivenDepth,
+	public static void InitialiseFragmentsAtGivenDepth(List<VSTNode> fragmentsAtGivenDepth,
 												VSTNode currentVSTNode,
 												int depth,
 												int rootOwnerID)
@@ -217,83 +197,84 @@ public partial class VSTSplittingComponent : Area3D
 		};
 	}
 
+	// DEPRECATED
 	// removes all internal vertices from a mesh
-	public static MeshInstance3D ConvertOverlappingMeshToExternalMesh(MeshInstance3D overlappingMeshInstance)
-	{
-		// list of all vertices that are on the surface of a mesh and not inside the mesh boundary
-		List<Vector3> boundaryPoints = GetBoundaryPoints(overlappingMeshInstance);
+	// public static MeshInstance3D ConvertOverlappingMeshToExternalMesh(MeshInstance3D overlappingMeshInstance)
+	// {
+	// 	// list of all vertices that are on the surface of a mesh and not inside the mesh boundary
+	// 	List<Vector3> boundaryPoints = GetBoundaryPoints(overlappingMeshInstance);
 
-		var surfaceTool = new SurfaceTool();
-		surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
+	// 	var surfaceTool = new SurfaceTool();
+	// 	surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
 
-		foreach (Vector3 vertex in boundaryPoints)
-		{
-			surfaceTool.AddVertex(vertex);
-		}
+	// 	foreach (Vector3 vertex in boundaryPoints)
+	// 	{
+	// 		surfaceTool.AddVertex(vertex);
+	// 	}
 
-		ArrayMesh arrayMesh = surfaceTool.Commit();
+	// 	ArrayMesh arrayMesh = surfaceTool.Commit();
 
-		return new MeshInstance3D()
-		{
-			Mesh = arrayMesh
-		};
-	}
+	// 	return new MeshInstance3D()
+	// 	{
+	// 		Mesh = arrayMesh
+	// 	};
+	// }
 
-	public static List<Vector3> GetBoundaryPoints(MeshInstance3D meshInstance)
-	{
-		List<Vector3> boundaryPoints = [];
+	// public static List<Vector3> GetBoundaryPoints(MeshInstance3D meshInstance)
+	// {
+	// 	List<Vector3> boundaryPoints = [];
 
-		var mdt = new MeshDataTool();
+	// 	var mdt = new MeshDataTool();
 
-		if (meshInstance.Mesh is not ArrayMesh arrayMesh)
-		{
-			GD.PushError("arraymesh must be passed to GetInteriorPoints, not any other type of mesh");
-			return null;
-		}
+	// 	if (meshInstance.Mesh is not ArrayMesh arrayMesh)
+	// 	{
+	// 		GD.PushError("arraymesh must be passed to GetInteriorPoints, not any other type of mesh");
+	// 		return null;
+	// 	}
 
-		mdt.CreateFromSurface(arrayMesh, 0);
+	// 	mdt.CreateFromSurface(arrayMesh, 0);
 
-		if (mdt.GetFaceCount() == 0)
-		{
-			GD.PushWarning("no faces found in meshdatatool, GetBoundaryPoints will loop forever. returning early");
-			return null;
-		}
+	// 	if (mdt.GetFaceCount() == 0)
+	// 	{
+	// 		GD.PushWarning("no faces found in meshdatatool, GetBoundaryPoints will loop forever. returning early");
+	// 		return null;
+	// 	}
 
-		var direction = Vector3.Up;
+	// 	var direction = Vector3.Up;
 
-		for (int i = 0; i < mdt.GetVertexCount(); i++)
-		{
-			Vector3 currentVertex = mdt.GetVertex(i);
+	// 	for (int i = 0; i < mdt.GetVertexCount(); i++)
+	// 	{
+	// 		Vector3 currentVertex = mdt.GetVertex(i);
 
-			int intersections = 0;
+	// 		int intersections = 0;
 
-			for (int face = 0; face < mdt.GetFaceCount(); face++)
-			{
-				int v0 = mdt.GetFaceVertex(face, 0);
-				int v1 = mdt.GetFaceVertex(face, 1);
-				int v2 = mdt.GetFaceVertex(face, 2);
-				var p0 = mdt.GetVertex(v0);
-				var p1 = mdt.GetVertex(v1);
-				var p2 = mdt.GetVertex(v2);
+	// 		for (int face = 0; face < mdt.GetFaceCount(); face++)
+	// 		{
+	// 			int v0 = mdt.GetFaceVertex(face, 0);
+	// 			int v1 = mdt.GetFaceVertex(face, 1);
+	// 			int v2 = mdt.GetFaceVertex(face, 2);
+	// 			var p0 = mdt.GetVertex(v0);
+	// 			var p1 = mdt.GetVertex(v1);
+	// 			var p2 = mdt.GetVertex(v2);
 
-				Variant intersectionPoint = Geometry3D.RayIntersectsTriangle(currentVertex, direction, p0, p1, p2);
-				if (intersectionPoint.VariantType != Variant.Type.Nil)
-				{
-					intersections++;
-				}
-			}
+	// 			Variant intersectionPoint = Geometry3D.RayIntersectsTriangle(currentVertex, direction, p0, p1, p2);
+	// 			if (intersectionPoint.VariantType != Variant.Type.Nil)
+	// 			{
+	// 				intersections++;
+	// 			}
+	// 		}
 
 			
-			// if number of intersections is odd, its inside
-			// if number of intersections is even, its outside
-			if (intersections % 2 == 0)
-			{
-				boundaryPoints.Add(currentVertex);
-			}
-		}
+	// 		// if number of intersections is odd, its inside
+	// 		// if number of intersections is even, its outside
+	// 		if (intersections % 2 == 0)
+	// 		{
+	// 			boundaryPoints.Add(currentVertex);
+	// 		}
+	// 	}
 
-		return boundaryPoints;
-	}
+	// 	return boundaryPoints;
+	// }
 
 	// a function which renumbers the levels of a given leaf
 	// so that the given leaf and all its children have the correct level as per the initial input currentLevel
@@ -311,6 +292,51 @@ public partial class VSTSplittingComponent : Area3D
 
 		ReduceLevelsAndReplaceOwnership(leaf.left,currentLevel + 1, newOwnerID);
 		ReduceLevelsAndReplaceOwnership(leaf.right,currentLevel + 1, newOwnerID);
+	}
 
+	public static MeshInstance3D RemoveDuplicateSurfaces(MeshInstance3D meshInstance3D)
+	{
+		if (meshInstance3D.Mesh is not ArrayMesh arrayMesh)
+		{
+			GD.PrintErr("mesh passed to RemoveDuplicateSurfaces must have an arraymesh mesh. returning early");
+			return null;
+		}
+
+		HashSet<int> surfaceIndicesToRemove = [];
+
+		for (int i = 0; i < arrayMesh.GetSurfaceCount(); i++)
+		{
+			for (int j = 0; j < arrayMesh.GetSurfaceCount(); j++)
+			{
+				if (MeshUtils.AreMeshVerticesEqual(arrayMesh, i, j))
+				{
+					surfaceIndicesToRemove.Add(i);
+					GD.Print("removing surface");
+				}
+			}
+		}
+
+		ArrayMesh newArrayMesh = new();
+
+		for (int i = 0; i < arrayMesh.GetSurfaceCount(); i++)
+		{
+			if (surfaceIndicesToRemove.Contains(i))
+			{
+				continue;
+			}
+
+			var arrays = arrayMesh.SurfaceGetArrays(i);
+			var primitive = arrayMesh.SurfaceGetPrimitiveType(i);
+
+			newArrayMesh.AddSurfaceFromArrays(primitive, arrays);
+
+		}
+
+		MeshInstance3D newMesh = new()
+		{
+			Mesh = newArrayMesh
+		};
+
+		return newMesh;
 	}
 }

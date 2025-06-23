@@ -103,7 +103,7 @@ mesh = SubResource("BoxMesh_r0du0")
 shape = SubResource("ConvexPolygonShape3D_cm0pq")
 
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("meshInstance3D")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.39427, 0, -0.0129507)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.93372, 0, -0.0129507)
 script = ExtResource("4_fgqed")
 explosionDepth = 4
 meshInstance3D = NodePath("MeshInstance3D")
