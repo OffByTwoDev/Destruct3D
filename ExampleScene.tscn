@@ -104,7 +104,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.59674, 2.54331, 0)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("CSharpMesh")
 fragmentContainer = NodePath("..")
-treeHeight = 2
+treeHeight = 8
 
 [node name="CSharpMesh" type="MeshInstance3D" parent="Environment/OriginalObject"]
 mesh = SubResource("BoxMesh_r0du0")
@@ -115,8 +115,8 @@ shape = SubResource("ConvexPolygonShape3D_xpmf3")
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("explosionMeshes")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.93372, 0.792343, 0.138725)
 script = ExtResource("4_fgqed")
-explosionMeshes = [NodePath("LargeMesh")]
-explosionTreeDepths = Array[int]([1])
+explosionMeshes = [NodePath("MediumMesh"), NodePath("LargeMesh")]
+explosionTreeDepths = Array[int]([7, 2])
 
 [node name="SmallMesh" type="MeshInstance3D" parent="Explosion"]
 visible = false

@@ -131,6 +131,7 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		// if we are removing no fragments, then the rest of this code is just gonna create a duplicate of the current node
+		// ie in this case, nothing would be changed. nothing about the vst either i believe (hence no need to clean the VST)
 		// so we can save some computation and skip it. also prevents bodies moving about weirdly (duplicating them resets their position)
 		if (fragmentsToRemove.Count == 0)
 		{
@@ -165,6 +166,15 @@ public partial class VSTSplittingComponent : Area3D
 			fragmentNumber++;
 		}
 
+		// Remove nodes who have 2 children removed (as now their mesh doesn't correspond to a physical node)
+        // and fast forward references to nodes which reference only 1 node with the same owner ID
+        CleanVST(originalVSTRoot, explosionTreeDepth);
+
+		if (fragmentsToKeep.Count == 0)
+		{
+			return;
+		}
+
 		// create single body from fragmentstokeep
 
 		List<MeshInstance3D> meshInstances = [.. fragmentsToKeep.Select(f => f.meshInstance)];
@@ -182,11 +192,10 @@ public partial class VSTSplittingComponent : Area3D
 																			combinedFragmentName);
 
 		destronoiNode.fragmentContainer.AddChild(destronoiNodeToKeep);
+	}
 
-		// --- clean VST --- //
-		// i.e. remove nodes who have 2 children removed (as now their mesh doesn't correspond to a physical node)
-		// and fast forward references to nodes which reference only 1 node with the same owner ID
-
+	public static void CleanVST(VSTNode originalVSTRoot, int explosionTreeDepth)
+	{
 		List<VSTNode> parentNodes = [];
 		InitialiseFragmentsAtGivenDepth(parentNodes, originalVSTRoot, explosionTreeDepth - 1, originalVSTRoot.ownerID);
 
@@ -204,7 +213,8 @@ public partial class VSTSplittingComponent : Area3D
 				{
 					parentNode.parent.right = null;
 				}
-				return;
+
+				continue;
 			}
 
 			if (parentNode.left is null)
@@ -219,7 +229,7 @@ public partial class VSTSplittingComponent : Area3D
 					parentNode.parent.right = parentNode.right;
 				}
 
-				return;
+				continue;
 			}
 
 			if (parentNode.right is null)
@@ -234,11 +244,9 @@ public partial class VSTSplittingComponent : Area3D
 					parentNode.parent.right = parentNode.left;
 				}
 				
-				return;
+				continue;
 			}
 		}
-
-		// rigidBodyToKeep.GlobalPosition = destronoiNode.GlobalPosition;
 	}
 
 	public static void InitialiseFragmentsAtGivenDepth(List<VSTNode> fragmentsAtGivenDepth,
