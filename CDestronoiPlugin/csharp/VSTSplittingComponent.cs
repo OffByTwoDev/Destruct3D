@@ -74,16 +74,11 @@ public partial class VSTSplittingComponent : Area3D
 				continue;
 			}
 
-			for (int i = 0; i < explosionMeshes.Count; i++)
+			SplitExplode(destronoiNode, 0, explosionDistances[0], explosionTreeDepths[0]);
+
+			for (int i = 1; i < explosionMeshes.Count; i++)
 			{
-				if (i == 0)
-				{
-					SplitExplode(destronoiNode, 0, explosionDistances[i], explosionTreeDepths[i]);
-				}
-				else
-				{
-					SplitExplode(destronoiNode, explosionDistances[i-1], explosionDistances[i], explosionTreeDepths[i]);
-				}
+				SplitExplode(destronoiNode, explosionDistances[i-1], explosionDistances[i], explosionTreeDepths[i]);
 			}
 		}
 	}

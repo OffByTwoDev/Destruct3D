@@ -22,6 +22,36 @@ public partial class DestronoiNode : RigidBody3D
 	// if you are creating a fragment and are passing in a known vstRoot, mesh etc, then this flag should be false
 	private bool needsInitialising = true;
 
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		base._UnhandledInput(@event);
+		
+		if (Input.IsActionJustPressed("debug_print_vst"))
+		{
+			DebugPrintVST(vstRoot);
+		}
+	}
+
+	public void DebugPrintVST(VSTNode vstNode)
+	{
+		if (vstNode is null)
+		{
+			return;
+		}
+
+		GD.Print("ID: ", vstNode.ID);
+		GD.Print("left: ", vstNode.left?.ID);
+		GD.Print("right: ", vstNode.right?.ID);
+		GD.Print("parent: ", vstNode.parent?.ID);
+		GD.Print("level: ", vstNode.level);
+		GD.Print("laterality: ", vstNode.laterality);
+		GD.Print("ownerID: ", vstNode.ownerID);
+		GD.Print("---");
+
+		DebugPrintVST(vstNode.left);
+		DebugPrintVST(vstNode.right);
+	}
+
 	public override void _Ready()
 	{
 		base._Ready();
