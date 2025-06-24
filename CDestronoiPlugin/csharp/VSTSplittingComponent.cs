@@ -1,64 +1,73 @@
 using Godot;
 using System.Collections.Generic;
 using System.Linq;
-using System.Collections;
 
 // the area3d uses the collisionshape3d
 // this script uses values from the meshinstance3d
 // so make sure the collisionshape3d and meshinstance3d child of this area3d represent the same thing
 
+// smaller mesh instance corresponds to the deeper explosion
 public partial class VSTSplittingComponent : Area3D
 {
 	// the layer of the VST that the fragments will be removed from, where the vstroot is the 0th layer
 	// [Export(PropertyHint.Range, "1,8")] int explosionDepth = 2;
 
-	[Export] Godot.Collections.Array<MeshInstance3D> explosionMeshes;
-	[Export] Godot.Collections.Array<int> explosionTreeDepths = [2, 4, 6];
+	[Export] MeshInstance3D explosionMeshSmall;
+	[Export] MeshInstance3D explosionMeshLarge;
+
+	// all other children of this node will be queuefreed() after ready function (see end of ready for reasons)
+	[Export] CollisionShape3D mainCollisionShape;
+
+	[Export] int explosionTreeDepthDeep = 2;
+	[Export] int explosionTreeDepthShallow = 4;
 
 	[Export] bool ApplyImpulseOnSplit = false;
 	[Export] float ImpulseStrength = 10.0f;
 
 	// this is set to be the radius of the sphere for now
-	List<float> explosionDistances = [];
+	float explosionDistancesSmall;
+	float explosionDistancesLarge;
+
+	int framesUntilCloseExplosion = -10;
 
 	public override void _Ready()
 	{
 		base._Ready();
-
-		// --- error checking & setting up explosionDistances --- //
-		if (explosionMeshes.Count != explosionTreeDepths.Count)
+	
+		if ((explosionTreeDepthDeep <= 0) || (explosionTreeDepthDeep <= 0))
 		{
-			GD.PrintErr("explosionRanges & explosionDepths must have the same length. returning early.");
+			GD.PrintErr("explosionDepths have to be strictly greater than 0");
 			return;
 		}
+
+		if (explosionMeshSmall.Mesh is not SphereMesh sphereMeshSmall ||
+			explosionMeshLarge.Mesh is not SphereMesh sphereMeshLarge)
+		{
+			GD.PrintErr("only spheremeshes are supported for VSTSplittingComponenets for now. i.e. only spherically symmetric explosions can split VSTNodes.");
+			return;
+		}
+
+		explosionDistancesSmall = sphereMeshSmall.Radius;
+		explosionDistancesLarge = sphereMeshLarge.Radius;
+
 		
-		foreach (int explosionDepth in explosionTreeDepths)
-		{
-			if (!(0 < explosionDepth))
-			{
-				GD.PrintErr("explosionDepths have to be greater than 0");
-				return;
-			}
-		}
-
-		for (int i = 0; i < explosionMeshes.Count; i++)
-		{
-			if (explosionMeshes[i].Mesh is not SphereMesh sphereMesh)
-			{
-				GD.PrintErr("only spheremeshes are supported for VSTSplittingComponenets for now. i.e. only spherically symmetric explosions can split VSTNodes.");
-				return;
-			}
-
-			if (i > 1 && sphereMesh.Radius > explosionDistances[i])
-			{
-				GD.PrintErr("meshes must be specified in terms of increasing size. returning early.");
-				return;
-			}
-
-			explosionDistances.Add(sphereMesh.Radius);
-		}
-
-		explosionDistances.Insert(0,0);
+		// this is dumb AF but I _believe_ that if the centre of the destronoinode is within some other object (in this case the small mesh)
+		// then the area3d will just REFUSE to detect the destronoinode
+		// we can bodge this by just queuefreeing ALL CHILDREN of this area3d that aren't the collisionshape
+		// (that way even usused guides won't mess with overlappingbodies detection)
+		// probably shit code and this will definitely fuck me in the future
+		// foreach(Node child in GetChildren())
+		// {
+		// 	if (child != mainCollisionShape)
+		// 	{
+		// 		child.QueueFree();
+		// 	}
+		// }
+		
+		// if (GetChildCount() != 1)
+		// {
+		// 	GD.PrintErr("should only have 1 child at end of ready, but either 0 or 2+ were detected.");
+		// }
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -70,7 +79,9 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		GD.Print("splitting");
+		GD.Print("splitting (large scale)");
+
+		GD.Print(GetOverlappingBodies());
 
 		foreach (Node3D node in GetOverlappingBodies())
 		{
@@ -79,31 +90,50 @@ public partial class VSTSplittingComponent : Area3D
 				continue;
 			}
 
-			for (int i = 0; i < explosionMeshes.Count; i++)
+			SplitExplode(destronoiNode, explosionDistancesLarge, explosionTreeDepthShallow);
+		}
+
+		framesUntilCloseExplosion = 5;
+	}
+
+	public override void _PhysicsProcess(double delta)
+	{
+		base._PhysicsProcess(delta);
+
+		// GD.Print("overlapping: ", GetOverlappingBodies());
+
+		framesUntilCloseExplosion -= 1;
+
+		if (framesUntilCloseExplosion == 0)
+		{
+			GD.Print("2ndary");
+
+			CloserExplosion();
+		}
+	}
+
+	public void CloserExplosion()
+	{
+		foreach (Node3D node in GetOverlappingBodies())
+		{
+			if (node is not DestronoiNode destronoiNode)
 			{
-				if (i == explosionMeshes.Count - 1)
-				{
-					SplitExplode(destronoiNode, explosionDistances[i], explosionDistances[i+1], explosionTreeDepths[i], true);
-				}
-				else
-				{
-					SplitExplode(destronoiNode, explosionDistances[i], explosionDistances[i+1], explosionTreeDepths[i], false);
-				}
+				continue;
 			}
+
+			SplitExplode(destronoiNode, explosionDistancesSmall, explosionTreeDepthDeep);
 		}
 	}
 
 	public void SplitExplode(DestronoiNode destronoiNode,
-							float explosionDistanceMin,
 							float explosionDistanceMax,
-							int explosionTreeDepth,
-							bool createOuterFragment)
+							int explosionTreeDepth)
 	{
 		VSTNode originalVSTRoot = destronoiNode.vstRoot;
 
 		if (destronoiNode.treeHeight < explosionTreeDepth)
 		{
-			GD.Print("not enough treedepth left");
+			GD.Print("not enough treeDepth left");
 			// destronoiNode.QueueFree();
 			// replace with some particle effects
 			return;
@@ -116,13 +146,11 @@ public partial class VSTSplittingComponent : Area3D
 		List<VSTNode> fragmentsToRemove = [];
 		List<VSTNode> fragmentsToKeep = [];
 
-		GD.Print($"range {explosionDistanceMin} to {explosionDistanceMax}");
 		foreach (VSTNode vstnode in fragmentsAtGivenDepth)
 		{
 			Vector3 leafPosition = destronoiNode.GlobalTransform * vstnode.meshInstance.GetAabb().GetCenter();
 
-			if (explosionDistanceMin < (leafPosition - GlobalPosition).Length() &&
-				(leafPosition - GlobalPosition).Length() < explosionDistanceMax)
+			if ((leafPosition - GlobalPosition).Length() < explosionDistanceMax)
 			{
 				fragmentsToRemove.Add(vstnode);
 
@@ -187,13 +215,6 @@ public partial class VSTSplittingComponent : Area3D
 		// OR just refrag / reinitialise the subtrees...
 
 		ReFragTree(originalVSTRoot);
-
-		// only create outer fragments when we are exploding the outermost "shell" of the explodingareas
-		if (!createOuterFragment)
-		{
-			GD.Print("!createOuterFragment");
-			return;
-		}
 
 		if (fragmentsToKeep.Count == 0)
 		{

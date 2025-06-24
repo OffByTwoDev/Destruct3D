@@ -13,7 +13,7 @@ public partial class DestronoiNode : RigidBody3D
 	// node under which fragments will be instanced
 	[Export] public Node fragmentContainer;
 	// Generates 2^n fragments, where n is treeHeight.
-	[Export(PropertyHint.Range, "1,8")] public int treeHeight = 1;
+	[Export] public int treeHeight = 1;
 
 	// --- internal variables --- //
 	public VSTNode vstRoot;
