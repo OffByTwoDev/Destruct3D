@@ -40,8 +40,8 @@ points = PackedVector3Array(1, 1, 1, 1, 1, -1, -1, 1, 1, 1, -1, 1, 1, -1, -1, -1
 [sub_resource type="SphereMesh" id="SphereMesh_xpmf3"]
 
 [sub_resource type="SphereMesh" id="SphereMesh_n7n8g"]
-radius = 1.0
-height = 2.0
+radius = 1.3
+height = 2.6
 
 [sub_resource type="SphereMesh" id="SphereMesh_p3r26"]
 radius = 2.0
@@ -96,8 +96,8 @@ shape = SubResource("ConvexPolygonShape3D_cm0pq")
 [node name="FragmentationComponent" type="Node" parent="Environment" node_paths=PackedStringArray("destronoiNode")]
 script = ExtResource("3_fhs12")
 destronoiNode = NodePath("../OriginalObject")
-destructionFragmentsLeft = 4
-destructionFragmentsRight = 4
+destructionFragmentsLeft = 8
+destructionFragmentsRight = 5
 
 [node name="OriginalObject" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.59674, 2.54331, 0)
@@ -113,17 +113,17 @@ mesh = SubResource("BoxMesh_r0du0")
 shape = SubResource("ConvexPolygonShape3D_xpmf3")
 
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("explosionMeshes")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6.88054, 0.220931, 0.138725)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7.47181, 0.919232, 0.138725)
 script = ExtResource("4_fgqed")
-explosionMeshes = [NodePath("LargeMesh")]
-explosionTreeDepths = Array[int]([4])
+explosionMeshes = [NodePath("MediumMesh"), NodePath("LargeMesh")]
+explosionTreeDepths = Array[int]([8, 2])
+ImpulseStrength = 0.5
 
 [node name="SmallMesh" type="MeshInstance3D" parent="Explosion"]
 visible = false
 mesh = SubResource("SphereMesh_xpmf3")
 
 [node name="MediumMesh" type="MeshInstance3D" parent="Explosion"]
-visible = false
 mesh = SubResource("SphereMesh_n7n8g")
 
 [node name="LargeMesh" type="MeshInstance3D" parent="Explosion"]

@@ -16,6 +16,7 @@ public partial class VSTSplittingComponent : Area3D
 	[Export] Godot.Collections.Array<int> explosionTreeDepths = [2, 4, 6];
 
 	[Export] bool ApplyImpulseOnSplit = false;
+	[Export] float ImpulseStrength = 10.0f;
 
 	// this is set to be the radius of the sphere for now
 	List<float> explosionDistances = [];
@@ -174,7 +175,7 @@ public partial class VSTSplittingComponent : Area3D
 
 			if (ApplyImpulseOnSplit)
 			{
-				body.ApplyCentralImpulse(new Vector3(1,1,1) * 0.1f);
+				body.ApplyCentralImpulse(new Vector3(1,1,1) * ImpulseStrength);
 			}
 
 			fragmentNumber++;

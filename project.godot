@@ -80,3 +80,4 @@ debug_print_vst={
 [physics]
 
 3d/physics_engine="Jolt Physics"
+3d/solver/solver_iterations=32
