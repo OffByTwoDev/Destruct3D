@@ -56,6 +56,8 @@ public partial class VSTSplittingComponent : Area3D
 
 			explosionDistances.Add(sphereMesh.Radius);
 		}
+
+		explosionDistances.Insert(0,0);
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -67,6 +69,8 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
+		GD.Print("splitting");
+
 		foreach (Node3D node in GetOverlappingBodies())
 		{
 			if (node is not DestronoiNode destronoiNode)
@@ -74,11 +78,16 @@ public partial class VSTSplittingComponent : Area3D
 				continue;
 			}
 
-			SplitExplode(destronoiNode, 0, explosionDistances[0], explosionTreeDepths[0]);
-
-			for (int i = 1; i < explosionMeshes.Count; i++)
+			for (int i = 0; i < explosionMeshes.Count; i++)
 			{
-				SplitExplode(destronoiNode, explosionDistances[i-1], explosionDistances[i], explosionTreeDepths[i]);
+				if (i == explosionMeshes.Count - 1)
+				{
+					SplitExplode(destronoiNode, explosionDistances[i], explosionDistances[i+1], explosionTreeDepths[i], true);
+				}
+				else
+				{
+					SplitExplode(destronoiNode, explosionDistances[i], explosionDistances[i+1], explosionTreeDepths[i], false);
+				}
 			}
 		}
 	}
@@ -86,12 +95,14 @@ public partial class VSTSplittingComponent : Area3D
 	public void SplitExplode(DestronoiNode destronoiNode,
 							float explosionDistanceMin,
 							float explosionDistanceMax,
-							int explosionTreeDepth)
+							int explosionTreeDepth,
+							bool createOuterFragment)
 	{
 		VSTNode originalVSTRoot = destronoiNode.vstRoot;
 
 		if (destronoiNode.treeHeight < explosionTreeDepth)
 		{
+			GD.Print("not enough treedepth left");
 			// destronoiNode.QueueFree();
 			// replace with some particle effects
 			return;
@@ -104,6 +115,7 @@ public partial class VSTSplittingComponent : Area3D
 		List<VSTNode> fragmentsToRemove = [];
 		List<VSTNode> fragmentsToKeep = [];
 
+		GD.Print($"range {explosionDistanceMin} to {explosionDistanceMax}");
 		foreach (VSTNode vstnode in fragmentsAtGivenDepth)
 		{
 			Vector3 leafPosition = destronoiNode.GlobalTransform * vstnode.meshInstance.GetAabb().GetCenter();
@@ -113,7 +125,7 @@ public partial class VSTSplittingComponent : Area3D
 			{
 				fragmentsToRemove.Add(vstnode);
 
-				// remove reference to this node in originalTree
+				// remove reference to this node from the parent's section of the tree
 				if (vstnode.laterality == Laterality.LEFT)
 				{
 					vstnode.parent.left = null;
@@ -122,7 +134,6 @@ public partial class VSTSplittingComponent : Area3D
 				{
 					vstnode.parent.right = null;
 				}
-
 			}
 			else
 			{
@@ -135,6 +146,7 @@ public partial class VSTSplittingComponent : Area3D
 		// so we can save some computation and skip it. also prevents bodies moving about weirdly (duplicating them resets their position)
 		if (fragmentsToRemove.Count == 0)
 		{
+			GD.Print("no fragments to remove");
 			return;
 		}
 
@@ -149,29 +161,42 @@ public partial class VSTSplittingComponent : Area3D
 		{
 			string leafName = destronoiNode.Name + $"_fragment_{fragmentNumber}";
 			
+			GD.Print("Creating Individual DN");
+
 			RigidBody3D body = destronoiNode.CreateDestronoiNode(leaf,
 																leaf.meshInstance,
 																destronoiNode.treeHeight - leaf.level,
 																leafName);
 			
-			ReduceLevelsAndReplaceOwnership(leaf, 0, leaf.ID);
+			ReduceLevelsAndReplaceOwnership(leaf, 0, leaf.ID, leaf);
 
 			destronoiNode.fragmentContainer.AddChild(body);
 
 			if (ApplyImpulseOnSplit)
 			{
-				body.ApplyCentralImpulse(new Vector3(1,1,1) * 0.01f);
+				body.ApplyCentralImpulse(new Vector3(1,1,1) * 0.1f);
 			}
 
 			fragmentNumber++;
 		}
 
-		// Remove nodes who have 2 children removed (as now their mesh doesn't correspond to a physical node)
-        // and fast forward references to nodes which reference only 1 node with the same owner ID
-        CleanVST(originalVSTRoot, explosionTreeDepth);
+		CleanVST(originalVSTRoot, explosionTreeDepth);
+
+		// loop through originalVSTRoot (from deepest point to shallowest) and replace all meshes with the union of their children
+		// OR just refrag / reinitialise the subtrees...
+
+		ReFragTree(originalVSTRoot);
+
+		// only create outer fragments when we are exploding the outermost "shell" of the explodingareas
+		if (!createOuterFragment)
+		{
+			GD.Print("!createOuterFragment");
+			return;
+		}
 
 		if (fragmentsToKeep.Count == 0)
 		{
+			GD.Print("no fragmentsToKeep");
 			return;
 		}
 
@@ -185,7 +210,8 @@ public partial class VSTSplittingComponent : Area3D
 
 		string combinedFragmentName = destronoiNode.Name + "_remaining_fragment";
 
-		GD.Print("creatingDN");
+		GD.Print("Creating Combined DN");
+
 		DestronoiNode destronoiNodeToKeep = destronoiNode.CreateDestronoiNode(originalVSTRoot,
 																			overlappingCombinedMeshesToKeep,
 																			destronoiNode.treeHeight,
@@ -194,6 +220,37 @@ public partial class VSTSplittingComponent : Area3D
 		destronoiNode.fragmentContainer.AddChild(destronoiNodeToKeep);
 	}
 
+	// replace all nodes' meshInstances with the union of their 2 children's meshInstances
+	public void ReFragTree(VSTNode vstNode)
+	{
+		List<MeshInstance3D> meshesToCombine = [];
+
+		if (vstNode.left is not null)
+		{
+			ReFragTree(vstNode.left);
+			meshesToCombine.Add(vstNode.left.meshInstance);
+		}
+		if (vstNode.right is not null)
+		{
+			ReFragTree(vstNode.right);
+			meshesToCombine.Add(vstNode.right.meshInstance);
+		}
+
+		if (meshesToCombine.Count == 2)
+		{
+			vstNode.meshInstance = CombineMeshes(meshesToCombine);
+		}
+		if (meshesToCombine.Count == 1)
+		{
+			vstNode.meshInstance = meshesToCombine[0];
+		}
+	}
+
+	/// <summary>
+	///  Remove nodes who have 2 children removed (as now their mesh doesn't correspond to a physical node)
+	/// and fast forward references to nodes which reference only 1 node with the same owner ID
+	/// cleans all layers which are equal to or shallower than the input explosionTreeDepth
+	/// </summary>
 	public static void CleanVST(VSTNode originalVSTRoot, int explosionTreeDepth)
 	{
 		List<VSTNode> parentNodes = [];
@@ -247,6 +304,14 @@ public partial class VSTSplittingComponent : Area3D
 				continue;
 			}
 		}
+
+		// repeat recursively
+		if (explosionTreeDepth == 2)
+		{
+			return;
+		}
+
+		CleanVST(originalVSTRoot, explosionTreeDepth - 1);
 	}
 
 	public static void InitialiseFragmentsAtGivenDepth(List<VSTNode> fragmentsAtGivenDepth,
@@ -284,20 +349,21 @@ public partial class VSTSplittingComponent : Area3D
 	/// <param name="leaf"></param>
 	/// <param name="currentLevel"></param>
 	/// <param name="newOwnerID"></param>
-	public static void ReduceLevelsAndReplaceOwnership(VSTNode leaf, int currentLevel, int newOwnerID)
+	public static void ReduceLevelsAndReplaceOwnership(VSTNode leaf, int currentLevel, int newOwnerID, VSTNode newParent)
 	{
 		leaf.level = currentLevel;
 		leaf.ownerID = newOwnerID;
+		leaf.parent = newParent;
 
 		// exit at end of tree
 		if (leaf.left is not null)
 		{
-			ReduceLevelsAndReplaceOwnership(leaf.left,currentLevel + 1, newOwnerID);
+			ReduceLevelsAndReplaceOwnership(leaf.left, currentLevel + 1, newOwnerID, newParent);
 		}
 
 		if (leaf.right is not null)
 		{
-			ReduceLevelsAndReplaceOwnership(leaf.right,currentLevel + 1, newOwnerID);
+			ReduceLevelsAndReplaceOwnership(leaf.right, currentLevel + 1, newOwnerID, newParent);
 		}
 	}
 
