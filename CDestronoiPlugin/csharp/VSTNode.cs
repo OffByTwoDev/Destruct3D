@@ -25,6 +25,9 @@ public class VSTNode
 	public int level;
 	public Laterality laterality;
 
+	// whether this fragment is the smallest initialised fragment for this body
+	public bool endPoint;
+
 	// IDS start at 1 (not 0, idk why, i actually believe it doesnt matter it probably doesn't change any behaviour)
 	public int ID;
 	public int ownerID;
@@ -37,7 +40,8 @@ public class VSTNode
 					int inputOwnerID,
 					VSTNode inputParent,
 					int lev,
-					Laterality lat)
+					Laterality lat,
+					bool inputEndPoint)
 	{
 		SurfaceTool surfaceTool = new();
 		surfaceTool.CreateFrom(inputMeshInstance.Mesh, 0);
@@ -54,6 +58,8 @@ public class VSTNode
         meshInstance = newMeshInstance;
 		level = lev;
 		laterality = lat;
+
+		endPoint = inputEndPoint;
 
 		ID = inputID;
 		ownerID = inputOwnerID;

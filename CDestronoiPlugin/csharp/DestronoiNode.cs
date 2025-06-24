@@ -69,13 +69,13 @@ public partial class DestronoiNode : RigidBody3D
 			return;
 		}
 
-		// the topmost node has no parent hence null & no laterality
-		vstRoot = new VSTNode(meshInstance, 1, 1, null, 0, Laterality.NONE);
+		// the topmost node has no parent hence null & no laterality & not endPoint
+		vstRoot = new VSTNode(meshInstance, 1, 1, null, 0, Laterality.NONE, false);
 
 		// Plot 2 sites for the subdivision
 		PlotSitesRandom(vstRoot);
 		// Generate 2 children from the root
-		Bisect(vstRoot);
+		Bisect(vstRoot, false);
 		// Perform additional subdivisions depending on tree height
 		for (int i = 0; i < treeHeight - 1; i++)
 		{
@@ -84,7 +84,16 @@ public partial class DestronoiNode : RigidBody3D
 			foreach (VSTNode leaf in leaves)
 			{
 				PlotSitesRandom(leaf);
-				Bisect(leaf);
+				// on final pass, set children as endPoints
+				if (i == treeHeight - 2)
+				{
+					Bisect(leaf, true);
+				}
+				else
+				{
+					Bisect(leaf, false);
+				}
+				
 			}
 		}
 
@@ -169,7 +178,7 @@ public partial class DestronoiNode : RigidBody3D
 		}
 	}
 
-	public static bool Bisect(VSTNode node)
+	public static bool Bisect(VSTNode node, bool endPoint)
 	{
 		if (node.GetSiteCount() != 2)
 			return false;
@@ -338,10 +347,10 @@ public partial class DestronoiNode : RigidBody3D
 		surfB.Index(); surfB.GenerateNormals();
 
 		var meshUp = new MeshInstance3D { Mesh = surfA.Commit() };
-		node.left = new VSTNode(meshUp, node.ID * 2, node.ownerID, node, node.level + 1, Laterality.LEFT);
+		node.left = new VSTNode(meshUp, node.ID * 2, node.ownerID, node, node.level + 1, Laterality.LEFT, endPoint);
 
 		var meshDown = new MeshInstance3D { Mesh = surfB.Commit() };
-		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node.ownerID, node, node.level + 1, Laterality.RIGHT);
+		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node.ownerID, node, node.level + 1, Laterality.RIGHT, endPoint);
 
 		return true;
 	}
@@ -419,7 +428,6 @@ public partial class DestronoiNode : RigidBody3D
 	/// </summary>
 	public DestronoiNode CreateDestronoiNode(VSTNode subVST,
 											MeshInstance3D subVSTmeshInstance,
-											int remainingTreeDepth,
 											String name,
 											StandardMaterial3D debugMaterial)
 	{
@@ -462,7 +470,6 @@ public partial class DestronoiNode : RigidBody3D
 
 			destronoiNode.meshInstance = subVSTmeshInstance;
 			destronoiNode.fragmentContainer = fragmentContainer;
-			destronoiNode.treeHeight = remainingTreeDepth;
 			destronoiNode.vstRoot = subVST;
 			destronoiNode.baseObjectDensity = baseObjectDensity;
 			destronoiNode.needsInitialising = false;

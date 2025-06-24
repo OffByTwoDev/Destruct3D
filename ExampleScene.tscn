@@ -132,7 +132,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.90931, 5.43689, 2.6964)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("CSharpMesh")
 fragmentContainer = NodePath("..")
-treeHeight = 9
+treeHeight = 8
 
 [node name="CSharpMesh" type="MeshInstance3D" parent="Environment/OriginalObject"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.43061, 0, 0)
@@ -163,7 +163,7 @@ transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, 
 script = ExtResource("4_fgqed")
 explosionMeshSmall = NodePath("MediumMesh")
 explosionMeshLarge = NodePath("LargeMesh")
-explosionTreeDepthShallow = 2
+explosionTreeDepthDeep = 6
 ImpulseStrength = 0.3
 point = NodePath("../MeshInstance3D")
 

@@ -51,25 +51,6 @@ public partial class VSTSplittingComponent : Area3D
 
 		explosionDistancesSmall = sphereMeshSmall.Radius;
 		explosionDistancesLarge = sphereMeshLarge.Radius;
-
-		
-		// this is dumb AF but I _believe_ that if the centre of the destronoinode is within some other object (in this case the small mesh)
-		// then the area3d will just REFUSE to detect the destronoinode
-		// we can bodge this by just queuefreeing ALL CHILDREN of this area3d that aren't the collisionshape
-		// (that way even usused guides won't mess with overlappingbodies detection)
-		// probably shit code and this will definitely fuck me in the future
-		// foreach(Node child in GetChildren())
-		// {
-		// 	if (child != mainCollisionShape)
-		// 	{
-		// 		child.QueueFree();
-		// 	}
-		// }
-		
-		// if (GetChildCount() != 1)
-		// {
-		// 	GD.PrintErr("should only have 1 child at end of ready, but either 0 or 2+ were detected.");
-		// }
 	}
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -82,8 +63,6 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		GD.Print("splitting (large scale)");
-
-		GD.Print(GetOverlappingBodies());
 
 		foreach (Node3D node in GetOverlappingBodies())
 		{
@@ -102,15 +81,13 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		base._PhysicsProcess(delta);
 
-		// GD.Print("overlapping: ", GetOverlappingBodies());
-
 		framesUntilCloseExplosion -= 1;
 
 		if (framesUntilCloseExplosion == 0)
 		{
 			GD.Print("2ndary");
 
-			CloserExplosion();
+			// CloserExplosion();
 		}
 	}
 
@@ -139,59 +116,55 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		VSTNode originalVSTRoot = destronoiNode.vstRoot;
 
-		if (originalVSTRoot.left is null && originalVSTRoot.right is null)
-		{
-			destronoiNode.QueueFree();
-		}
+		// desired explosionTreeDepth is relative to a body's root node, hence we add the depth of the root node
+		explosionTreeDepth += originalVSTRoot.level;
 
-		if (explosionTreeDepth > destronoiNode.treeHeight)
-		{
-			explosionTreeDepth = destronoiNode.treeHeight;
-		}
-
-		if (explosionTreeDepth <= 1)
-		{
-			GD.Print("not enough treeDepth left");
-			destronoiNode.QueueFree();
-			return;
-		}
-
+		// if (explosionTreeDepth > deepestNode)
+		// {
+		//		set explosionTreeDepth to deepestNode i.e. just remove the smallest thing we have
+		//		OR create a particle effect for the fragments to remove
+		// }
 
 		List<VSTNode> fragmentsAtGivenDepth = [];
 
-		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, originalVSTRoot, explosionTreeDepth, originalVSTRoot.ownerID);
-
-		GD.Print(originalVSTRoot.ID, " ", originalVSTRoot.ownerID, " ", originalVSTRoot.left, " ", originalVSTRoot.right);
+		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, originalVSTRoot, explosionTreeDepth);
 
 		List<VSTNode> fragmentsToRemove = [];
-		List<VSTNode> fragmentsToKeep = [];
 
-		foreach (VSTNode vstnode in fragmentsAtGivenDepth)
+		GD.Print(fragmentsAtGivenDepth.Count);
+
+		foreach (VSTNode vstNode in fragmentsAtGivenDepth)
 		{
-			Vector3 globalLeafPosition = destronoiNode.GlobalTransform * vstnode.meshInstance.GetAabb().GetCenter();
+			// if the node is not an end point, its children says something about what it represents
+			if (!vstNode.endPoint)
+			{
+				if (vstNode.left is null && vstNode.right is null)
+				{
+					GD.PushWarning("this shouldn't be possible, no references to unphysical nodes should be present after orphaning");
+					continue;
+				}
 
-			MeshInstance3D meshInstance = (MeshInstance3D)point.Duplicate();
-			meshInstance.TopLevel = true;
-			destronoiNode.fragmentContainer.AddChild(meshInstance);
-			meshInstance.GlobalPosition = globalLeafPosition;
+				if (vstNode.left is null || vstNode.right is null)
+				{
+					// this node has been split; no node of the required depth is available as it has already been split in 2
+					continue;
+				}
+			}
+			// redundant check
+			else
+			{
+				if (! (vstNode.left is null && vstNode.right is null))
+				{
+					GD.Print("all endpoints should have 2 null children, this one has at least 1 non null child");
+				}
+			}
+
+			Vector3 globalLeafPosition = destronoiNode.GlobalTransform * vstNode.meshInstance.GetAabb().GetCenter();
 
 			if ((globalLeafPosition - GlobalPosition).Length() < explosionDistanceMax)
 			{
-				fragmentsToRemove.Add(vstnode);
-
-				// remove reference to this node from the parent's section of the tree
-				if (vstnode.laterality == Laterality.LEFT)
-				{
-					vstnode.parent.left = null;
-				}
-				else
-				{
-					vstnode.parent.right = null;
-				}
-			}
-			else
-			{
-				fragmentsToKeep.Add(vstnode);
+				fragmentsToRemove.Add(vstNode);
+				Orphan(vstNode);
 			}
 		}
 
@@ -204,9 +177,6 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		// remove original object
-		destronoiNode.QueueFree();
-
 		// create small fragments
 
 		int fragmentNumber = 0;
@@ -214,16 +184,11 @@ public partial class VSTSplittingComponent : Area3D
 		foreach (VSTNode leaf in fragmentsToRemove)
 		{
 			string leafName = destronoiNode.Name + $"_fragment_{fragmentNumber}";
-			
-			GD.Print("Creating Individual DN");
 
-			RigidBody3D body = destronoiNode.CreateDestronoiNode(leaf,
+			DestronoiNode body = destronoiNode.CreateDestronoiNode(leaf,
 																leaf.meshInstance,
-																destronoiNode.treeHeight - leaf.level,
 																leafName,
 																debugMaterial);
-			
-			ReduceLevelsAndReplaceOwnership(leaf, 0, leaf.ID, leaf);
 
 			destronoiNode.fragmentContainer.AddChild(body);
 
@@ -235,155 +200,85 @@ public partial class VSTSplittingComponent : Area3D
 			fragmentNumber++;
 		}
 
-		CleanVST(originalVSTRoot, explosionTreeDepth);
-
-		// loop through originalVSTRoot (from deepest point to shallowest) and replace all meshes with the union of their children
-		// OR just refrag / reinitialise the subtrees...
-		ReFragTree(originalVSTRoot);
-
-		if (fragmentsToKeep.Count == 0)
+		if (originalVSTRoot.parent is null &&
+			originalVSTRoot.left is null &&
+			originalVSTRoot.right is null)
 		{
-			GD.Print("no fragmentsToKeep");
+			destronoiNode.QueueFree();
 			return;
 		}
 
-		// create single body from fragmentstokeep
-
-		List<MeshInstance3D> meshInstances = [.. fragmentsToKeep.Select(f => f.meshInstance)];
-
-		MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
-
-		// MeshInstance3D finalCombinedMeshes = RemoveDuplicateSurfaces(overlappingCombinedMeshesToKeep);
-
-		string combinedFragmentName = destronoiNode.Name + "_remaining_fragment";
-
+		// create single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
 		GD.Print("Creating Combined DN");
 
-		DestronoiNode destronoiNodeToKeep = destronoiNode.CreateDestronoiNode(originalVSTRoot,
-																			overlappingCombinedMeshesToKeep,
-																			destronoiNode.treeHeight,
-																			combinedFragmentName,
-																			debugMaterial);
+		List<MeshInstance3D> meshInstances = [];
 
-		destronoiNode.fragmentContainer.AddChild(destronoiNodeToKeep);
+		InitialiseMeshInstances(meshInstances, originalVSTRoot);
+
+		MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
+		CollisionShape3D collisionShape = new()
+		{
+			Name = "CollisionShape3D",
+			Shape = overlappingCombinedMeshesToKeep.Mesh.CreateConvexShape(false, false)
+		};
+
+		foreach (Node child in destronoiNode.GetChildren())
+		{
+			child.Free();
+		}
+
+		destronoiNode.AddChild(overlappingCombinedMeshesToKeep);
+		destronoiNode.AddChild(collisionShape);
 	}
 
-	// replace all nodes' meshInstances with the union of their 2 children's meshInstances
-	public void ReFragTree(VSTNode vstNode)
+	public static void InitialiseMeshInstances(List<MeshInstance3D> meshInstances, VSTNode vstNode)
 	{
-		List<MeshInstance3D> meshesToCombine = [];
+		if (vstNode.endPoint == true)
+		{
+			meshInstances.Add(vstNode.meshInstance);
+		}
 
 		if (vstNode.left is not null)
 		{
-			ReFragTree(vstNode.left);
-			if (vstNode.left is not null)
-			{
-				meshesToCombine.Add(vstNode.left.meshInstance);
-			}
+			InitialiseMeshInstances(meshInstances, vstNode.left);
 		}
 		if (vstNode.right is not null)
 		{
-			ReFragTree(vstNode.right);
-			if (vstNode.right is not null)
-			{
-				meshesToCombine.Add(vstNode.right.meshInstance);
-			}
-		}
-
-		if (meshesToCombine.Count == 2)
-		{
-			vstNode.meshInstance = CombineMeshes(meshesToCombine);
-			return;
-		}
-		if (meshesToCombine.Count == 1)
-		{
-			vstNode.meshInstance = meshesToCombine[0];
-			return;
+			InitialiseMeshInstances(meshInstances, vstNode.right);
 		}
 	}
 
-	/// <summary>
-	///  Remove nodes who have 2 children removed (as now their mesh doesn't correspond to a physical node)
-	/// and fast forward references to nodes which reference only 1 node with the same owner ID
-	/// cleans all layers which are equal to or shallower than the input explosionTreeDepth
-	/// </summary>
-	public static void CleanVST(VSTNode originalVSTRoot, int explosionTreeDepth)
+	public static void Orphan(VSTNode vstNode)
 	{
-		List<VSTNode> parentNodes = [];
-		InitialiseFragmentsAtGivenDepth(parentNodes, originalVSTRoot, explosionTreeDepth - 1, originalVSTRoot.ownerID);
-
-		foreach (VSTNode parentNode in parentNodes)
+		if (vstNode.parent is null)
 		{
-			if ( (parentNode.left is null) &&
-				 (parentNode.right is null) )
-			{
-				// set parent reference to this parentNode as null, this node does not represent anything present in the scene anymore
-				if (parentNode.laterality == Laterality.LEFT)
-				{
-					parentNode.parent.left = null;
-				}
-				else
-				{
-					parentNode.parent.right = null;
-				}
-
-				continue;
-			}
-
-			if (parentNode.left is null)
-			{
-				// fast forward parent to right child
-				if (parentNode.laterality == Laterality.LEFT)
-				{
-					parentNode.parent.left = parentNode.right;
-				}
-				else
-				{
-					parentNode.parent.right = parentNode.right;
-				}
-
-				continue;
-			}
-
-			if (parentNode.right is null)
-			{
-				// fast forward parent to left child
-				if (parentNode.laterality == Laterality.LEFT)
-				{
-					parentNode.parent.left = parentNode.left;
-				}
-				else
-				{
-					parentNode.parent.right = parentNode.left;
-				}
-				
-				continue;
-			}
-		}
-
-		// repeat recursively
-		if (explosionTreeDepth == 2)
-		{
+			// represents root node of body having no children and no parent
+			// in this sitch we check later in main function and queuefree the destronoiNode
 			return;
 		}
 
-		CleanVST(originalVSTRoot, explosionTreeDepth - 1);
+		// remove reference to this node from the parent's section of the tree
+		if (vstNode.laterality == Laterality.LEFT)
+		{
+			vstNode.parent.left = null;
+		}
+		else
+		{
+			vstNode.parent.right = null;
+		}
+
+		if (vstNode.parent.left is null && vstNode.parent.right is null)
+		{
+			Orphan(vstNode.parent);
+		}
 	}
 
 	public static void InitialiseFragmentsAtGivenDepth(List<VSTNode> fragmentsAtGivenDepth,
 												VSTNode currentVSTNode,
-												int depth,
-												int rootOwnerID)
+												int depth)
 	{
 		// represents a node not in the tree
 		if (currentVSTNode is null)
-		{
-			return;
-		}
-
-		// if this node has been removed from the tree, it will have a different ownerID
-		// in that case, this leaf is unphysical (i.e. its part of a distinct object now) and we should return nothing
-		if (currentVSTNode.ownerID != rootOwnerID)
 		{
 			return;
 		}
@@ -394,33 +289,8 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.left, depth, rootOwnerID);
-		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.right, depth, rootOwnerID);
-	}
-
-	/// <summary>
-	/// a function which renumbers the levels of a given leaf
-	/// so that the given leaf and all its children have the correct level as per the initial input currentLevel
-	/// </summary>
-	/// <param name="leaf"></param>
-	/// <param name="currentLevel"></param>
-	/// <param name="newOwnerID"></param>
-	public static void ReduceLevelsAndReplaceOwnership(VSTNode leaf, int currentLevel, int newOwnerID, VSTNode newParent)
-	{
-		leaf.level = currentLevel;
-		leaf.ownerID = newOwnerID;
-		leaf.parent = newParent;
-
-		// exit at end of tree
-		if (leaf.left is not null)
-		{
-			ReduceLevelsAndReplaceOwnership(leaf.left, currentLevel + 1, newOwnerID, newParent);
-		}
-
-		if (leaf.right is not null)
-		{
-			ReduceLevelsAndReplaceOwnership(leaf.right, currentLevel + 1, newOwnerID, newParent);
-		}
+		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.left, depth);
+		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.right, depth);
 	}
 
 	// --- mesh combining schenanigans --- //
@@ -455,85 +325,6 @@ public partial class VSTSplittingComponent : Area3D
 			Mesh = combinedArrayMesh
 		};
 	}
-
-	// DEPRECATED
-	// removes all internal vertices from a mesh
-	// public static MeshInstance3D ConvertOverlappingMeshToExternalMesh(MeshInstance3D overlappingMeshInstance)
-	// {
-	// 	// list of all vertices that are on the surface of a mesh and not inside the mesh boundary
-	// 	List<Vector3> boundaryPoints = GetBoundaryPoints(overlappingMeshInstance);
-
-	// 	var surfaceTool = new SurfaceTool();
-	// 	surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
-
-	// 	foreach (Vector3 vertex in boundaryPoints)
-	// 	{
-	// 		surfaceTool.AddVertex(vertex);
-	// 	}
-
-	// 	ArrayMesh arrayMesh = surfaceTool.Commit();
-
-	// 	return new MeshInstance3D()
-	// 	{
-	// 		Mesh = arrayMesh
-	// 	};
-	// }
-
-	// public static List<Vector3> GetBoundaryPoints(MeshInstance3D meshInstance)
-	// {
-	// 	List<Vector3> boundaryPoints = [];
-
-	// 	var mdt = new MeshDataTool();
-
-	// 	if (meshInstance.Mesh is not ArrayMesh arrayMesh)
-	// 	{
-	// 		GD.PushError("arraymesh must be passed to GetInteriorPoints, not any other type of mesh");
-	// 		return null;
-	// 	}
-
-	// 	mdt.CreateFromSurface(arrayMesh, 0);
-
-	// 	if (mdt.GetFaceCount() == 0)
-	// 	{
-	// 		GD.PushWarning("no faces found in meshdatatool, GetBoundaryPoints will loop forever. returning early");
-	// 		return null;
-	// 	}
-
-	// 	var direction = Vector3.Up;
-
-	// 	for (int i = 0; i < mdt.GetVertexCount(); i++)
-	// 	{
-	// 		Vector3 currentVertex = mdt.GetVertex(i);
-
-	// 		int intersections = 0;
-
-	// 		for (int face = 0; face < mdt.GetFaceCount(); face++)
-	// 		{
-	// 			int v0 = mdt.GetFaceVertex(face, 0);
-	// 			int v1 = mdt.GetFaceVertex(face, 1);
-	// 			int v2 = mdt.GetFaceVertex(face, 2);
-	// 			var p0 = mdt.GetVertex(v0);
-	// 			var p1 = mdt.GetVertex(v1);
-	// 			var p2 = mdt.GetVertex(v2);
-
-	// 			Variant intersectionPoint = Geometry3D.RayIntersectsTriangle(currentVertex, direction, p0, p1, p2);
-	// 			if (intersectionPoint.VariantType != Variant.Type.Nil)
-	// 			{
-	// 				intersections++;
-	// 			}
-	// 		}
-
-			
-	// 		// if number of intersections is odd, its inside
-	// 		// if number of intersections is even, its outside
-	// 		if (intersections % 2 == 0)
-	// 		{
-	// 			boundaryPoints.Add(currentVertex);
-	// 		}
-	// 	}
-
-	// 	return boundaryPoints;
-	// }
 
 	public static MeshInstance3D RemoveDuplicateSurfaces(MeshInstance3D meshInstance3D)
 	{
