@@ -12,5 +12,10 @@ public partial class ExampleScene : Node3D
 			GD.Print("reloading example scene...");
 			GetTree().ReloadCurrentScene(); 
 		}
+
+		else if (Input.IsActionJustPressed("close_window"))
+		{
+			GetTree().Quit();
+		}   
 	}
 }
