@@ -420,7 +420,8 @@ public partial class DestronoiNode : RigidBody3D
 	public DestronoiNode CreateDestronoiNode(VSTNode subVST,
 											MeshInstance3D subVSTmeshInstance,
 											int remainingTreeDepth,
-											String name)
+											String name,
+											StandardMaterial3D debugMaterial)
 	{
 			DestronoiNode destronoiNode = new()
 			{
@@ -433,6 +434,9 @@ public partial class DestronoiNode : RigidBody3D
 			// mesh instance
 			MeshInstance3D meshInstance = subVSTmeshInstance;
 			meshInstance.Name = $"{name}_MeshInstance3D";
+
+			meshInstance.SetSurfaceOverrideMaterial(0, debugMaterial);
+
 			destronoiNode.AddChild(meshInstance);
 
 			// collisionshape
