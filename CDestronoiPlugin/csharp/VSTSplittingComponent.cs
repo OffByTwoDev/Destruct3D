@@ -37,14 +37,14 @@ public partial class VSTSplittingComponent : Area3D
 	
 		if ((explosionTreeDepthDeep <= 0) || (explosionTreeDepthDeep <= 0))
 		{
-			GD.PrintErr("explosionDepths have to be strictly greater than 0");
+			GD.PushError("explosionDepths have to be strictly greater than 0");
 			return;
 		}
 
 		if (explosionMeshSmall.Mesh is not SphereMesh sphereMeshSmall ||
 			explosionMeshLarge.Mesh is not SphereMesh sphereMeshLarge)
 		{
-			GD.PrintErr("only spheremeshes are supported for VSTSplittingComponenets for now. i.e. only spherically symmetric explosions can split VSTNodes.");
+			GD.PushError("only spheremeshes are supported for VSTSplittingComponenets for now. i.e. only spherically symmetric explosions can split VSTNodes.");
 			return;
 		}
 
@@ -328,7 +328,7 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		if (meshInstance3D.Mesh is not ArrayMesh arrayMesh)
 		{
-			GD.PrintErr("mesh passed to RemoveDuplicateSurfaces must have an arraymesh mesh. returning early");
+			GD.PushError("mesh passed to RemoveDuplicateSurfaces must have an arraymesh mesh. returning early");
 			return null;
 		}
 

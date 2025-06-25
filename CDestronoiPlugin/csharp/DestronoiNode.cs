@@ -100,7 +100,7 @@ public partial class DestronoiNode : RigidBody3D
 
 		if (meshInstance is null)
 		{
-			GD.PrintErr("[Destronoi] No MeshInstance3D set");
+			GD.PushError("[Destronoi] No MeshInstance3D set");
 			return;
 		}
 
