@@ -15,22 +15,21 @@ public partial class VSTSplittingComponent : Area3D
 	[Export] MeshInstance3D explosionMeshSmall;
 	[Export] MeshInstance3D explosionMeshLarge;
 
-	// all other children of this node will be queuefreed() after ready function (see end of ready for reasons)
-	[Export] CollisionShape3D mainCollisionShape;
-
 	[Export] int explosionTreeDepthDeep = 2;
 	[Export] int explosionTreeDepthShallow = 4;
 
 	[Export] bool ApplyImpulseOnSplit = false;
 	[Export] float ImpulseStrength = 10.0f;
 
-	// this is set to be the radius of the sphere for now
+	// these are to be set to be the radius of the sphere
 	float explosionDistancesSmall;
 	float explosionDistancesLarge;
 
 	int framesUntilCloseExplosion = -10;
 
 	[Export] MeshInstance3D point;
+
+	[Export] bool DebugPrints = false;
 
 	public override void _Ready()
 	{
@@ -62,7 +61,7 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		GD.Print("splitting (large scale)");
+		if (DebugPrints) { GD.Print("splitting (large scale)"); }
 
 		foreach (Node3D node in GetOverlappingBodies())
 		{
@@ -85,9 +84,9 @@ public partial class VSTSplittingComponent : Area3D
 
 		if (framesUntilCloseExplosion == 0)
 		{
-			GD.Print("2ndary");
-
-			// CloserExplosion();
+			if (DebugPrints) { GD.Print("2ndary explosion"); }
+			
+			CloserExplosion();
 		}
 	}
 
@@ -116,6 +115,7 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		VSTNode originalVSTRoot = destronoiNode.vstRoot;
 
+		
 		// desired explosionTreeDepth is relative to a body's root node, hence we add the depth of the root node
 		explosionTreeDepth += originalVSTRoot.level;
 
@@ -130,8 +130,6 @@ public partial class VSTSplittingComponent : Area3D
 		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, originalVSTRoot, explosionTreeDepth);
 
 		List<VSTNode> fragmentsToRemove = [];
-
-		GD.Print(fragmentsAtGivenDepth.Count);
 
 		foreach (VSTNode vstNode in fragmentsAtGivenDepth)
 		{
@@ -155,7 +153,7 @@ public partial class VSTSplittingComponent : Area3D
 			{
 				if (! (vstNode.left is null && vstNode.right is null))
 				{
-					GD.Print("all endpoints should have 2 null children, this one has at least 1 non null child");
+					GD.PushWarning("all endpoints should have 2 null children, this one has at least 1 non null child. This is unexpected.");
 				}
 			}
 
@@ -173,7 +171,7 @@ public partial class VSTSplittingComponent : Area3D
 		// so we can save some computation and skip it. also prevents bodies moving about weirdly (duplicating them resets their position)
 		if (fragmentsToRemove.Count == 0)
 		{
-			GD.Print("no fragments to remove");
+			if (DebugPrints) { GD.Print("no fragments to remove"); }
 			return;
 		}
 
@@ -209,7 +207,7 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
-		GD.Print("Creating Combined DN");
+		if (DebugPrints) { GD.Print("Creating Combined DN"); }
 
 		List<MeshInstance3D> meshInstances = [];
 
@@ -343,7 +341,6 @@ public partial class VSTSplittingComponent : Area3D
 				if (MeshUtils.AreMeshVerticesEqual(arrayMesh, i, j))
 				{
 					surfaceIndicesToRemove.Add(i);
-					GD.Print("removing surface");
 				}
 			}
 		}

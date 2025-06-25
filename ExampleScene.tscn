@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://bvae885dfsom2" path="res://FreeCam.cs" id="2_xpmf3"]
 [ext_resource type="Script" uid="uid://cy0lbch8hfx72" path="res://CDestronoiPlugin/csharp/FragmentationComponent.cs" id="3_fhs12"]
 [ext_resource type="Script" uid="uid://beevd6g3rmhxp" path="res://CDestronoiPlugin/csharp/VSTSplittingComponent.cs" id="4_fgqed"]
+[ext_resource type="Material" uid="uid://vccoqm71k406" path="res://TransparentMeshMaterial.tres" id="7_p3r26"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
 sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
@@ -52,18 +53,13 @@ albedo_color = Color(1, 1, 1, 0.137255)
 material = SubResource("StandardMaterial3D_nnq3s")
 size = Vector3(4, 4, 4)
 
-[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xpmf3"]
-transparency = 3
-alpha_hash_scale = 1.0
-alpha_antialiasing_mode = 0
-albedo_color = Color(1, 1, 1, 0.309804)
-
 [sub_resource type="SphereMesh" id="SphereMesh_n7n8g"]
-material = SubResource("StandardMaterial3D_xpmf3")
+material = ExtResource("7_p3r26")
 radius = 2.0
 height = 4.0
 
 [sub_resource type="SphereMesh" id="SphereMesh_p3r26"]
+material = ExtResource("7_p3r26")
 radius = 4.0
 height = 8.0
 
@@ -143,7 +139,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.43061, 0, 0)
 shape = SubResource("ConvexPolygonShape3D_xpmf3")
 
 [node name="smallobject" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.42308, 1.02252, -1.66219)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.42308, 1.02252, -1.00893)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
@@ -159,20 +155,18 @@ shape = SubResource("ConvexPolygonShape3D_p3r26")
 mesh = SubResource("BoxMesh_jyebb")
 
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("explosionMeshSmall", "explosionMeshLarge", "point")]
-transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, -9.36827, 0.919232, -0.626963)
+transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, -9.26757, 0.995488, 0.783144)
 script = ExtResource("4_fgqed")
 explosionMeshSmall = NodePath("MediumMesh")
 explosionMeshLarge = NodePath("LargeMesh")
-explosionTreeDepthDeep = 6
 explosionTreeDepthShallow = 2
-ImpulseStrength = 0.3
+ImpulseStrength = 0.1
 point = NodePath("../MeshInstance3D")
 
 [node name="MediumMesh" type="MeshInstance3D" parent="Explosion"]
 mesh = SubResource("SphereMesh_n7n8g")
 
 [node name="LargeMesh" type="MeshInstance3D" parent="Explosion"]
-visible = false
 mesh = SubResource("SphereMesh_p3r26")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Explosion"]
@@ -180,4 +174,5 @@ shape = SubResource("ConvexPolygonShape3D_nnq3s")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2751, 3.42595)
+visible = false
 mesh = SubResource("SphereMesh_nnq3s")
