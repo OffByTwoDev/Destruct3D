@@ -434,7 +434,7 @@ public partial class DestronoiNode : RigidBody3D
 			DestronoiNode destronoiNode = new()
 			{
 				Name = name,
-				Position = GlobalPosition
+				GlobalTransform = this.GlobalTransform
 			};
 
 			// --- rigidbody initialisation --- //

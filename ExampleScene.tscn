@@ -159,11 +159,12 @@ shape = SubResource("ConvexPolygonShape3D_p3r26")
 mesh = SubResource("BoxMesh_jyebb")
 
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("explosionMeshSmall", "explosionMeshLarge", "point")]
-transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, -9.36827, 0.919232, 0.98985)
+transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, -9.36827, 0.919232, -0.626963)
 script = ExtResource("4_fgqed")
 explosionMeshSmall = NodePath("MediumMesh")
 explosionMeshLarge = NodePath("LargeMesh")
 explosionTreeDepthDeep = 6
+explosionTreeDepthShallow = 2
 ImpulseStrength = 0.3
 point = NodePath("../MeshInstance3D")
 

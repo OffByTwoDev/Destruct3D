@@ -208,7 +208,7 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		// create single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
+		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
 		GD.Print("Creating Combined DN");
 
 		List<MeshInstance3D> meshInstances = [];
