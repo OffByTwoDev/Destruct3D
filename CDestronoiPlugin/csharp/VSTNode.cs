@@ -28,9 +28,14 @@ public class VSTNode
 	// whether this fragment is the smallest initialised fragment for this body
 	public bool endPoint;
 
-	// IDS start at 1 (not 0, idk why, i actually believe it doesnt matter it probably doesn't change any behaviour)
+	// by convention, IDS start at 1 (it doesnt matter it probably doesn't change any behaviour)
+	// they are currently used for nothing other than for printing VST trees for debugging
 	public int ID;
 	public int ownerID;
+
+	// when a node is fragmented / orphaned, we tell its parent & its parent's parent etc that one of its children has changed
+	// i.e. that the meshInstance of those parents dont accurately reflect the union of their children anymore
+	public bool childrenChanged = false;
 
 	/// <summary>
 	/// Initializes a VSTNode using mesh data, a depth level, and a laterality value.

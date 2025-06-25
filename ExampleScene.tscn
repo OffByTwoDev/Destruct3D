@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3 uid="uid://c7oqy8jsemyg1"]
+[gd_scene load_steps=30 format=3 uid="uid://c7oqy8jsemyg1"]
 
 [ext_resource type="Script" uid="uid://k0jup8gwalph" path="res://ExampleScene.cs" id="1_n7n8g"]
 [ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://original_gdscript_destronoi/DestronoiNode.gd" id="1_xvrj6"]
@@ -52,6 +52,12 @@ albedo_color = Color(1, 1, 1, 0.137255)
 [sub_resource type="BoxMesh" id="BoxMesh_jyebb"]
 material = SubResource("StandardMaterial3D_nnq3s")
 size = Vector3(4, 4, 4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_5h8pk"]
+size = Vector3(20, 1, 1)
+
+[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_i82ug"]
+points = PackedVector3Array(10, 0.5, 0.5, 10, 0.5, -0.5, -10, 0.5, 0.5, 10, -0.5, 0.5, 10, -0.5, -0.5, -10, 0.5, -0.5, -10, -0.5, 0.5, -10, -0.5, -0.5)
 
 [sub_resource type="SphereMesh" id="SphereMesh_n7n8g"]
 material = ExtResource("7_p3r26")
@@ -138,7 +144,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.77329, 5.43689, 2.6964)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("CSharpMesh")
 fragmentContainer = NodePath("..")
-treeHeight = 11
+treeHeight = 5
 
 [node name="CSharpMesh" type="MeshInstance3D" parent="Environment/LargeObject"]
 mesh = SubResource("BoxMesh_r0du0")
@@ -151,7 +157,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.42308, 1.02252, -1.00893)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
-treeHeight = 9
+treeHeight = 5
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/SmallObject"]
 mesh = SubResource("BoxMesh_xpmf3")
@@ -162,13 +168,27 @@ shape = SubResource("ConvexPolygonShape3D_p3r26")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment"]
 mesh = SubResource("BoxMesh_jyebb")
 
+[node name="Slab" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.9747, 3.41572, 0)
+script = ExtResource("2_epgrm")
+meshInstance = NodePath("MeshInstance3D")
+fragmentContainer = NodePath("..")
+treeHeight = 9
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Slab"]
+mesh = SubResource("BoxMesh_5h8pk")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Slab"]
+shape = SubResource("ConvexPolygonShape3D_i82ug")
+
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("explosionMeshSmall", "explosionMeshLarge", "point")]
-transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, -9.26757, 0.995488, 0.783144)
+transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, 17.1667, 0.995488, 0.783144)
 script = ExtResource("4_fgqed")
 explosionMeshSmall = NodePath("MediumMesh")
 explosionMeshLarge = NodePath("LargeMesh")
-explosionTreeDepthDeep = 3
+explosionTreeDepthDeep = 4
 explosionTreeDepthShallow = 2
+ApplyImpulseOnSplit = true
 ImpulseStrength = 0.1
 point = NodePath("../MeshInstance3D")
 
@@ -176,7 +196,6 @@ point = NodePath("../MeshInstance3D")
 mesh = SubResource("SphereMesh_n7n8g")
 
 [node name="LargeMesh" type="MeshInstance3D" parent="Explosion"]
-visible = false
 mesh = SubResource("SphereMesh_p3r26")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Explosion"]

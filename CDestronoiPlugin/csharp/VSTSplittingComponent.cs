@@ -169,6 +169,7 @@ public partial class VSTSplittingComponent : Area3D
 			{
 				fragmentsToRemove.Add(vstNode);
 				Orphan(vstNode);
+				TellParentThatChildChanged(vstNode);
 			}
 		}
 
@@ -220,6 +221,7 @@ public partial class VSTSplittingComponent : Area3D
 		InitialiseMeshInstances(meshInstances, originalVSTRoot);
 
 		MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
+
 		CollisionShape3D collisionShape = new()
 		{
 			Name = "CollisionShape3D",
@@ -237,7 +239,7 @@ public partial class VSTSplittingComponent : Area3D
 
 	public static void InitialiseMeshInstances(List<MeshInstance3D> meshInstances, VSTNode vstNode)
 	{
-		if (vstNode.endPoint == true)
+		if (!vstNode.childrenChanged || vstNode.endPoint == true)
 		{
 			meshInstances.Add(vstNode.meshInstance);
 		}
@@ -275,6 +277,17 @@ public partial class VSTSplittingComponent : Area3D
 		{
 			Orphan(vstNode.parent);
 		}
+	}
+
+	public static void TellParentThatChildChanged(VSTNode vstNode)
+	{
+		if (vstNode.parent is not null)
+		{
+			vstNode.parent.childrenChanged = true;
+
+			TellParentThatChildChanged(vstNode.parent);
+		}
+		
 	}
 
 	public static void InitialiseFragmentsAtGivenDepth(List<VSTNode> fragmentsAtGivenDepth,
@@ -316,8 +329,6 @@ public partial class VSTSplittingComponent : Area3D
 			int surfaceCount = mesh.GetSurfaceCount();
 			for (int s = 0; s < surfaceCount; s++)
 			{
-				// maybe this should be baseObject.GlobalPosition + meshInstance.Transform?
-				// or maybe its fine as is idk...
 				surfaceTool.AppendFrom(mesh, s, meshInstance.Transform);
 			}
 		}
