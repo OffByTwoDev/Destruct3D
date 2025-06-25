@@ -122,10 +122,6 @@ public partial class DestronoiNode : RigidBody3D
 
 		mdt.CreateFromSurface(arrayMesh, 0);
 
-		Vector3 centre = node.meshInstance.GetAabb().GetCenter();
-
-		float deviation = 0.1f;
-
 		if (mdt.GetFaceCount() == 0)
 		{
 			GD.PushWarning("no faces found in meshdatatool, plotsitesrandom will loop forever. returning early");
@@ -136,19 +132,27 @@ public partial class DestronoiNode : RigidBody3D
 
 		var direction = Vector3.Up;
 
+		// seems weird to me to have a hardcoded deviation
+		// as it would lead to a shit ton of non overlapping tries for fragments much less than 0.1 meters in size
+		// so i've removed that and changedit to be the average length of the aabb
+		// this probably has some bias but no ones gonna ever notice lmao
+		var aabb = node.meshInstance.GetAabb();
+
 		while (node.sites.Count < 2)
 		{
 			tries++;
+
 			if (tries > 5000)
 			{
 				GD.PushWarning("over 5k tries exceeded, exiting PlotSitesRandom");
 				return;
 			}
 
+			
 			var site = new Vector3(
-				(float)GD.Randfn(centre.X, deviation),
-				(float)GD.Randfn(centre.Y, deviation),
-				(float)GD.Randfn(centre.Z, deviation)
+				(float)GD.RandRange(aabb.Position.X, aabb.End.X),
+				(float)GD.RandRange(aabb.Position.Y, aabb.End.Y),
+				(float)GD.RandRange(aabb.Position.Z, aabb.End.Z)
 			);
 
 			int intersections = 0;
@@ -176,6 +180,8 @@ public partial class DestronoiNode : RigidBody3D
 				node.sites.Add(site);
 			}
 		}
+
+		GD.Print(tries);
 	}
 
 	public static bool Bisect(VSTNode node, bool endPoint)

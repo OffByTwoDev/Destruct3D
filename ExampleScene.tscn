@@ -160,6 +160,7 @@ script = ExtResource("4_fgqed")
 explosionMeshSmall = NodePath("MediumMesh")
 explosionMeshLarge = NodePath("LargeMesh")
 explosionTreeDepthShallow = 2
+ApplyImpulseOnSplit = true
 ImpulseStrength = 0.1
 point = NodePath("../MeshInstance3D")
 
