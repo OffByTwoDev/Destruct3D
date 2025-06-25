@@ -22,6 +22,9 @@ public partial class DestronoiNode : RigidBody3D
 	// if you are creating a fragment and are passing in a known vstRoot, mesh etc, then this flag should be false
 	private bool needsInitialising = true;
 
+	// --- meta variables --- //
+	public int MAX_PLOTSITERANDOM_TRIES = 5_000;
+
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		base._UnhandledInput(@event);
@@ -109,7 +112,7 @@ public partial class DestronoiNode : RigidBody3D
 		node.sites = [node.meshInstance.Position + site1, node.meshInstance.Position + site2];
 	}
 
-	public static void PlotSitesRandom(VSTNode node)
+	public void PlotSitesRandom(VSTNode node)
 	{
 		node.sites = [];
 		var mdt = new MeshDataTool();
@@ -142,12 +145,11 @@ public partial class DestronoiNode : RigidBody3D
 		{
 			tries++;
 
-			if (tries > 5000)
+			if (tries > MAX_PLOTSITERANDOM_TRIES)
 			{
-				GD.PushWarning("over 5k tries exceeded, exiting PlotSitesRandom");
+				GD.PushWarning($"over {MAX_PLOTSITERANDOM_TRIES} tries exceeded, exiting PlotSitesRandom");
 				return;
 			}
-
 			
 			var site = new Vector3(
 				(float)GD.RandRange(aabb.Position.X, aabb.End.X),
@@ -180,8 +182,6 @@ public partial class DestronoiNode : RigidBody3D
 				node.sites.Add(site);
 			}
 		}
-
-		GD.Print(tries);
 	}
 
 	public static bool Bisect(VSTNode node, bool endPoint)
