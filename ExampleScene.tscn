@@ -124,18 +124,16 @@ destructionFragmentsLeft = 8
 destructionFragmentsRight = 5
 
 [node name="OriginalObject" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.90931, 5.43689, 2.6964)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.77329, 5.43689, 2.6964)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("CSharpMesh")
 fragmentContainer = NodePath("..")
 treeHeight = 8
 
 [node name="CSharpMesh" type="MeshInstance3D" parent="Environment/OriginalObject"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.43061, 0, 0)
 mesh = SubResource("BoxMesh_r0du0")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/OriginalObject"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.43061, 0, 0)
 shape = SubResource("ConvexPolygonShape3D_xpmf3")
 
 [node name="smallobject" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]

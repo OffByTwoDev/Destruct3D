@@ -55,6 +55,34 @@ public partial class DestronoiNode : RigidBody3D
 		DebugPrintVST(vstNode.right);
 	}
 
+	public void ErrorChecks()
+	{
+		if (!(GetChildCount() == 2))
+		{
+			GD.PushError($"CDestronoiNodes must have only 2 children. The node named {Name} does not");
+			return;
+		}
+
+		if (!(
+			(GetChildren()[0] is MeshInstance3D && GetChildren()[1] is CollisionShape3D) ||
+			(GetChildren()[1] is MeshInstance3D && GetChildren()[0] is CollisionShape3D)
+			))
+		{
+			GD.PushError($"CDestronoiNodes must have 1 collisionshape3d child and 1 meshinstance3d child. The node named {Name} does not");
+			return;
+		}
+
+		foreach (Node3D child in GetChildren().Cast<Node3D>())
+		{
+			if (child.Transform != Transform3D.Identity)
+			{
+				// if the transform is modified, then fragments will be instantiated in incorrect positions
+				// just move the CDestronoi node directly and keep the mesh and collisionshape centered around the origin
+				GD.PushError("the collisionshape and mesh children of a CDestronoi node must have an unmodified transform");
+			}
+		}
+	}
+
 	public override void _Ready()
 	{
 		base._Ready();
@@ -63,6 +91,10 @@ public partial class DestronoiNode : RigidBody3D
 		{
 			return;
 		}
+
+		// --- do some error checks, but only after children have been added to scene i.e. we wait one frame --- //
+
+		CallDeferred(nameof(ErrorChecks));
 
 		// --- create filled VST and find density --- //
 
