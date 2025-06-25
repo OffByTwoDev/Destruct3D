@@ -168,9 +168,9 @@ public partial class DestronoiNode : RigidBody3D
 		var direction = Vector3.Up;
 
 		// seems weird to me to have a hardcoded deviation
-		// as it would lead to a shit ton of non overlapping tries for fragments much less than 0.1 meters in size
-		// so i've removed that and changedit to be the average length of the aabb
-		// this probably has some bias but no ones gonna ever notice lmao
+		// as it could lead to a lot of non overlapping tries for fragments much less than 0.1 meters in size
+		// so i've removed that and changed it to generate points within the aabb of the meshInstance
+		// i believe this also has the benefit of being uniformly distributed throughout the fragment's meshInstance
 		var aabb = node.meshInstance.GetAabb();
 
 		while (node.sites.Count < 2)
@@ -207,8 +207,7 @@ public partial class DestronoiNode : RigidBody3D
 				}
 			}
 
-			
-			// if number of intersections is 1, its inside (???)
+			// if number of intersections is 1, its inside
 			if (intersections == 1)
 			{
 				node.sites.Add(site);

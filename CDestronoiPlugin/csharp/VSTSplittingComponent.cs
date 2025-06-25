@@ -30,6 +30,8 @@ public partial class VSTSplittingComponent : Area3D
 	[Export] MeshInstance3D point;
 
 	[Export] bool DebugPrints = false;
+	// if true, the secondary explosion has a randomly coloured material (random for each explosion, i.e. one colour per explosion not per fragment)
+	[Export] bool DebugMaterialsOnSecondaryExplosion = false;
 
 	public override void _Ready()
 	{
@@ -92,10 +94,12 @@ public partial class VSTSplittingComponent : Area3D
 
 	public void CloserExplosion()
 	{
-		StandardMaterial3D material = new()
+		StandardMaterial3D material = new();
+
+		if (DebugMaterialsOnSecondaryExplosion)
 		{
-			AlbedoColor = new Color(GD.Randf(), GD.Randf(), GD.Randf())
-		};
+			material.AlbedoColor = new Color(GD.Randf(), GD.Randf(), GD.Randf());
+		}
 
 		foreach (Node3D node in GetOverlappingBodies())
 		{
@@ -115,7 +119,6 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		VSTNode originalVSTRoot = destronoiNode.vstRoot;
 
-		
 		// desired explosionTreeDepth is relative to a body's root node, hence we add the depth of the root node
 		explosionTreeDepth += originalVSTRoot.level;
 
@@ -124,6 +127,9 @@ public partial class VSTSplittingComponent : Area3D
 		//		set explosionTreeDepth to deepestNode i.e. just remove the smallest thing we have
 		//		OR create a particle effect for the fragments to remove
 		// }
+
+		// might also want to queuefree fragments and instantiate some temporary explosion looking particle effects
+		// if all sides of the aabb of the fragment are less than some value (or maybe the volume of the aabb is less than some value)
 
 		List<VSTNode> fragmentsAtGivenDepth = [];
 
@@ -324,6 +330,7 @@ public partial class VSTSplittingComponent : Area3D
 		};
 	}
 
+	// semi deprecated / not used right now
 	public static MeshInstance3D RemoveDuplicateSurfaces(MeshInstance3D meshInstance3D)
 	{
 		if (meshInstance3D.Mesh is not ArrayMesh arrayMesh)

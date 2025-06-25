@@ -18,4 +18,11 @@ public partial class ExampleScene : Node3D
 			GetTree().Quit();
 		}   
 	}
+
+	private string title = "Game v0.1";
+
+	public override void _Process(double delta)
+	{
+		GetWindow().Title = $"{title} | fps: {Engine.GetFramesPerSecond()}";
+	}
 }
