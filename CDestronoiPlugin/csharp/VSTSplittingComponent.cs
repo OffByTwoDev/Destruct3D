@@ -28,13 +28,14 @@ public partial class VSTSplittingComponent : Area3D
 
 	int framesUntilCloseExplosion = -10;
 
-	[Export] MeshInstance3D point;
-
 	[Export] bool DebugPrints = false;
 	// if true, the secondary explosion has a randomly coloured material (random for each explosion, i.e. one colour per explosion not per fragment)
 	[Export] bool DebugMaterialsOnSecondaryExplosion = false;
 
 	[Export] int PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION = 5;
+
+	// material to set for fragments
+	StandardMaterial3D fragmentMaterial = new();
 
 	public override void _Ready()
 	{
@@ -97,11 +98,9 @@ public partial class VSTSplittingComponent : Area3D
 
 	public void CloserExplosion()
 	{
-		StandardMaterial3D material = new();
-
 		if (DebugMaterialsOnSecondaryExplosion)
 		{
-			material.AlbedoColor = new Color(GD.Randf(), GD.Randf(), GD.Randf());
+			fragmentMaterial.AlbedoColor = new Color(GD.Randf(), GD.Randf(), GD.Randf());
 		}
 
 		foreach (Node3D node in GetOverlappingBodies())
@@ -111,24 +110,26 @@ public partial class VSTSplittingComponent : Area3D
 				continue;
 			}
 
-			SplitExplode(destronoiNode, explosionDistancesSmall, explosionTreeDepthDeep, material);
+			SplitExplode(destronoiNode, explosionDistancesSmall, explosionTreeDepthDeep, fragmentMaterial);
 		}
 	}
 
 	public void SplitExplode(DestronoiNode destronoiNode,
 							float explosionDistanceMax,
 							int explosionTreeDepth,
-							StandardMaterial3D debugMaterial)
+							StandardMaterial3D fragmentMaterial)
 	{
 		VSTNode originalVSTRoot = destronoiNode.vstRoot;
 
 		// desired explosionTreeDepth is relative to a body's root node, hence we add the depth of the root node
 		explosionTreeDepth += originalVSTRoot.level;
 
+		// GD.Print(explosionTreeDepth);
+
 		// if (explosionTreeDepth > deepestNode)
 		// {
-		//		set explosionTreeDepth to deepestNode i.e. just remove the smallest thing we have
-		//		OR create a particle effect for the fragments to remove
+			// set explosionTreeDepth to deepestNode i.e. just remove the smallest thing we have
+			// OR create a particle effect for the fragments to remove
 		// }
 
 		// might also want to queuefree fragments and instantiate some temporary explosion looking particle effects
@@ -157,15 +158,13 @@ public partial class VSTSplittingComponent : Area3D
 					continue;
 				}
 			}
-			// redundant check
-			else
+			// redundant check, can just remove probs
+			else if ( !(vstNode.left is null && vstNode.right is null) )
 			{
-				if (! (vstNode.left is null && vstNode.right is null))
-				{
-					GD.PushWarning("all endpoints should have 2 null children, this one has at least 1 non null child. This is unexpected.");
-				}
+				GD.PushWarning("all endpoints should have 2 null children, this one has at least 1 non null child. This is unexpected.");
 			}
-
+			
+			// test for fragment centre's inclusion in explosion region
 			Vector3 globalLeafPosition = destronoiNode.GlobalTransform * vstNode.meshInstance.GetAabb().GetCenter();
 
 			if ((globalLeafPosition - GlobalPosition).Length() < explosionDistanceMax)
@@ -176,6 +175,8 @@ public partial class VSTSplittingComponent : Area3D
 
 				if (vstNode.childrenChanged)
 				{
+					// even if this error occurs, might be too much of a performance hit to justify adding it
+					// esp if it occurs rarely.
 					GD.PushWarning("i cant work out if this case ever occurs. if this has occured, then just implement code" +
 						"which recalculates a nodes mesh (as the union of its children) before orphaning it into its own destronoinode");
 				}
@@ -191,7 +192,7 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		// create small fragments
+		// --- create small fragments --- //
 
 		int fragmentNumber = 0;
 
@@ -202,13 +203,17 @@ public partial class VSTSplittingComponent : Area3D
 			DestronoiNode body = destronoiNode.CreateDestronoiNode(leaf,
 																leaf.meshInstance,
 																leafName,
-																debugMaterial);
+																fragmentMaterial);
 
 			destronoiNode.fragmentContainer.AddChild(body);
 
 			if (ApplyImpulseOnSplit)
 			{
-				body.ApplyCentralImpulse(new Vector3(1,1,1) * ImpulseStrength);
+				body.ApplyCentralImpulse(new Vector3(
+													GD.Randf()-0.5f,
+													GD.Randf()-0.5f,
+													GD.Randf()-0.5f
+													).Normalized() * ImpulseStrength);
 			}
 
 			fragmentNumber++;
@@ -227,7 +232,7 @@ public partial class VSTSplittingComponent : Area3D
 		if (originalVSTRoot.left is null &&
 			originalVSTRoot.right is null)
 		{
-			destronoiNode.QueueFree();
+			Deactivate(destronoiNode);
 			return;
 		}
 
@@ -255,8 +260,10 @@ public partial class VSTSplittingComponent : Area3D
 
 		List<List<VSTNode>> groupedVSTNodes = GetGroupedVSTNode(vstNodes);
 
-		// this node becoems groupedMeshes[0], orphan non adjacent vstNodes
-		// for the rest, we create a new destronoiNode with a copy of the vstNode, orphan non adjacent vstNodes
+		// could save 1 destronoinode creation
+		// by having this node become groupedMeshes[0], orphan non adjacent vstNodes
+		// and for the rest, we create a new destronoiNode with a copy of the vstNode, orphan non adjacent vstNodes
+		// i.e. create n-1 new destronoi nodes rather than n
 		foreach (List<VSTNode> vstNodeGroup in groupedVSTNodes)
 		{
 			// parent of root node is null, hence pass null in
@@ -268,8 +275,7 @@ public partial class VSTSplittingComponent : Area3D
 
 			VSTNode newVSTRoot = originalVSTRoot.DeepCopy(newparent: null);
 			
-			// now we can create a list of non adjacent nodes
-			// HOWEVER this list of VSTNodes is of DISTINCT objects compared to the ones in newVSTRoot
+			// now we can create a list of non adjacent nodes. HOWEVER this list of VSTNodes is of DISTINCT objects compared to the ones in newVSTRoot
 			// as we just created a deepcopy of originalVSTRoot
 			// hence when orphaning, we have to check against IDs (which are not allowed to change after initialisation), not object references themselves
 			List<int> nonAdjacentNodeIDs = groupedVSTNodes
@@ -285,10 +291,6 @@ public partial class VSTSplittingComponent : Area3D
 			// instantiate as a DestronoiNode
 
 			string leafName = destronoiNode.Name + $"_fragment_{fragmentNumber}";
-			StandardMaterial3D material = new()
-			{
-				AlbedoColor = new Color(GD.Randf(),GD.Randf(),GD.Randf())
-			};
 
 			List<MeshInstance3D> meshInstances = [];
 			GetDeepestMeshInstances(meshInstances, newVSTRoot);
@@ -297,17 +299,13 @@ public partial class VSTSplittingComponent : Area3D
 			DestronoiNode body = destronoiNode.CreateDestronoiNode(newVSTRoot,
 																overlappingCombinedMeshesToKeep,
 																leafName,
-																material);
+																fragmentMaterial);
 
 			destronoiNode.fragmentContainer.AddChild(body);
 		}
 
 		// destronoiNode.QueueFree();
-		destronoiNode.Visible = false;
-		destronoiNode.Freeze = true;
-		destronoiNode.CollisionLayer = 0;
-		destronoiNode.CollisionMask = 0;
-		destronoiNode.Sleeping = true;
+		Deactivate(destronoiNode);
 
 		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
 		// if (DebugPrints) { GD.Print("Creating Combined DN"); }
@@ -333,6 +331,15 @@ public partial class VSTSplittingComponent : Area3D
 		// destronoiNode.AddChild(collisionShape);
 	}
 
+	public static void Deactivate(DestronoiNode destronoiNode)
+	{
+		destronoiNode.Visible = false;
+		destronoiNode.Freeze = true;
+		destronoiNode.CollisionLayer = 0;
+		destronoiNode.CollisionMask = 0;
+		destronoiNode.Sleeping = true;
+	}
+
 	public static void OrphanDeepestNonAdjacentNodesByID(VSTNode vstNode, List<int> nonAdjacentNodeIDs)
 	{
 		if (nonAdjacentNodeIDs.Contains(vstNode.ID))
@@ -340,16 +347,22 @@ public partial class VSTSplittingComponent : Area3D
 			Orphan(vstNode);
 			TellParentThatChildChanged(vstNode);
 		}
-
-		// else {below stuff} i believe is valid
-		if (vstNode.left is not null)
+		// i feel like putting this bit in an else{} would be correct, but i think it might error sometimes? :/ idk why
+		// it saves a shit ton of checks on deep trees if we else{} it
+		// theoretically, if youve reached a non adjacent node to orphan, then I think it should be a node with no childrenChanged
+		// and hence the destruction shouldnt need to check any deeper nodes
+		// ideally, explosions would have a runtime independent of tree depth but that isnt the case rn still :/
+		else
 		{
-			OrphanDeepestNonAdjacentNodesByID(vstNode.left,nonAdjacentNodeIDs);
-		}
+			if (vstNode.left is not null)
+			{
+				OrphanDeepestNonAdjacentNodesByID(vstNode.left,nonAdjacentNodeIDs);
+			}
 
-		if (vstNode.right is not null)
-		{
-			OrphanDeepestNonAdjacentNodesByID(vstNode.right,nonAdjacentNodeIDs);
+			if (vstNode.right is not null)
+			{
+				OrphanDeepestNonAdjacentNodesByID(vstNode.right,nonAdjacentNodeIDs);
+			}
 		}
 	}
 

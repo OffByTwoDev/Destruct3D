@@ -144,7 +144,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.77329, 5.43689, 2.6964)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("CSharpMesh")
 fragmentContainer = NodePath("..")
-treeHeight = 5
+treeHeight = 6
 
 [node name="CSharpMesh" type="MeshInstance3D" parent="Environment/LargeObject"]
 mesh = SubResource("BoxMesh_r0du0")
@@ -157,7 +157,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.42308, 1.02252, -1.00893)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
-treeHeight = 5
+treeHeight = 6
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/SmallObject"]
 mesh = SubResource("BoxMesh_xpmf3")
@@ -169,11 +169,11 @@ shape = SubResource("ConvexPolygonShape3D_p3r26")
 mesh = SubResource("BoxMesh_jyebb")
 
 [node name="Slab" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.9747, 3.41572, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.34069, 3.41572, 0)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
-treeHeight = 8
+treeHeight = 6
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Slab"]
 mesh = SubResource("BoxMesh_5h8pk")
@@ -181,16 +181,16 @@ mesh = SubResource("BoxMesh_5h8pk")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Slab"]
 shape = SubResource("ConvexPolygonShape3D_i82ug")
 
-[node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("explosionMeshSmall", "explosionMeshLarge", "point")]
-transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, 13.6777, 0.995488, 0.783144)
+[node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("explosionMeshSmall", "explosionMeshLarge")]
+transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, -11.0165, 0.995488, 2.0804)
+visible = false
 script = ExtResource("4_fgqed")
 explosionMeshSmall = NodePath("MediumMesh")
 explosionMeshLarge = NodePath("LargeMesh")
 explosionTreeDepthShallow = 2
 ApplyImpulseOnSplit = true
-ImpulseStrength = 0.1
-point = NodePath("../MeshInstance3D")
-PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION = 2
+ImpulseStrength = 1.0
+PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION = 1
 
 [node name="MediumMesh" type="MeshInstance3D" parent="Explosion"]
 mesh = SubResource("SphereMesh_n7n8g")

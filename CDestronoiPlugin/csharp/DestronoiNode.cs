@@ -466,7 +466,7 @@ public partial class DestronoiNode : RigidBody3D
 	public DestronoiNode CreateDestronoiNode(VSTNode subVST,
 											MeshInstance3D subVSTmeshInstance,
 											String name,
-											StandardMaterial3D debugMaterial)
+											StandardMaterial3D material)
 	{
 			DestronoiNode destronoiNode = new()
 			{
@@ -480,7 +480,7 @@ public partial class DestronoiNode : RigidBody3D
 			MeshInstance3D meshInstance = subVSTmeshInstance;
 			meshInstance.Name = $"{name}_MeshInstance3D";
 
-			meshInstance.SetSurfaceOverrideMaterial(0, debugMaterial);
+			meshInstance.SetSurfaceOverrideMaterial(0, material);
 
 			destronoiNode.AddChild(meshInstance);
 
@@ -509,6 +509,8 @@ public partial class DestronoiNode : RigidBody3D
 			destronoiNode.fragmentContainer = fragmentContainer;
 			destronoiNode.vstRoot = subVST;
 			destronoiNode.baseObjectDensity = baseObjectDensity;
+			// setting this to true will break everything,
+			// this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
 			destronoiNode.needsInitialising = false;
 
 			return destronoiNode;

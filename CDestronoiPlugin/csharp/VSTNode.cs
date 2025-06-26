@@ -1,10 +1,10 @@
 using Godot;
 using System.Collections.Generic;
-using System;
 
+// none laterality applies only to a root node
 public enum Laterality
 {
-	NONE = 0,
+	NONE,
 	LEFT,
 	RIGHT
 }
@@ -26,6 +26,8 @@ public class VSTNode
 	public Laterality laterality;
 
 	// whether this fragment is the smallest initialised fragment for this body
+	// not actually necessary, if logic is good then childrenChanged would always be false for endPoints anyways
+	// so I believe this bool and any check upon it can be removed and replaced by checking childrenChanged
 	public bool endPoint;
 
 	// by convention, IDS start at 1 (it doesnt matter it probably doesn't change any behaviour)
