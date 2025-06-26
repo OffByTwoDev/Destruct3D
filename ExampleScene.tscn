@@ -173,7 +173,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.9747, 3.41572, 0)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
-treeHeight = 7
+treeHeight = 8
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Slab"]
 mesh = SubResource("BoxMesh_5h8pk")

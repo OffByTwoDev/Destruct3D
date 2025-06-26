@@ -257,9 +257,6 @@ public partial class VSTSplittingComponent : Area3D
 
 		// this node becoems groupedMeshes[0], orphan non adjacent vstNodes
 		// for the rest, we create a new destronoiNode with a copy of the vstNode, orphan non adjacent vstNodes
-
-		int i = 0;
-
 		foreach (List<VSTNode> vstNodeGroup in groupedVSTNodes)
 		{
 			// parent of root node is null, hence pass null in
@@ -280,12 +277,10 @@ public partial class VSTSplittingComponent : Area3D
 				.SelectMany(innerList => innerList)    // flatten all nodes in the other groups
 				.Select(vstNode => vstNode.ID)         // get their IDs
 				.ToList();
-			
-			GD.Print("shit to orphan: ", nonAdjacentNodeIDs.Count);
 
 			// orphan all vstnodes at the deepest depth of originalVSTRoot which are NOT part of vstNodeGroup
 
-			OrphanDeepestNonAdjacentNodesByID(newVSTRoot, nonAdjacentNodeIDs, i);
+			OrphanDeepestNonAdjacentNodesByID(newVSTRoot, nonAdjacentNodeIDs);
 
 			// instantiate as a DestronoiNode
 
@@ -305,11 +300,8 @@ public partial class VSTSplittingComponent : Area3D
 																material);
 
 			destronoiNode.fragmentContainer.AddChild(body);
-			GD.Print($"adding child {i}");
-			i++;
 		}
 
-		GD.Print("queuefreeing");
 		// destronoiNode.QueueFree();
 		destronoiNode.Visible = false;
 		destronoiNode.Freeze = true;
@@ -341,11 +333,10 @@ public partial class VSTSplittingComponent : Area3D
 		// destronoiNode.AddChild(collisionShape);
 	}
 
-	public static void OrphanDeepestNonAdjacentNodesByID(VSTNode vstNode, List<int> nonAdjacentNodeIDs, int debugi)
+	public static void OrphanDeepestNonAdjacentNodesByID(VSTNode vstNode, List<int> nonAdjacentNodeIDs)
 	{
 		if (nonAdjacentNodeIDs.Contains(vstNode.ID))
 		{
-			GD.Print($"child {debugi}; orphaning, {vstNode.ID}");
 			Orphan(vstNode);
 			TellParentThatChildChanged(vstNode);
 		}
@@ -353,12 +344,12 @@ public partial class VSTSplittingComponent : Area3D
 		// else {below stuff} i believe is valid
 		if (vstNode.left is not null)
 		{
-			OrphanDeepestNonAdjacentNodesByID(vstNode.left,nonAdjacentNodeIDs, debugi);
+			OrphanDeepestNonAdjacentNodesByID(vstNode.left,nonAdjacentNodeIDs);
 		}
 
 		if (vstNode.right is not null)
 		{
-			OrphanDeepestNonAdjacentNodesByID(vstNode.right,nonAdjacentNodeIDs, debugi);
+			OrphanDeepestNonAdjacentNodesByID(vstNode.right,nonAdjacentNodeIDs);
 		}
 	}
 
