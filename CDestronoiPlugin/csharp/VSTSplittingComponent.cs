@@ -1,4 +1,5 @@
 using Godot;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -32,6 +33,8 @@ public partial class VSTSplittingComponent : Area3D
 	[Export] bool DebugPrints = false;
 	// if true, the secondary explosion has a randomly coloured material (random for each explosion, i.e. one colour per explosion not per fragment)
 	[Export] bool DebugMaterialsOnSecondaryExplosion = false;
+
+	[Export] int PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION = 5;
 
 	public override void _Ready()
 	{
@@ -75,7 +78,7 @@ public partial class VSTSplittingComponent : Area3D
 			SplitExplode(destronoiNode, explosionDistancesLarge, explosionTreeDepthShallow, new StandardMaterial3D());
 		}
 
-		framesUntilCloseExplosion = 5;
+		framesUntilCloseExplosion = PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION;
 	}
 
 	public override void _PhysicsProcess(double delta)
@@ -170,6 +173,12 @@ public partial class VSTSplittingComponent : Area3D
 				fragmentsToRemove.Add(vstNode);
 				Orphan(vstNode);
 				TellParentThatChildChanged(vstNode);
+
+				if (vstNode.childrenChanged)
+				{
+					GD.PushWarning("i cant work out if this case ever occurs. if this has occured, then just implement code" +
+						"which recalculates a nodes mesh (as the union of its children) before orphaning it into its own destronoinode");
+				}
 			}
 		}
 
@@ -205,52 +214,169 @@ public partial class VSTSplittingComponent : Area3D
 			fragmentNumber++;
 		}
 
-		if (originalVSTRoot.parent is null &&
-			originalVSTRoot.left is null &&
+		// i think the weaker condition below makes this check redundant
+		// if (originalVSTRoot.parent is null &&
+		// 	originalVSTRoot.left is null &&
+		// 	originalVSTRoot.right is null)
+		// {
+		// 	destronoiNode.QueueFree();
+		// 	return;
+		// }
+
+		// if this node now has no children, all its mass has been removed and it doesn't represent anything physical anymore
+		if (originalVSTRoot.left is null &&
 			originalVSTRoot.right is null)
 		{
 			destronoiNode.QueueFree();
 			return;
 		}
 
-		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
-		if (DebugPrints) { GD.Print("Creating Combined DN"); }
-
-		List<MeshInstance3D> meshInstances = [];
-
-		InitialiseMeshInstances(meshInstances, originalVSTRoot);
-
-		MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
-
-		CollisionShape3D collisionShape = new()
+		if (!originalVSTRoot.childrenChanged)
 		{
-			Name = "CollisionShape3D",
-			Shape = overlappingCombinedMeshesToKeep.Mesh.CreateConvexShape(false, false)
-		};
-
-		foreach (Node child in destronoiNode.GetChildren())
-		{
-			child.Free();
+			GD.PushWarning("i didnt expect this to be possible. if this vstroot has no changed children, then i would expect" +
+				" fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.");
+			return;
 		}
 
-		destronoiNode.AddChild(overlappingCombinedMeshesToKeep);
-		destronoiNode.AddChild(collisionShape);
+		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
+
+		if (DebugPrints) { GD.Print("Creating Combined DN"); }
+
+		List<VSTNode> vstNodes = [];
+		GetDeepestVSTNodes(vstNodes, originalVSTRoot);
+
+		if (vstNodes.Count == 0)
+		{
+			GD.PushError("this doesnt make sense, we have a non zero number of fragments to remove but then no valid vstNodes were found" +
+				" by GetDeepestVSTNodes");
+			originalVSTRoot.DebugPrint();
+			return;
+		}
+
+		List<List<VSTNode>> groupedVSTNodes = GetGroupedVSTNode(vstNodes);
+
+		// GD.Print("grouped length: ", groupedVSTNodes[0].Count);
+
+		// foreach (VSTNode vst in groupedVSTNodes[0])
+		// {
+		// 	MeshInstance3D testmesh = vst.meshInstance.Duplicate() as MeshInstance3D;
+		// 	destronoiNode.fragmentContainer.AddChild(testmesh);
+		// 	testmesh.Position += Vector3.Up * 10f;
+		// }
+
+		// GD.Print("groupedVSTNodes.Count = ", groupedVSTNodes.Count);
+
+		// this node becoems groupedMeshes[0], orphan non adjacent vstNodes
+		// for the rest, we create a new destronoiNode with a copy of the vstNode, orphan non adjacent vstNodes
+
+		int i = 0;
+
+		foreach (List<VSTNode> vstNodeGroup in groupedVSTNodes)
+		{
+			// parent of root node is null, hence pass null in
+			if (originalVSTRoot is null)
+			{
+				GD.PushWarning("hmm this is unexpected");
+				return;
+			}
+
+			VSTNode newVSTRoot = originalVSTRoot.DeepCopy(newparent: null);
+			
+			// now we can create a list of non adjacent nodes
+			// HOWEVER this list of VSTNodes is of DISTINCT objects compared to the ones in newVSTRoot
+			// as we just created a deepcopy of originalVSTRoot
+			// hence when orphaning, we have to check against IDs (which are not allowed to change after initialisation), not object references themselves
+			List<int> nonAdjacentNodeIDs = groupedVSTNodes
+				.Where(innerList => !ReferenceEquals(innerList, vstNodeGroup))
+				.SelectMany(innerList => innerList)    // flatten all nodes in the other groups
+				.Select(vstNode => vstNode.ID)         // get their IDs
+				.ToList();
+			
+			GD.Print("shit to orphan: ", nonAdjacentNodeIDs.Count);
+
+			// orphan all vstnodes at the deepest depth of originalVSTRoot which are NOT part of vstNodeGroup
+
+			OrphanDeepestNonAdjacentNodesByID(newVSTRoot, nonAdjacentNodeIDs, i);
+
+			// instantiate as a DestronoiNode
+
+			string leafName = destronoiNode.Name + $"_fragment_{fragmentNumber}";
+			StandardMaterial3D material = new()
+			{
+				AlbedoColor = new Color(GD.Randf(),GD.Randf(),GD.Randf())
+			};
+
+			List<MeshInstance3D> meshInstances = [];
+			GetDeepestMeshInstances(meshInstances, newVSTRoot);
+			MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
+
+			DestronoiNode body = destronoiNode.CreateDestronoiNode(newVSTRoot,
+																overlappingCombinedMeshesToKeep,
+																leafName,
+																material);
+
+			destronoiNode.fragmentContainer.AddChild(body);
+			GD.Print($"adding child {i}");
+			i++;
+			// break;
+		}
+
+		GD.Print("queuefreeing");
+		destronoiNode.QueueFree();
 	}
 
-	public static void InitialiseMeshInstances(List<MeshInstance3D> meshInstances, VSTNode vstNode)
+	public static void OrphanDeepestNonAdjacentNodesByID(VSTNode vstNode, List<int> nonAdjacentNodeIDs, int debugi)
 	{
-		if (!vstNode.childrenChanged || vstNode.endPoint == true)
+		if (nonAdjacentNodeIDs.Contains(vstNode.ID))
+		{
+			GD.Print($"child {debugi}; orphaning, {vstNode.ID}");
+			Orphan(vstNode);
+			TellParentThatChildChanged(vstNode);
+		}
+
+		// else {below stuff} i believe is valid
+		if (vstNode.left is not null)
+		{
+			OrphanDeepestNonAdjacentNodesByID(vstNode.left,nonAdjacentNodeIDs, debugi);
+		}
+
+		if (vstNode.right is not null)
+		{
+			OrphanDeepestNonAdjacentNodesByID(vstNode.right,nonAdjacentNodeIDs, debugi);
+		}
+	}
+
+	public static void GetDeepestMeshInstances(List<MeshInstance3D> meshInstances, VSTNode vstNode)
+	{
+		if (!vstNode.childrenChanged || vstNode.endPoint)
 		{
 			meshInstances.Add(vstNode.meshInstance);
 		}
 
 		if (vstNode.left is not null)
 		{
-			InitialiseMeshInstances(meshInstances, vstNode.left);
+			GetDeepestMeshInstances(meshInstances, vstNode.left);
 		}
 		if (vstNode.right is not null)
 		{
-			InitialiseMeshInstances(meshInstances, vstNode.right);
+			GetDeepestMeshInstances(meshInstances, vstNode.right);
+		}
+	}
+
+	public static void GetDeepestVSTNodes(List<VSTNode> vstNodeList, VSTNode vstNode)
+	{
+		if (!vstNode.childrenChanged || vstNode.endPoint)
+		{
+			vstNodeList.Add(vstNode);
+		}
+
+		if (vstNode.left is not null)
+		{
+			GetDeepestVSTNodes(vstNodeList, vstNode.left);
+		}
+		if (vstNode.right is not null)
+		{
+			GetDeepestVSTNodes(vstNodeList, vstNode.right);
 		}
 	}
 
@@ -312,6 +438,82 @@ public partial class VSTSplittingComponent : Area3D
 
 	// --- mesh combining schenanigans --- //
 
+	// if mesh is adjacent to any node in group 1, append to group 1
+	// repeat for all groups
+	// if that group doesn't exist, create a new group and add the node to it
+	// finds groups of VSTNodes who are adjacent
+	public static List<List<VSTNode>> GetGroupedVSTNode(List<VSTNode> ungroupedVSTNodes)
+	{
+		if (ungroupedVSTNodes.Count == 0)
+		{
+			GD.PushWarning("ungroupedVSTNodes was passed to GetGroupedVSTNode with length 0. prolly wanna avoid that");
+			return null;
+		}
+
+		List<VSTNode> group1 = [ungroupedVSTNodes[0]];
+
+		List<List<VSTNode>> groups = [group1];
+
+		// skip the first mesh, we already added it
+		foreach (VSTNode vstNodeToCheck in ungroupedVSTNodes.Skip(1))
+		{
+			bool addedToGroup = false;
+
+			foreach (List<VSTNode> group in groups)
+			{
+				foreach (VSTNode groupedVSTNode in group)
+				{
+					if (!IsAdjacent(vstNodeToCheck.meshInstance, groupedVSTNode.meshInstance))
+					{
+						continue;
+					}
+
+					group.Add(vstNodeToCheck);
+					// skip to next meshToCheck;
+					addedToGroup = true;
+					break;
+				}
+
+				if (addedToGroup) { break; }
+			}
+
+			if (addedToGroup) { continue; }
+
+			// if we're here, the meshToCheck is NOT adjacent to ANY mesh currently in a group
+			// so we create a new group for it
+
+			List<VSTNode> newGroup = [vstNodeToCheck];
+			
+			groups.Add(newGroup);
+		}
+
+		return groups;
+	}
+
+	// this is currently an ESTIMATOR for adjacency and NOT a true test. this function WILL be logically incorrect occasionally
+	// (but probably in not a very noticeable way)
+	// 2 meshes can be adjacent iff centre of mesh 2 - centre of mesh 1 <= (maxlength of mesh 2 / 2) + (max length of mesh 1 / 2)
+	// i.e. we are checking a necessary but not sufficient condition
+	// this test massively reduces the meshes we need to check, but may still group non adjacent meshes together
+	public static bool IsAdjacent(MeshInstance3D mesh1, MeshInstance3D mesh2)
+	{
+		Aabb aabb1 = mesh1.GetAabb();
+		Aabb aabb2 = mesh2.GetAabb();
+
+		float distanceBetween = ( aabb2.GetCenter() - aabb1.GetCenter() ).Length();
+
+		float maxLengthScale1 = Math.Max( Math.Max(aabb1.Size.X, aabb1.Size.Y), aabb1.Size.Z);
+
+		float maxLengthScale2 = Math.Max( Math.Max(aabb2.Size.X, aabb2.Size.Y), aabb2.Size.Z);
+
+		if (distanceBetween <= maxLengthScale1 / 2.0f + maxLengthScale2 / 2.0f)
+		{
+			return true;
+		}
+
+		return false;
+	}
+
 	public static MeshInstance3D CombineMeshes(List<MeshInstance3D> meshInstances)
 	{
 		var surfaceTool = new SurfaceTool();
@@ -342,48 +544,48 @@ public partial class VSTSplittingComponent : Area3D
 	}
 
 	// semi deprecated / not used right now
-	public static MeshInstance3D RemoveDuplicateSurfaces(MeshInstance3D meshInstance3D)
-	{
-		if (meshInstance3D.Mesh is not ArrayMesh arrayMesh)
-		{
-			GD.PushError("mesh passed to RemoveDuplicateSurfaces must have an arraymesh mesh. returning early");
-			return null;
-		}
+	// public static MeshInstance3D RemoveDuplicateSurfaces(MeshInstance3D meshInstance3D)
+	// {
+	// 	if (meshInstance3D.Mesh is not ArrayMesh arrayMesh)
+	// 	{
+	// 		GD.PushError("mesh passed to RemoveDuplicateSurfaces must have an arraymesh mesh. returning early");
+	// 		return null;
+	// 	}
 
-		HashSet<int> surfaceIndicesToRemove = [];
+	// 	HashSet<int> surfaceIndicesToRemove = [];
 
-		for (int i = 0; i < arrayMesh.GetSurfaceCount(); i++)
-		{
-			for (int j = 0; j < arrayMesh.GetSurfaceCount(); j++)
-			{
-				if (MeshUtils.AreMeshVerticesEqual(arrayMesh, i, j))
-				{
-					surfaceIndicesToRemove.Add(i);
-				}
-			}
-		}
+	// 	for (int i = 0; i < arrayMesh.GetSurfaceCount(); i++)
+	// 	{
+	// 		for (int j = 0; j < arrayMesh.GetSurfaceCount(); j++)
+	// 		{
+	// 			if (MeshUtils.AreMeshVerticesEqual(arrayMesh, i, j))
+	// 			{
+	// 				surfaceIndicesToRemove.Add(i);
+	// 			}
+	// 		}
+	// 	}
 
-		ArrayMesh newArrayMesh = new();
+	// 	ArrayMesh newArrayMesh = new();
 
-		for (int i = 0; i < arrayMesh.GetSurfaceCount(); i++)
-		{
-			if (surfaceIndicesToRemove.Contains(i))
-			{
-				continue;
-			}
+	// 	for (int i = 0; i < arrayMesh.GetSurfaceCount(); i++)
+	// 	{
+	// 		if (surfaceIndicesToRemove.Contains(i))
+	// 		{
+	// 			continue;
+	// 		}
 
-			var arrays = arrayMesh.SurfaceGetArrays(i);
-			var primitive = arrayMesh.SurfaceGetPrimitiveType(i);
+	// 		var arrays = arrayMesh.SurfaceGetArrays(i);
+	// 		var primitive = arrayMesh.SurfaceGetPrimitiveType(i);
 
-			newArrayMesh.AddSurfaceFromArrays(primitive, arrays);
+	// 		newArrayMesh.AddSurfaceFromArrays(primitive, arrays);
 
-		}
+	// 	}
 
-		MeshInstance3D newMesh = new()
-		{
-			Mesh = newArrayMesh
-		};
+	// 	MeshInstance3D newMesh = new()
+	// 	{
+	// 		Mesh = newArrayMesh
+	// 	};
 
-		return newMesh;
-	}
+	// 	return newMesh;
+	// }
 }

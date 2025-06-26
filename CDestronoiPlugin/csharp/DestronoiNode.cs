@@ -35,7 +35,7 @@ public partial class DestronoiNode : RigidBody3D
 		}
 	}
 
-	public void DebugPrintVST(VSTNode vstNode)
+	public static void DebugPrintVST(VSTNode vstNode)
 	{
 		if (vstNode is null)
 		{
@@ -139,7 +139,7 @@ public partial class DestronoiNode : RigidBody3D
 		baseObjectDensity = Mass / volume;
 	}
 
-	public void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
+	public static void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
 	{
 		node.sites = [node.meshInstance.Position + site1, node.meshInstance.Position + site2];
 	}

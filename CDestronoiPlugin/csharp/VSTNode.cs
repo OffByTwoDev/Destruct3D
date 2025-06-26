@@ -30,7 +30,8 @@ public class VSTNode
 
 	// by convention, IDS start at 1 (it doesnt matter it probably doesn't change any behaviour)
 	// they are currently used for nothing other than for printing VST trees for debugging
-	public int ID;
+	// IDs can only be set on initialisation
+	public readonly int ID;
 	public int ownerID;
 
 	// when a node is fragmented / orphaned, we tell its parent & its parent's parent etc that one of its children has changed
@@ -48,24 +49,29 @@ public class VSTNode
 					Laterality lat,
 					bool inputEndPoint)
 	{
-		SurfaceTool surfaceTool = new();
-		surfaceTool.CreateFrom(inputMeshInstance.Mesh, 0);
-		ArrayMesh arrayMesh = surfaceTool.Commit();
+		if (inputMeshInstance.Mesh is not ArrayMesh)
+		{
+			SurfaceTool surfaceTool = new();
+			surfaceTool.CreateFrom(inputMeshInstance.Mesh, 0);
+			ArrayMesh arrayMesh = surfaceTool.Commit();
 
-        MeshInstance3D newMeshInstance = new()
-        {
-            Mesh = arrayMesh
-        };
+			MeshInstance3D newMeshInstance = new()
+			{
+				Mesh = arrayMesh
+			};
 
+			meshInstance = newMeshInstance;
+		}
+		else
+		{
+			meshInstance = inputMeshInstance;
+		}
 
 		parent = inputParent;
-
-        meshInstance = newMeshInstance;
+		
 		level = lev;
 		laterality = lat;
-
 		endPoint = inputEndPoint;
-
 		ID = inputID;
 		ownerID = inputOwnerID;
 	}
@@ -100,9 +106,9 @@ public class VSTNode
 			return outArr;
 		}
 		if (root.left != null)
-            GetLeafNodes(root.left, outArr);
+			GetLeafNodes(root.left, outArr);
 		if (root.right != null)
-            GetLeafNodes(root.right, outArr);
+			GetLeafNodes(root.right, outArr);
 
 		return outArr;
 	}
@@ -112,20 +118,30 @@ public class VSTNode
 	/// </summary>
 	public static List<VSTNode> GetRightLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
 	{
-		if (outArr == null)
+		if (outArr is null)
+		{
 			outArr = [];
-		if (root == null)
+		}
+		if (root is null)
+		{
 			return [];
+		}
 
-		if ((root.left == null && root.right == null) || level == lim)
+		if ((root.left is null && root.right is null) || level == lim)
 		{
 			outArr.Add(root);
 			return outArr;
 		}
-		if (root.left != null && level > 0)
-            GetRightLeafNodes(root.left, outArr, lim, level + 1);
-		if (root.right != null)
-            GetRightLeafNodes(root.right, outArr, lim, level + 1);
+
+		if (root.left is not null && level > 0)
+		{
+			GetRightLeafNodes(root.left, outArr, lim, level + 1);
+		}
+
+		if (root.right is not null)
+		{
+			GetRightLeafNodes(root.right, outArr, lim, level + 1);
+		}
 
 		return outArr;
 	}
@@ -136,19 +152,30 @@ public class VSTNode
 	public static List<VSTNode> GetLeftLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
 	{
 		if (outArr == null)
+		{
 			outArr = [];
+		}
+
 		if (root == null)
+		{
 			return [];
+		}
 
 		if ((root.left == null && root.right == null) || level == lim)
 		{
 			outArr.Add(root);
 			return outArr;
 		}
-		if (root.left != null)
-            GetLeftLeafNodes(root.left, outArr, lim, level + 1);
-		if (root.right != null && level > 0)
-            GetLeftLeafNodes(root.right, outArr, lim, level + 1);
+
+		if (root.left is not null)
+		{
+			GetLeftLeafNodes(root.left, outArr, lim, level + 1);
+		}
+
+		if (root.right is not null && level > 0)
+		{
+			GetLeftLeafNodes(root.right, outArr, lim, level + 1);
+		}
 
 		return outArr;
 	}
@@ -156,5 +183,54 @@ public class VSTNode
 	public override string ToString()
 	{
 		return $"VSTNode {meshInstance}";
+	}
+
+	public void DebugPrint()
+	{
+		GD.Print("ID: ", ID);
+		GD.Print("left: ", left?.ID);
+		GD.Print("right: ", right?.ID);
+		GD.Print("parent: ", parent?.ID);
+		GD.Print("level: ", level);
+		GD.Print("laterality: ", laterality);
+		GD.Print("ownerID: ", ownerID);
+		GD.Print("---");
+	}
+
+	// meshInstances are shared between all deepcopies, this is fine I dont think it affects behaviour
+	// the only things we need to deepcopy really are the VSTNodes themself and the references
+	// as we will be nullifying some references in sibling nodes when splitting nodes in 2 etc
+	public VSTNode DeepCopy(VSTNode newparent)
+	{
+		if (this.meshInstance is null)
+		{
+			GD.PushError("hmm that aint valid dawg. deepcopy has been called on a vstnode whose meshInstance is null :/");
+			return null;
+		}
+
+		if (!GodotObject.IsInstanceValid(this.meshInstance))
+		{
+			GD.PushError($"Cannot deep-copy VSTNode {ID}: meshInstance has been freed");
+			return null;
+		}
+
+        VSTNode copy = new(
+            this.meshInstance,
+            this.ID,
+            this.ownerID,
+            newparent,
+            this.level,
+            this.laterality,
+            this.endPoint
+        )
+        {
+            childrenChanged = this.childrenChanged,
+        };
+
+		// Deep copy left and right children, passing 'copy' as their parent
+		copy.left = this.left?.DeepCopy(copy);
+		copy.right = this.right?.DeepCopy(copy);
+
+        return copy;
 	}
 }
