@@ -255,17 +255,6 @@ public partial class VSTSplittingComponent : Area3D
 
 		List<List<VSTNode>> groupedVSTNodes = GetGroupedVSTNode(vstNodes);
 
-		// GD.Print("grouped length: ", groupedVSTNodes[0].Count);
-
-		// foreach (VSTNode vst in groupedVSTNodes[0])
-		// {
-		// 	MeshInstance3D testmesh = vst.meshInstance.Duplicate() as MeshInstance3D;
-		// 	destronoiNode.fragmentContainer.AddChild(testmesh);
-		// 	testmesh.Position += Vector3.Up * 10f;
-		// }
-
-		// GD.Print("groupedVSTNodes.Count = ", groupedVSTNodes.Count);
-
 		// this node becoems groupedMeshes[0], orphan non adjacent vstNodes
 		// for the rest, we create a new destronoiNode with a copy of the vstNode, orphan non adjacent vstNodes
 
@@ -318,11 +307,38 @@ public partial class VSTSplittingComponent : Area3D
 			destronoiNode.fragmentContainer.AddChild(body);
 			GD.Print($"adding child {i}");
 			i++;
-			// break;
 		}
 
 		GD.Print("queuefreeing");
-		destronoiNode.QueueFree();
+		// destronoiNode.QueueFree();
+		destronoiNode.Visible = false;
+		destronoiNode.Freeze = true;
+		destronoiNode.CollisionLayer = 0;
+		destronoiNode.CollisionMask = 0;
+		destronoiNode.Sleeping = true;
+
+		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
+		// if (DebugPrints) { GD.Print("Creating Combined DN"); }
+
+		// List<MeshInstance3D> meshInstances = [];
+
+		// InitialiseMeshInstances(meshInstances, originalVSTRoot);
+
+		// MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
+
+		// CollisionShape3D collisionShape = new()
+		// {
+		// 	Name = "CollisionShape3D",
+		// 	Shape = overlappingCombinedMeshesToKeep.Mesh.CreateConvexShape(false, false)
+		// };
+
+		// foreach (Node child in destronoiNode.GetChildren())
+		// {
+		// 	child.Free();
+		// }
+
+		// destronoiNode.AddChild(overlappingCombinedMeshesToKeep);
+		// destronoiNode.AddChild(collisionShape);
 	}
 
 	public static void OrphanDeepestNonAdjacentNodesByID(VSTNode vstNode, List<int> nonAdjacentNodeIDs, int debugi)

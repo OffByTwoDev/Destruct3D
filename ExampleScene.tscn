@@ -190,7 +190,7 @@ explosionTreeDepthShallow = 2
 ApplyImpulseOnSplit = true
 ImpulseStrength = 0.1
 point = NodePath("../MeshInstance3D")
-PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION = 5000
+PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION = 2
 
 [node name="MediumMesh" type="MeshInstance3D" parent="Explosion"]
 mesh = SubResource("SphereMesh_n7n8g")
