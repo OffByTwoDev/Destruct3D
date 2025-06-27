@@ -17,10 +17,10 @@ public partial class VSTSplittingComponent : Area3D
 	[Export] MeshInstance3D explosionMeshLarge;
 
 	[Export] int explosionTreeDepthDeep = 2;
-	[Export] int explosionTreeDepthShallow = 4;
+	[Export] int explosionTreeDepthShallow = 2;
 
 	[Export] bool ApplyImpulseOnSplit = false;
-	[Export] float ImpulseStrength = 10.0f;
+	[Export] float ImpulseStrength = 1.0f;
 
 	// these are to be set to be the radius of the sphere
 	float explosionDistancesSmall;
@@ -69,6 +69,11 @@ public partial class VSTSplittingComponent : Area3D
 
 		if (DebugPrints) { GD.Print("splitting (large scale)"); }
 
+		Activate();
+	}
+
+	public void Activate()
+	{
 		foreach (Node3D node in GetOverlappingBodies())
 		{
 			if (node is not DestronoiNode destronoiNode)
