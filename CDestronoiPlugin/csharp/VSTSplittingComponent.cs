@@ -180,10 +180,7 @@ public partial class VSTSplittingComponent : Area3D
 
 				if (vstNode.childrenChanged)
 				{
-					// even if this error occurs, might be too much of a performance hit to justify adding it
-					// esp if it occurs rarely.
-					GD.PushWarning("i cant work out if this case ever occurs. if this has occured, then just implement code" +
-						"which recalculates a nodes mesh (as the union of its children) before orphaning it into its own destronoinode");
+					GD.Print("expect a subsequent warning about combining meshes");
 				}
 			}
 		}
@@ -205,8 +202,22 @@ public partial class VSTSplittingComponent : Area3D
 		{
 			string leafName = destronoiNode.Name + $"_fragment_{fragmentNumber}";
 
+			MeshInstance3D meshToInstantate = new();
+
+			if (leaf.childrenChanged)
+			{
+				GD.Print("created combined mesh for this fragment.");
+				List<MeshInstance3D> meshInstances = [];
+				GetDeepestMeshInstances(meshInstances, leaf);
+				meshToInstantate = CombineMeshes(meshInstances);
+			}
+			else
+			{
+				meshToInstantate = leaf.meshInstance;
+			}
+
 			DestronoiNode body = destronoiNode.CreateDestronoiNode(leaf,
-																leaf.meshInstance,
+																meshToInstantate,
 																leafName,
 																fragmentMaterial);
 
@@ -248,8 +259,10 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
+		// --- create parent fragments --- //
 		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
-
+		// (assumes originalVSTRoot.childrenChanged is true, and hence we combine the relevant meshes)
+		
 		if (DebugPrints) { GD.Print("Creating Combined DN"); }
 
 		List<VSTNode> vstNodes = [];

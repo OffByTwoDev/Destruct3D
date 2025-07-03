@@ -173,7 +173,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.34069, 3.41572, 0)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
-treeHeight = 6
+treeHeight = 7
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Slab"]
 mesh = SubResource("BoxMesh_5h8pk")
@@ -187,9 +187,7 @@ visible = false
 script = ExtResource("4_fgqed")
 explosionMeshSmall = NodePath("MediumMesh")
 explosionMeshLarge = NodePath("LargeMesh")
-explosionTreeDepthShallow = 2
 ApplyImpulseOnSplit = true
-ImpulseStrength = 1.0
 PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION = 1
 
 [node name="MediumMesh" type="MeshInstance3D" parent="Explosion"]

@@ -34,6 +34,7 @@ public class VSTNode
 	// they are currently used for nothing other than for printing VST trees for debugging
 	// IDs can only be set on initialisation
 	public readonly int ID;
+	// i think ownerID can be made readonly too
 	public int ownerID;
 
 	// when a node is fragmented / orphaned, we tell its parent & its parent's parent etc that one of its children has changed
