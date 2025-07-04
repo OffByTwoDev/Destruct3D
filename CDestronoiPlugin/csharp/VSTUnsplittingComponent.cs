@@ -39,11 +39,21 @@ public partial class VSTUnsplittingComponent : Node
 	/// <param name="reversedExplosionCentre">in global coordinates</param>
 	public async void Unsplit(DestronoiNode destronoiNode, Transform3D reversedExplosionCentre)
 	{
-		// get the topmost parent from the permanentparent of the node to be unexploded (might be wrong idk lmao)
-		VSTNode topmostParent = GetTopMostParent(destronoiNode.vstRoot.permanentParent);
+		VSTNode topmostParent;
+		List<DestronoiNode> instantiatedChildren;
 
-		List<DestronoiNode> instantiatedChildren = destronoiNode.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
-
+		// if there are no parent (i.e. this fragment itself is the topmost fragment), then just use the original vstNode
+		if (destronoiNode.vstRoot.permanentParent is null)
+		{
+			topmostParent = destronoiNode.vstRoot;
+			instantiatedChildren = destronoiNode.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
+		}
+		else
+		{
+			topmostParent = VSTUnsplittingComponent.GetTopMostParent(destronoiNode.vstRoot.permanentParent);
+			instantiatedChildren = destronoiNode.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
+		}
+		
 		// now we need to interpolate all instantiated children towards the reverse explosion
 		// and then queuefree them alls
 		// and then instantiate the parent as a brand new, fresh, fragment with all its children and vstStuff reset
