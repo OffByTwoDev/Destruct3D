@@ -5,22 +5,29 @@ using System.Linq;
 
 /// <summary>
 /// Subdivides a convex ArrayMesh belonging to a RigidBody3D by generating a Voronoi Subdivision Tree (VST).
+/// This code prolly fails if treeHeight is set to 1
 /// </summary>
 public partial class DestronoiNode : RigidBody3D
 {
 	// --- Exports --- //
+	// this meshInstance (which is also set in CreateDestronoiNode) is the actual meshInstance of the instantiated rigidbody
+	// ie its the sum of all relevant endPoints / nodes with unchanged children
 	[Export] public MeshInstance3D meshInstance;
 	// node under which fragments will be instanced
 	[Export] public Node fragmentContainer;
 	// Generates 2^n fragments, where n is treeHeight.
-	[Export] public int treeHeight = 1;
+	[Export] public int treeHeight = 2;
+	
+	// only relevant for DestronoiNodes which are present on level startup
+	// [Export] Node binaryTreeMapContainer;
+	public BinaryTreeMapToActiveNodes binaryTreeMapToActiveNodes;
 
 	// --- internal variables --- //
 	public VSTNode vstRoot;
-	private float baseObjectDensity;
+	public float baseObjectDensity;
 	// this should be true if the node needs its own vstRoot created
 	// if you are creating a fragment and are passing in a known vstRoot, mesh etc, then this flag should be false
-	private bool needsInitialising = true;
+	public bool needsInitialising = true;
 
 	// --- meta variables --- //
 	public int MAX_PLOTSITERANDOM_TRIES = 5_000;
@@ -37,10 +44,7 @@ public partial class DestronoiNode : RigidBody3D
 
 	public static void DebugPrintVST(VSTNode vstNode)
 	{
-		if (vstNode is null)
-		{
-			return;
-		}
+		if (vstNode is null) { return; }
 
 		GD.Print("ID: ", vstNode.ID);
 		GD.Print("left: ", vstNode.left?.ID);
@@ -87,16 +91,13 @@ public partial class DestronoiNode : RigidBody3D
 	{
 		base._Ready();
 
-		if (!needsInitialising)
-		{
-			return;
-		}
+		if (!needsInitialising) { return; }
 
 		// --- do some error checks, but only after children have been added to scene i.e. we wait one frame --- //
 
 		CallDeferred(nameof(ErrorChecks));
 
-		// --- create filled VST and find density --- //
+		// --- create filled VST --- //
 
 		if (meshInstance is null)
 		{
@@ -132,11 +133,16 @@ public partial class DestronoiNode : RigidBody3D
 			}
 		}
 
+		// --- find density --- //
 		float volume = meshInstance.Mesh.GetAabb().Size.X *
 								 meshInstance.Mesh.GetAabb().Size.Y *
 								 meshInstance.Mesh.GetAabb().Size.Z;
 		
 		baseObjectDensity = Mass / volume;
+
+		// --- create a binarytreemap and set its root to be this node --- //
+
+		binaryTreeMapToActiveNodes = new(treeHeight, this);
 	}
 
 	public static void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
@@ -385,9 +391,11 @@ public partial class DestronoiNode : RigidBody3D
 
 		var meshUp = new MeshInstance3D { Mesh = surfA.Commit() };
 		node.left = new VSTNode(meshUp, node.ID * 2, node.ownerID, node, node.level + 1, Laterality.LEFT, endPoint);
+		node.permanentLeft = node.left;
 
 		var meshDown = new MeshInstance3D { Mesh = surfB.Commit() };
 		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node.ownerID, node, node.level + 1, Laterality.RIGHT, endPoint);
+		node.permanentRight = node.right;
 
 		return true;
 	}
@@ -468,51 +476,60 @@ public partial class DestronoiNode : RigidBody3D
 											String name,
 											StandardMaterial3D material)
 	{
-			DestronoiNode destronoiNode = new()
-			{
-				Name = name,
-				GlobalTransform = this.GlobalTransform
-			};
+		// a newly created node has no parent
+		// (but we leave its permanentParent alone of course, so it can be reset if this node is recreated / unfragmented later on)
+		subVST.parent = null;
 
-			// --- rigidbody initialisation --- //
+		DestronoiNode destronoiNode = new()
+		{
+			Name = name,
+			GlobalTransform = this.GlobalTransform
+		};
 
-			// mesh instance
-			MeshInstance3D meshInstance = subVSTmeshInstance;
-			meshInstance.Name = $"{name}_MeshInstance3D";
+		// --- rigidbody initialisation --- //
 
-			meshInstance.SetSurfaceOverrideMaterial(0, material);
+		// mesh instance
+		MeshInstance3D meshInstance = subVSTmeshInstance;
+		meshInstance.Name = $"{name}_MeshInstance3D";
 
-			destronoiNode.AddChild(meshInstance);
+		meshInstance.SetSurfaceOverrideMaterial(0, material);
 
-			// collisionshape
-			var shape = new CollisionShape3D
-			{
-				Name = "CollisionShape3D",
-				Shape = meshInstance.Mesh.CreateConvexShape(false, false)
-			};
-			destronoiNode.AddChild(shape);
+		destronoiNode.AddChild(meshInstance);
 
-			// mass
-			float volume =  meshInstance.Mesh.GetAabb().Size.X *
-							meshInstance.Mesh.GetAabb().Size.Y *
-							meshInstance.Mesh.GetAabb().Size.Z;
-			destronoiNode.Mass = Math.Max(baseObjectDensity * volume, 0.01f);
+		// collisionshape
+		var shape = new CollisionShape3D
+		{
+			Name = "CollisionShape3D",
+			Shape = meshInstance.Mesh.CreateConvexShape(false, false)
+		};
+		destronoiNode.AddChild(shape);
 
-			// needed (idk why lmao ?) for detecting explosions from RPGs
-			destronoiNode.ContactMonitor = true;
-			destronoiNode.MaxContactsReported = 5_000;
+		// mass
+		float volume =  meshInstance.Mesh.GetAabb().Size.X *
+						meshInstance.Mesh.GetAabb().Size.Y *
+						meshInstance.Mesh.GetAabb().Size.Z;
+		destronoiNode.Mass = Math.Max(baseObjectDensity * volume, 0.01f);
+
+		// needed (idk why lmao ?) for detecting explosions from RPGs
+		destronoiNode.ContactMonitor = true;
+		destronoiNode.MaxContactsReported = 5_000;
 
 
-			// --- destronoi node initialisation --- //
+		// --- destronoi node initialisation --- //
 
-			destronoiNode.meshInstance = subVSTmeshInstance;
-			destronoiNode.fragmentContainer = fragmentContainer;
-			destronoiNode.vstRoot = subVST;
-			destronoiNode.baseObjectDensity = baseObjectDensity;
-			// setting this to true will break everything,
-			// this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
-			destronoiNode.needsInitialising = false;
+		destronoiNode.meshInstance = subVSTmeshInstance;
+		destronoiNode.fragmentContainer = fragmentContainer;
+		destronoiNode.vstRoot = subVST;
+		destronoiNode.baseObjectDensity = baseObjectDensity;
+		// setting this to true will break everything,
+		// this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
+		destronoiNode.needsInitialising = false;
 
-			return destronoiNode;
+		// finally, tell the relevant binarytreemap that this node has been created //
+		// and also set the relevant binaryTreeMap to be this one
+		destronoiNode.binaryTreeMapToActiveNodes = this.binaryTreeMapToActiveNodes;
+		destronoiNode.binaryTreeMapToActiveNodes.AddToActiveTree(destronoiNode);
+		
+		return destronoiNode;
 	}
 }

@@ -213,14 +213,22 @@ public partial class VSTSplittingComponent : Area3D
 			}
 			else
 			{
-				meshToInstantate = leaf.meshInstance;
+				if (leaf.meshInstance.GetParent() is not null)
+				{
+					GD.PushWarning("leafs meshinstance already has a parent. duplicating and reusing.");
+					meshToInstantate = (MeshInstance3D)leaf.meshInstance.Duplicate();
+				}
+				else
+				{
+					meshToInstantate = leaf.meshInstance;
+				}
 			}
 
 			DestronoiNode body = destronoiNode.CreateDestronoiNode(leaf,
 																meshToInstantate,
 																leafName,
 																fragmentMaterial);
-
+			
 			destronoiNode.fragmentContainer.AddChild(body);
 
 			if (ApplyImpulseOnSplit)
@@ -349,6 +357,9 @@ public partial class VSTSplittingComponent : Area3D
 		// destronoiNode.AddChild(collisionShape);
 	}
 
+	// for now we dont queuefree as we need the original objects (i.e. the vst leafs) to stick around
+	// would be fixed if we reused the old destronoiNode when creating new ones
+	// rather than just creating new ones and deactivating the old one
 	public static void Deactivate(DestronoiNode destronoiNode)
 	{
 		destronoiNode.Visible = false;
@@ -356,6 +367,9 @@ public partial class VSTSplittingComponent : Area3D
 		destronoiNode.CollisionLayer = 0;
 		destronoiNode.CollisionMask = 0;
 		destronoiNode.Sleeping = true;
+
+		destronoiNode.binaryTreeMapToActiveNodes.RemoveFromActiveTree(destronoiNode);
+
 	}
 
 	public static void OrphanDeepestNonAdjacentNodesByID(VSTNode vstNode, List<int> nonAdjacentNodeIDs)
@@ -420,12 +434,9 @@ public partial class VSTSplittingComponent : Area3D
 
 	public static void Orphan(VSTNode vstNode)
 	{
-		if (vstNode.parent is null)
-		{
-			// represents root node of body having no children and no parent
-			// in this sitch we check later in main function and queuefree the destronoiNode
-			return;
-		}
+		// represents root node of body having no children and no parent
+		// in this sitch we check later in main function and queuefree the destronoiNode
+		if (vstNode.parent is null) { return; }
 
 		// remove reference to this node from the parent's section of the tree
 		if (vstNode.laterality == Laterality.LEFT)
