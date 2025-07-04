@@ -476,56 +476,60 @@ public partial class DestronoiNode : RigidBody3D
 											String name,
 											StandardMaterial3D material)
 	{
-			DestronoiNode destronoiNode = new()
-			{
-				Name = name,
-				GlobalTransform = this.GlobalTransform
-			};
+		// a newly created node has no parent
+		// (but we leave its permanentParent alone of course, so it can be reset if this node is recreated / unfragmented later on)
+		subVST.parent = null;
 
-			// --- rigidbody initialisation --- //
+		DestronoiNode destronoiNode = new()
+		{
+			Name = name,
+			GlobalTransform = this.GlobalTransform
+		};
 
-			// mesh instance
-			MeshInstance3D meshInstance = subVSTmeshInstance;
-			meshInstance.Name = $"{name}_MeshInstance3D";
+		// --- rigidbody initialisation --- //
 
-			meshInstance.SetSurfaceOverrideMaterial(0, material);
+		// mesh instance
+		MeshInstance3D meshInstance = subVSTmeshInstance;
+		meshInstance.Name = $"{name}_MeshInstance3D";
 
-			destronoiNode.AddChild(meshInstance);
+		meshInstance.SetSurfaceOverrideMaterial(0, material);
 
-			// collisionshape
-			var shape = new CollisionShape3D
-			{
-				Name = "CollisionShape3D",
-				Shape = meshInstance.Mesh.CreateConvexShape(false, false)
-			};
-			destronoiNode.AddChild(shape);
+		destronoiNode.AddChild(meshInstance);
 
-			// mass
-			float volume =  meshInstance.Mesh.GetAabb().Size.X *
-							meshInstance.Mesh.GetAabb().Size.Y *
-							meshInstance.Mesh.GetAabb().Size.Z;
-			destronoiNode.Mass = Math.Max(baseObjectDensity * volume, 0.01f);
+		// collisionshape
+		var shape = new CollisionShape3D
+		{
+			Name = "CollisionShape3D",
+			Shape = meshInstance.Mesh.CreateConvexShape(false, false)
+		};
+		destronoiNode.AddChild(shape);
 
-			// needed (idk why lmao ?) for detecting explosions from RPGs
-			destronoiNode.ContactMonitor = true;
-			destronoiNode.MaxContactsReported = 5_000;
+		// mass
+		float volume =  meshInstance.Mesh.GetAabb().Size.X *
+						meshInstance.Mesh.GetAabb().Size.Y *
+						meshInstance.Mesh.GetAabb().Size.Z;
+		destronoiNode.Mass = Math.Max(baseObjectDensity * volume, 0.01f);
+
+		// needed (idk why lmao ?) for detecting explosions from RPGs
+		destronoiNode.ContactMonitor = true;
+		destronoiNode.MaxContactsReported = 5_000;
 
 
-			// --- destronoi node initialisation --- //
+		// --- destronoi node initialisation --- //
 
-			destronoiNode.meshInstance = subVSTmeshInstance;
-			destronoiNode.fragmentContainer = fragmentContainer;
-			destronoiNode.vstRoot = subVST;
-			destronoiNode.baseObjectDensity = baseObjectDensity;
-			// setting this to true will break everything,
-			// this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
-			destronoiNode.needsInitialising = false;
+		destronoiNode.meshInstance = subVSTmeshInstance;
+		destronoiNode.fragmentContainer = fragmentContainer;
+		destronoiNode.vstRoot = subVST;
+		destronoiNode.baseObjectDensity = baseObjectDensity;
+		// setting this to true will break everything,
+		// this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
+		destronoiNode.needsInitialising = false;
 
-			// finally, tell the relevant binarytreemap that this node has been created //
-			// and also set the relevant binaryTreeMap to be this one
-			destronoiNode.binaryTreeMapToActiveNodes = this.binaryTreeMapToActiveNodes;
-			destronoiNode.binaryTreeMapToActiveNodes.Activate(destronoiNode);
-			
-			return destronoiNode;
+		// finally, tell the relevant binarytreemap that this node has been created //
+		// and also set the relevant binaryTreeMap to be this one
+		destronoiNode.binaryTreeMapToActiveNodes = this.binaryTreeMapToActiveNodes;
+		destronoiNode.binaryTreeMapToActiveNodes.Activate(destronoiNode);
+		
+		return destronoiNode;
 	}
 }
