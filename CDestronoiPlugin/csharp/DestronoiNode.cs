@@ -5,15 +5,18 @@ using System.Linq;
 
 /// <summary>
 /// Subdivides a convex ArrayMesh belonging to a RigidBody3D by generating a Voronoi Subdivision Tree (VST).
+/// This code prolly fails if treeHeight is set to 1
 /// </summary>
 public partial class DestronoiNode : RigidBody3D
 {
 	// --- Exports --- //
+	// this meshInstance (which is also set in CreateDestronoiNode) is the actual meshInstance of the instantiated rigidbody
+	// ie its the sum of all relevant endPoints / nodes with unchanged children
 	[Export] public MeshInstance3D meshInstance;
 	// node under which fragments will be instanced
 	[Export] public Node fragmentContainer;
 	// Generates 2^n fragments, where n is treeHeight.
-	[Export] public int treeHeight = 1;
+	[Export] public int treeHeight = 2;
 	
 	// only relevant for DestronoiNodes which are present on level startup
 	// [Export] Node binaryTreeMapContainer;
@@ -41,10 +44,7 @@ public partial class DestronoiNode : RigidBody3D
 
 	public static void DebugPrintVST(VSTNode vstNode)
 	{
-		if (vstNode is null)
-		{
-			return;
-		}
+		if (vstNode is null) { return; }
 
 		GD.Print("ID: ", vstNode.ID);
 		GD.Print("left: ", vstNode.left?.ID);
@@ -91,10 +91,7 @@ public partial class DestronoiNode : RigidBody3D
 	{
 		base._Ready();
 
-		if (!needsInitialising)
-		{
-			return;
-		}
+		if (!needsInitialising) { return; }
 
 		// --- do some error checks, but only after children have been added to scene i.e. we wait one frame --- //
 
