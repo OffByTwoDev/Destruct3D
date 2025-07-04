@@ -74,8 +74,8 @@ public partial class BinaryTreeMapToActiveNodes : Node
 	{
 		instantiatedChildren.AddRange(representativeNode.activeNodesWhichRepresentThisLeafID);
 
-		RecursivelyAddActiveNodes(representativeNode.left, instantiatedChildren);
-		RecursivelyAddActiveNodes(representativeNode.right, instantiatedChildren);
+		if (representativeNode.left is not null) { RecursivelyAddActiveNodes(representativeNode.left, instantiatedChildren); }
+		if (representativeNode.right is not null) { RecursivelyAddActiveNodes(representativeNode.right, instantiatedChildren); }
 	}
 }
 
