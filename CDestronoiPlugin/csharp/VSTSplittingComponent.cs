@@ -360,7 +360,7 @@ public partial class VSTSplittingComponent : Area3D
 		destronoiNode.CollisionMask = 0;
 		destronoiNode.Sleeping = true;
 
-		destronoiNode.binaryTreeMapToActiveNodes.Deactivate(destronoiNode);
+		destronoiNode.binaryTreeMapToActiveNodes.RemoveFromActiveTree(destronoiNode);
 
 	}
 

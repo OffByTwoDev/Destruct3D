@@ -245,9 +245,10 @@ public class VSTNode
         return copy;
 	}
 
-	// fully cleans a node and all its children
-	// to be as if that fragment has just been cleanly initialised
-
+	/// <summary>
+	/// fully cleans a node and all its children
+	/// to be as if that fragment has just been cleanly initialised
+	/// </summary>
 	public void Reset()
 	{
 		left = permanentLeft;
@@ -255,7 +256,7 @@ public class VSTNode
 		parent = permanentParent;
 		childrenChanged = false;
 
-		left.Reset();
-		right.Reset();
+		left?.Reset();
+		right?.Reset();
 	}
 }

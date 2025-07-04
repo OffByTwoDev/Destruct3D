@@ -528,7 +528,7 @@ public partial class DestronoiNode : RigidBody3D
 		// finally, tell the relevant binarytreemap that this node has been created //
 		// and also set the relevant binaryTreeMap to be this one
 		destronoiNode.binaryTreeMapToActiveNodes = this.binaryTreeMapToActiveNodes;
-		destronoiNode.binaryTreeMapToActiveNodes.Activate(destronoiNode);
+		destronoiNode.binaryTreeMapToActiveNodes.AddToActiveTree(destronoiNode);
 		
 		return destronoiNode;
 	}

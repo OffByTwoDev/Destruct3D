@@ -42,7 +42,7 @@ public partial class BinaryTreeMapToActiveNodes : Node
 	/// and then adds the input destronoiNode to the activeNodeList for that RN / ID
 	/// </summary>
 	/// <param name="destronoiNode"></param>
-	public void Activate(DestronoiNode destronoiNode)
+	public void AddToActiveTree(DestronoiNode destronoiNode)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
 		representativeNode.activeNodesWhichRepresentThisLeafID.Add(destronoiNode);
@@ -52,7 +52,7 @@ public partial class BinaryTreeMapToActiveNodes : Node
 	/// removes a destronoiNode from the activeNodeList for a representative node
 	/// </summary>
 	/// <param name="destronoiNode"></param>
-	public void Deactivate(DestronoiNode destronoiNode)
+	public void RemoveFromActiveTree(DestronoiNode destronoiNode)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
 		representativeNode.activeNodesWhichRepresentThisLeafID.Remove(destronoiNode);
