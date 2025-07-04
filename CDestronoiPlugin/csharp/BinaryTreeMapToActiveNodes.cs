@@ -84,13 +84,16 @@ public class RepresentativeNode(RepresentativeNode inputParent,
 							Laterality inputLaterality,
 							int inputID)
 {
-	public RepresentativeNode parent = inputParent;
-	public Laterality laterality = inputLaterality;
+	public readonly RepresentativeNode parent = inputParent;
+	public readonly Laterality laterality = inputLaterality;
+	public readonly int ID = inputID;
 	
-	public List<DestronoiNode> activeNodesWhichRepresentThisLeafID = [];
+	// these should be writeonce ideally
 	public RepresentativeNode left;
 	public RepresentativeNode right;
-	public int ID = inputID;
+
+	// this should be always editable
+	public List<DestronoiNode> activeNodesWhichRepresentThisLeafID = [];
 }
 
 

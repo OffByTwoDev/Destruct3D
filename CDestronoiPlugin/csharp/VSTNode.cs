@@ -23,8 +23,8 @@ public class VSTNode
 	public VSTNode right;
 	public VSTNode parent;
 	// i believe the initial level is 0 (i.e. for the vstNode that represents the whole object)
-	public int level;
-	public Laterality laterality;
+	public readonly int level;
+	public readonly Laterality laterality;
 
 	// just used for unfragmentation
 	public readonly VSTNode permanentParent;
@@ -35,14 +35,14 @@ public class VSTNode
 	// whether this fragment is the smallest initialised fragment for this body
 	// not actually necessary, if logic is good then childrenChanged would always be false for endPoints anyways
 	// so I believe this bool and any check upon it can be removed and replaced by checking childrenChanged
-	public bool endPoint;
+	public readonly bool endPoint;
 
 	// by convention, IDS start at 1 (it doesnt matter it probably doesn't change any behaviour)
 	// they are currently used for nothing other than for printing VST trees for debugging
 	// IDs can only be set on initialisation
 	// this must stay readonly for BinaryTreeMapToActiveNodes to always link to the correct IDs
 	public readonly int ID;
-	// i think ownerID can be made readonly too
+	// i think ownerID can be made readonly too, actually i think it can just be removed, i dont think its used for anything
 	public int ownerID;
 
 	// when a node is fragmented / orphaned, we tell its parent & its parent's parent etc that one of its children has changed
@@ -207,6 +207,21 @@ public class VSTNode
 		GD.Print("laterality: ", laterality);
 		GD.Print("ownerID: ", ownerID);
 		GD.Print("---");
+	}
+
+	public void RecursiveDebugPrint()
+	{
+		GD.Print("ID: ", ID);
+		GD.Print("left: ", left?.ID);
+		GD.Print("right: ", right?.ID);
+		GD.Print("parent: ", parent?.ID);
+		GD.Print("level: ", level);
+		GD.Print("laterality: ", laterality);
+		GD.Print("ownerID: ", ownerID);
+		GD.Print("---");
+
+		left?.RecursiveDebugPrint();
+		right?.RecursiveDebugPrint();
 	}
 
 	// meshInstances are shared between all deepcopies, this is fine I dont think it affects behaviour

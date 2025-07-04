@@ -213,7 +213,15 @@ public partial class VSTSplittingComponent : Area3D
 			}
 			else
 			{
-				meshToInstantate = leaf.meshInstance;
+				if (leaf.meshInstance.GetParent() is not null)
+				{
+					GD.PushWarning("leafs meshinstance already has a parent. duplicating and reusing.");
+					meshToInstantate = (MeshInstance3D)leaf.meshInstance.Duplicate();
+				}
+				else
+				{
+					meshToInstantate = leaf.meshInstance;
+				}
 			}
 
 			DestronoiNode body = destronoiNode.CreateDestronoiNode(leaf,

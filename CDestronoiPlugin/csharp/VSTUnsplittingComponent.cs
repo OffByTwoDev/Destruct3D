@@ -53,7 +53,7 @@ public partial class VSTUnsplittingComponent : Node
 			topmostParent = VSTUnsplittingComponent.GetTopMostParent(destronoiNode.vstRoot.permanentParent);
 			instantiatedChildren = destronoiNode.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
 		}
-		
+
 		// now we need to interpolate all instantiated children towards the reverse explosion
 		// and then queuefree them alls
 		// and then instantiate the parent as a brand new, fresh, fragment with all its children and vstStuff reset
@@ -66,10 +66,10 @@ public partial class VSTUnsplittingComponent : Node
 		DestronoiNode freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
 		freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
 
-		foreach (DestronoiNode child in instantiatedChildren)
-		{
-			child.QueueFree();
-		}
+		// foreach (DestronoiNode child in instantiatedChildren)
+		// {
+		// 	child.QueueFree();
+		// }
 	}
 
 	public static VSTNode GetTopMostParent(VSTNode vstNode)
@@ -102,7 +102,7 @@ public partial class VSTUnsplittingComponent : Node
 
 			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, 1.0f);
 			tween.TweenCallback(Callable.From(() => destronoiNode.Visible = false));
-			tween.TweenCallback(Callable.From(destronoiNode.QueueFree));
+			// tween.TweenCallback(Callable.From(destronoiNode.QueueFree));
 			tween.TweenCallback(Callable.From(() => tcs.SetResult(true)));
 		}
 
@@ -137,7 +137,7 @@ public partial class VSTUnsplittingComponent : Node
 	public DestronoiNode CreateFreshDestronoiNode(VSTNode vstNode, Transform3D globalTransform, DestronoiNode anyChildDestronoiNode)
 	{
 		// temporary shit
-		string name = "tempname";
+		string name = "unfragmented_with_ID_" + vstNode.ID.ToString();
 		StandardMaterial3D material = new();
 
 		DestronoiNode destronoiNode = new()
