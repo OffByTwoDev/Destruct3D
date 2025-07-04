@@ -30,14 +30,22 @@ public partial class VSTUnsplittingComponent : Node
 
 	}
 
-	private static VSTNode GetTopMostParent(VSTNode vstNode)
+	public static VSTNode GetTopMostParent(VSTNode vstNode)
 	{
+		// just a null check
+		if (vstNode is null)
+		{
+			GD.PushError("a null vstNode was passed to GetTopMostParent");
+			return null;
+		}
+
+		// actual logic begins
 		if (vstNode.parent is null) { return vstNode; }
 
 		return GetTopMostParent(vstNode.parent);
 	}
 
-	private void InterpolateDestronoiNodesThenQueueFree(List<DestronoiNode> instantiatedChildren, Transform3D reversedExplosionCentre)
+	public void InterpolateDestronoiNodesThenQueueFree(List<DestronoiNode> instantiatedChildren, Transform3D reversedExplosionCentre)
 	{
 		foreach (DestronoiNode destronoiNode in instantiatedChildren)
 		{

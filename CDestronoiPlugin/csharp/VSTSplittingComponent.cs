@@ -220,7 +220,7 @@ public partial class VSTSplittingComponent : Area3D
 																meshToInstantate,
 																leafName,
 																fragmentMaterial);
-
+			
 			destronoiNode.fragmentContainer.AddChild(body);
 
 			if (ApplyImpulseOnSplit)
@@ -426,12 +426,9 @@ public partial class VSTSplittingComponent : Area3D
 
 	public static void Orphan(VSTNode vstNode)
 	{
-		if (vstNode.parent is null)
-		{
-			// represents root node of body having no children and no parent
-			// in this sitch we check later in main function and queuefree the destronoiNode
-			return;
-		}
+		// represents root node of body having no children and no parent
+		// in this sitch we check later in main function and queuefree the destronoiNode
+		if (vstNode.parent is null) { return; }
 
 		// remove reference to this node from the parent's section of the tree
 		if (vstNode.laterality == Laterality.LEFT)
