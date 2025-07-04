@@ -16,7 +16,8 @@ public enum Laterality
 /// <param name="laterality">whether this node is a left or right child of its parent</param>
 public class VSTNode
 {
-	public MeshInstance3D meshInstance;
+	// this meshInstance represents the originally calculated mesh. it never changes. what changes is the DestronoiNode's meshInstance
+	public readonly MeshInstance3D meshInstance;
 	public List<Vector3> sites;
 	public VSTNode left;
 	public VSTNode right;
@@ -27,6 +28,9 @@ public class VSTNode
 
 	// just used for unfragmentation
 	public readonly VSTNode permanentParent;
+	// these 2 wanna be made "WriteOnce" or smthn probably
+	public VSTNode permanentLeft;
+	public VSTNode permanentRight;
 
 	// whether this fragment is the smallest initialised fragment for this body
 	// not actually necessary, if logic is good then childrenChanged would always be false for endPoints anyways
@@ -239,5 +243,19 @@ public class VSTNode
 		copy.right = this.right?.DeepCopy(copy);
 
         return copy;
+	}
+
+	// fully cleans a node and all its children
+	// to be as if that fragment has just been cleanly initialised
+
+	public void Reset()
+	{
+		left = permanentLeft;
+		right = permanentRight;
+		parent = permanentParent;
+		childrenChanged = false;
+
+		left.Reset();
+		right.Reset();
 	}
 }

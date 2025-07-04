@@ -16,15 +16,15 @@ public partial class DestronoiNode : RigidBody3D
 	[Export] public int treeHeight = 1;
 	
 	// only relevant for DestronoiNodes which are present on level startup
-	[Export] Node binaryTreeMapContainer;
+	// [Export] Node binaryTreeMapContainer;
 	public BinaryTreeMapToActiveNodes binaryTreeMapToActiveNodes;
 
 	// --- internal variables --- //
 	public VSTNode vstRoot;
-	private float baseObjectDensity;
+	public float baseObjectDensity;
 	// this should be true if the node needs its own vstRoot created
 	// if you are creating a fragment and are passing in a known vstRoot, mesh etc, then this flag should be false
-	private bool needsInitialising = true;
+	public bool needsInitialising = true;
 
 	// --- meta variables --- //
 	public int MAX_PLOTSITERANDOM_TRIES = 5_000;
@@ -146,7 +146,6 @@ public partial class DestronoiNode : RigidBody3D
 		// --- create a binarytreemap and set its root to be this node --- //
 
 		binaryTreeMapToActiveNodes = new(treeHeight, this);
-		binaryTreeMapContainer.AddChild(binaryTreeMapToActiveNodes);
 	}
 
 	public static void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
@@ -395,9 +394,11 @@ public partial class DestronoiNode : RigidBody3D
 
 		var meshUp = new MeshInstance3D { Mesh = surfA.Commit() };
 		node.left = new VSTNode(meshUp, node.ID * 2, node.ownerID, node, node.level + 1, Laterality.LEFT, endPoint);
+		node.permanentLeft = node.left;
 
 		var meshDown = new MeshInstance3D { Mesh = surfB.Commit() };
 		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node.ownerID, node, node.level + 1, Laterality.RIGHT, endPoint);
+		node.permanentRight = node.right;
 
 		return true;
 	}
@@ -526,7 +527,7 @@ public partial class DestronoiNode : RigidBody3D
 			// finally, tell the relevant binarytreemap that this node has been created //
 			// and also set the relevant binaryTreeMap to be this one
 			destronoiNode.binaryTreeMapToActiveNodes = this.binaryTreeMapToActiveNodes;
-			destronoiNode.binaryTreeMapToActiveNodes.Activate(this);
+			destronoiNode.binaryTreeMapToActiveNodes.Activate(destronoiNode);
 			
 			return destronoiNode;
 	}

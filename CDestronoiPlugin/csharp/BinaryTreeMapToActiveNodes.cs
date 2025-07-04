@@ -58,9 +58,9 @@ public partial class BinaryTreeMapToActiveNodes : Node
 		representativeNode.activeNodesWhichRepresentThisLeafID.Remove(destronoiNode);
 	}
 
-	public List<DestronoiNode> GetFragmentsInstantiatedChildren(DestronoiNode destronoiNode)
+	public List<DestronoiNode> GetFragmentsInstantiatedChildren(int vstRootID)
 	{
-		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
+		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[vstRootID];
 		List<DestronoiNode> instantiatedChildren = [];
 
 		RecursivelyAddActiveNodes(representativeNode, instantiatedChildren);
@@ -68,6 +68,8 @@ public partial class BinaryTreeMapToActiveNodes : Node
 		return instantiatedChildren;
 	}
 
+	// maybe can stop this recursion on last node which doesnt have childrenChanged flag == true or smthn
+	// tbh prolly makes like 0 difference to runtime
 	public static void RecursivelyAddActiveNodes(RepresentativeNode representativeNode, List<DestronoiNode> instantiatedChildren)
 	{
 		instantiatedChildren.AddRange(representativeNode.activeNodesWhichRepresentThisLeafID);
