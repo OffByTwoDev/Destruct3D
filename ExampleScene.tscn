@@ -91,6 +91,8 @@ size = Vector3(0.1, 0.1, 0.1)
 [node name="Main" type="Node3D"]
 script = ExtResource("1_n7n8g")
 
+[node name="FragmentTracker" type="Node" parent="."]
+
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
 shadow_enabled = true
@@ -102,6 +104,8 @@ environment = SubResource("Environment_uu6xs")
 transform = Transform3D(0.973786, -0.0783492, 0.213546, 0, 0.938807, 0.344445, -0.227466, -0.335415, 0.914197, 6.84713, 2.23563, 4.60651)
 script = ExtResource("2_xpmf3")
 Speed = 5.0
+
+[node name="BinaryTreeMapContainer" type="Node" parent="."]
 
 [node name="Environment" type="Node" parent="."]
 
@@ -139,12 +143,13 @@ destronoiNode = NodePath("../LargeObject")
 destructionFragmentsLeft = 8
 destructionFragmentsRight = 5
 
-[node name="LargeObject" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]
+[node name="LargeObject" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer", "binaryTreeMapContainer")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8.77329, 5.43689, 2.6964)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("CSharpMesh")
 fragmentContainer = NodePath("..")
 treeHeight = 6
+binaryTreeMapContainer = NodePath("../../BinaryTreeMapContainer")
 
 [node name="CSharpMesh" type="MeshInstance3D" parent="Environment/LargeObject"]
 mesh = SubResource("BoxMesh_r0du0")
@@ -152,12 +157,13 @@ mesh = SubResource("BoxMesh_r0du0")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/LargeObject"]
 shape = SubResource("ConvexPolygonShape3D_xpmf3")
 
-[node name="SmallObject" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]
+[node name="SmallObject" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer", "binaryTreeMapContainer")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.42308, 1.02252, -1.00893)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
 treeHeight = 6
+binaryTreeMapContainer = NodePath("../../BinaryTreeMapContainer")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/SmallObject"]
 mesh = SubResource("BoxMesh_xpmf3")
@@ -168,12 +174,13 @@ shape = SubResource("ConvexPolygonShape3D_p3r26")
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment"]
 mesh = SubResource("BoxMesh_jyebb")
 
-[node name="Slab" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer")]
+[node name="Slab" type="RigidBody3D" parent="Environment" node_paths=PackedStringArray("meshInstance", "fragmentContainer", "binaryTreeMapContainer")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7.34069, 3.41572, 0)
 script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
 treeHeight = 7
+binaryTreeMapContainer = NodePath("../../BinaryTreeMapContainer")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/Slab"]
 mesh = SubResource("BoxMesh_5h8pk")
@@ -182,7 +189,7 @@ mesh = SubResource("BoxMesh_5h8pk")
 shape = SubResource("ConvexPolygonShape3D_i82ug")
 
 [node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("explosionMeshSmall", "explosionMeshLarge")]
-transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, -11.0165, 0.995488, 2.0804)
+transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, -0.728977, 0.995488, 2.0804)
 visible = false
 script = ExtResource("4_fgqed")
 explosionMeshSmall = NodePath("MediumMesh")

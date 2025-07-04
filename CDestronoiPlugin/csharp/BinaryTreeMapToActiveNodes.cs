@@ -1,0 +1,137 @@
+using Godot;
+using System.Collections.Generic;
+using System;
+
+// anytime you create or destroy a destronoi node
+// find the (1) binarytreemap which represents the topmost ancestor of said created or destroyed destronoiNode
+// and tell it "hey, i have this ID, i exist / have been queuefreed() now"
+// so we are left with a map from any fragment to all instanced destronoiNodes which represent its children somehow
+public partial class BinaryTreeMapToActiveNodes : Node
+{
+	public RepresentativeNode rootNode;
+	public int rootID = 1;
+
+	public Dictionary<int, RepresentativeNode> IDToRepresentativeNodeMap = [];
+
+	private RepresentativeNode BuildSubtree(RepresentativeNode parent,
+													Laterality laterality,
+													int inputID,
+													int height)
+	{
+		RepresentativeNode node = new(parent, laterality, inputID);
+		IDToRepresentativeNodeMap.Add(inputID, node);
+
+		if (height > 0)
+		{
+			node.left = BuildSubtree(node, Laterality.LEFT, inputID * 2, height - 1);
+			node.right = BuildSubtree(node, Laterality.RIGHT, inputID * 2 + 1, height - 1);
+		}
+
+		return node;
+	}
+
+	public BinaryTreeMapToActiveNodes(int treeHeight, DestronoiNode rootDestronoiNode)
+	{
+		rootNode = BuildSubtree(null, Laterality.NONE, rootID, treeHeight);
+
+		rootNode.activeNodesWhichRepresentThisLeafID = [rootDestronoiNode];
+	}
+
+	/// <summary>
+	/// get the relevant representativeNode for this destronoiNode
+	/// and then adds the input destronoiNode to the activeNodeList for that RN / ID
+	/// </summary>
+	/// <param name="destronoiNode"></param>
+	public void Activate(DestronoiNode destronoiNode)
+	{
+		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
+		representativeNode.activeNodesWhichRepresentThisLeafID.Add(destronoiNode);
+	}
+
+	/// <summary>
+	/// removes a destronoiNode from the activeNodeList for a representative node
+	/// </summary>
+	/// <param name="destronoiNode"></param>
+	public void Deactivate(DestronoiNode destronoiNode)
+	{
+		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
+		representativeNode.activeNodesWhichRepresentThisLeafID.Remove(destronoiNode);
+	}
+
+	public List<DestronoiNode> GetFragmentsInstantiatedChildren(DestronoiNode destronoiNode)
+	{
+		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
+		List<DestronoiNode> instantiatedChildren = [];
+
+		RecursivelyAddActiveNodes(representativeNode, instantiatedChildren);
+
+		return instantiatedChildren;
+	}
+
+	public static void RecursivelyAddActiveNodes(RepresentativeNode representativeNode, List<DestronoiNode> instantiatedChildren)
+	{
+		instantiatedChildren.AddRange(representativeNode.activeNodesWhichRepresentThisLeafID);
+
+		RecursivelyAddActiveNodes(representativeNode.left, instantiatedChildren);
+		RecursivelyAddActiveNodes(representativeNode.right, instantiatedChildren);
+	}
+}
+
+// a simplified version of a vstNode
+public class RepresentativeNode(RepresentativeNode inputParent,
+							Laterality inputLaterality,
+							int inputID)
+{
+	public RepresentativeNode parent = inputParent;
+	public Laterality laterality = inputLaterality;
+	
+	public List<DestronoiNode> activeNodesWhichRepresentThisLeafID = [];
+	public RepresentativeNode left;
+	public RepresentativeNode right;
+	public int ID = inputID;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// public sealed class WriteOnce<T>
+// {
+// 	private T value;
+// 	private bool hasValue;
+
+// 	public override string ToString()
+// 	{
+// 		return hasValue ? Convert.ToString(value) : "";
+// 	}
+	
+// 	public T Value
+// 	{
+// 		get
+// 		{
+// 			if (!hasValue) throw new InvalidOperationException("Value not set");
+// 			return value;
+// 		}
+// 		set
+// 		{
+// 			if (hasValue) throw new InvalidOperationException("Value already set");
+// 			this.value = value;
+// 			this.hasValue = true;
+// 		}
+// 	}

@@ -14,6 +14,10 @@ public partial class DestronoiNode : RigidBody3D
 	[Export] public Node fragmentContainer;
 	// Generates 2^n fragments, where n is treeHeight.
 	[Export] public int treeHeight = 1;
+	
+	// only relevant for DestronoiNodes which are present on level startup
+	[Export] Node binaryTreeMapContainer;
+	public BinaryTreeMapToActiveNodes binaryTreeMapToActiveNodes;
 
 	// --- internal variables --- //
 	public VSTNode vstRoot;
@@ -96,7 +100,7 @@ public partial class DestronoiNode : RigidBody3D
 
 		CallDeferred(nameof(ErrorChecks));
 
-		// --- create filled VST and find density --- //
+		// --- create filled VST --- //
 
 		if (meshInstance is null)
 		{
@@ -132,11 +136,17 @@ public partial class DestronoiNode : RigidBody3D
 			}
 		}
 
+		// --- find density --- //
 		float volume = meshInstance.Mesh.GetAabb().Size.X *
 								 meshInstance.Mesh.GetAabb().Size.Y *
 								 meshInstance.Mesh.GetAabb().Size.Z;
 		
 		baseObjectDensity = Mass / volume;
+
+		// --- create a binarytreemap and set its root to be this node --- //
+
+		binaryTreeMapToActiveNodes = new(treeHeight, this);
+		binaryTreeMapContainer.AddChild(binaryTreeMapToActiveNodes);
 	}
 
 	public static void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
@@ -513,6 +523,11 @@ public partial class DestronoiNode : RigidBody3D
 			// this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
 			destronoiNode.needsInitialising = false;
 
+			// finally, tell the relevant binarytreemap that this node has been created //
+			// and also set the relevant binaryTreeMap to be this one
+			destronoiNode.binaryTreeMapToActiveNodes = this.binaryTreeMapToActiveNodes;
+			destronoiNode.binaryTreeMapToActiveNodes.Activate(this);
+			
 			return destronoiNode;
 	}
 }

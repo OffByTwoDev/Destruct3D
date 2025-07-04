@@ -25,6 +25,9 @@ public class VSTNode
 	public int level;
 	public Laterality laterality;
 
+	// just used for unfragmentation
+	public readonly VSTNode permanentParent;
+
 	// whether this fragment is the smallest initialised fragment for this body
 	// not actually necessary, if logic is good then childrenChanged would always be false for endPoints anyways
 	// so I believe this bool and any check upon it can be removed and replaced by checking childrenChanged
@@ -33,6 +36,7 @@ public class VSTNode
 	// by convention, IDS start at 1 (it doesnt matter it probably doesn't change any behaviour)
 	// they are currently used for nothing other than for printing VST trees for debugging
 	// IDs can only be set on initialisation
+	// this must stay readonly for BinaryTreeMapToActiveNodes to always link to the correct IDs
 	public readonly int ID;
 	// i think ownerID can be made readonly too
 	public int ownerID;
@@ -71,6 +75,7 @@ public class VSTNode
 		}
 
 		parent = inputParent;
+		permanentParent = inputParent;
 		
 		level = lev;
 		laterality = lat;
@@ -230,7 +235,6 @@ public class VSTNode
             childrenChanged = this.childrenChanged,
         };
 
-		// Deep copy left and right children, passing 'copy' as their parent
 		copy.left = this.left?.DeepCopy(copy);
 		copy.right = this.right?.DeepCopy(copy);
 

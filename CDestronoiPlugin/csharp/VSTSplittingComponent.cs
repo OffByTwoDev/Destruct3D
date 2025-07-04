@@ -349,6 +349,9 @@ public partial class VSTSplittingComponent : Area3D
 		// destronoiNode.AddChild(collisionShape);
 	}
 
+	// for now we dont queuefree as we need the original objects (i.e. the vst leafs) to stick around
+	// would be fixed if we reused the old destronoiNode when creating new ones
+	// rather than just creating new ones and deactivating the old one
 	public static void Deactivate(DestronoiNode destronoiNode)
 	{
 		destronoiNode.Visible = false;
@@ -356,6 +359,9 @@ public partial class VSTSplittingComponent : Area3D
 		destronoiNode.CollisionLayer = 0;
 		destronoiNode.CollisionMask = 0;
 		destronoiNode.Sleeping = true;
+
+		destronoiNode.binaryTreeMapToActiveNodes.Deactivate(destronoiNode);
+
 	}
 
 	public static void OrphanDeepestNonAdjacentNodesByID(VSTNode vstNode, List<int> nonAdjacentNodeIDs)
