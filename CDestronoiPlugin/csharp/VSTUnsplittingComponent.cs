@@ -1,6 +1,8 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 // for whatever reason, you might want to unfragment a node
 // that is, find all the instantiated children of a node, queufree them
@@ -8,8 +10,34 @@ using System.Collections.Generic;
 // this component simply takes an input destronoiNode and does exactly that
 public partial class VSTUnsplittingComponent : Node
 {
+	public RayCast3D unfragmentationRayCast;
+
+	public Player player;
+
+	public override void _Ready()
+	{
+		base._Ready();
+		
+		LevelSwitcher levelSwitcher = GetNode<LevelSwitcher>("/root/Main/LevelSwitcher");
+
+		player = levelSwitcher.player;
+
+		unfragmentationRayCast = player.unfragmentationHighlighting;
+	}
+
+	public void Activate()
+	{
+		if (unfragmentationRayCast.GetCollider() is DestronoiNode fragment)
+		{
+			Vector3 halfwayBetweenPlayerAndObject = (player.GlobalPosition + fragment.GlobalPosition) / 2.0f;
+
+			Transform3D transform3D = new(player.GlobalTransform.Basis, halfwayBetweenPlayerAndObject);
+
+			Unsplit(fragment, transform3D);
+		}
+	}
 	/// <param name="reversedExplosionCentre">in global coordinates</param>
-	public void Unsplit(DestronoiNode destronoiNode, Transform3D reversedExplosionCentre)
+	public async void Unsplit(DestronoiNode destronoiNode, Transform3D reversedExplosionCentre)
 	{
 		// get the topmost parent from the permanentparent of the node to be unexploded (might be wrong idk lmao)
 		VSTNode topmostParent = GetTopMostParent(destronoiNode.vstRoot.permanentParent);
@@ -20,14 +48,18 @@ public partial class VSTUnsplittingComponent : Node
 		// and then queuefree them alls
 		// and then instantiate the parent as a brand new, fresh, fragment with all its children and vstStuff reset
 
-		InterpolateDestronoiNodesThenQueueFree(instantiatedChildren, reversedExplosionCentre);
-
+		await InterpolateDestronoiNodesThenQueueFree(instantiatedChildren, reversedExplosionCentre);
+		
 		topmostParent.Reset();
 
 		// create fresh parent destronoiNode and add to scene
 		DestronoiNode freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
 		freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
 
+		foreach (DestronoiNode child in instantiatedChildren)
+		{
+			child.QueueFree();
+		}
 	}
 
 	public static VSTNode GetTopMostParent(VSTNode vstNode)
@@ -45,15 +77,45 @@ public partial class VSTUnsplittingComponent : Node
 		return GetTopMostParent(vstNode.parent);
 	}
 
-	public void InterpolateDestronoiNodesThenQueueFree(List<DestronoiNode> instantiatedChildren, Transform3D reversedExplosionCentre)
+	public async Task InterpolateDestronoiNodesThenQueueFree(List<DestronoiNode> instantiatedChildren, Transform3D reversedExplosionCentre)
 	{
+		var completionSources = new List<TaskCompletionSource<bool>>();
+
 		foreach (DestronoiNode destronoiNode in instantiatedChildren)
 		{
+			var tcs = new TaskCompletionSource<bool>();
+			completionSources.Add(tcs);
+
 			Tween tween = GetTree().CreateTween();
+			VSTSplittingComponent.Deactivate(destronoiNode);
+			destronoiNode.Visible = true;
+
 			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, 1.0f);
+			tween.TweenCallback(Callable.From(() => destronoiNode.Visible = false));
 			tween.TweenCallback(Callable.From(destronoiNode.QueueFree));
+			tween.TweenCallback(Callable.From(() => tcs.SetResult(true)));
 		}
+
+		// Wait for all interpolations to complete
+		await Task.WhenAll(completionSources.Select(t => t.Task));
 	}
+
+	// public void InterpolateDestronoiNodesThenQueueFree(List<DestronoiNode> instantiatedChildren,
+	// 												Transform3D reversedExplosionCentre)
+	// {
+	// 	foreach (DestronoiNode destronoiNode in instantiatedChildren)
+	// 	{
+	// 		Tween tween = GetTree().CreateTween();
+
+	// 		// disable everything about the destronoiNode but keep it visible
+	// 		VSTSplittingComponent.Deactivate(destronoiNode);
+	// 		destronoiNode.Visible = true;
+
+	// 		tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, 1.0f);
+
+	// 		tween.TweenCallback(Callable.From(() => destronoiNode.Visible = false));
+	// 	}
+	// }
 
 	/// <summary>
 	/// creates a Destronoi Node from the given meshInstance and vstnode
@@ -77,7 +139,7 @@ public partial class VSTUnsplittingComponent : Node
 		// --- rigidbody initialisation --- //
 
 		// mesh instance
-		MeshInstance3D meshInstance = vstNode.meshInstance;
+		MeshInstance3D meshInstance = (MeshInstance3D)vstNode.meshInstance.Duplicate();
 		meshInstance.Name = $"{name}_MeshInstance3D";
 
 		meshInstance.SetSurfaceOverrideMaterial(0, material);
@@ -116,7 +178,7 @@ public partial class VSTUnsplittingComponent : Node
 		// finally, tell the relevant binarytreemap that this node has been created //
 		// and also set the relevant binaryTreeMap to be this one
 		destronoiNode.binaryTreeMapToActiveNodes = anyChildDestronoiNode.binaryTreeMapToActiveNodes;
-		destronoiNode.binaryTreeMapToActiveNodes.Activate(destronoiNode);
+		destronoiNode.binaryTreeMapToActiveNodes.AddToActiveTree(destronoiNode);
 		
 		return destronoiNode;
 	}
