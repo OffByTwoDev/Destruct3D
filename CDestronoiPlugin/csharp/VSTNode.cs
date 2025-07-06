@@ -13,10 +13,11 @@ public enum Laterality
 /// A node in a Voronoi Subdivision Tree.
 /// Despite the name, VSTNode does not inherit from Node and therefore cannot be used as a scene object.
 /// </summary>
-/// <param name="laterality">whether this node is a left or right child of its parent</param>
 public class VSTNode
 {
-	// this meshInstance represents the originally calculated mesh. it never changes. what changes is the DestronoiNode's meshInstance
+	/// <summary>
+	/// this meshInstance represents the originally calculated mesh. it never changes. what changes is the DestronoiNode's meshInstance
+	/// </summary>
 	public readonly MeshInstance3D meshInstance;
 	public List<Vector3> sites;
 	public VSTNode left;
@@ -24,6 +25,9 @@ public class VSTNode
 	public VSTNode parent;
 	// i believe the initial level is 0 (i.e. for the vstNode that represents the whole object)
 	public readonly int level;
+	/// <summary>
+	/// whether this node is a left or right child of its parent
+	/// </summary>
 	public readonly Laterality laterality;
 
 	// just used for unfragmentation
