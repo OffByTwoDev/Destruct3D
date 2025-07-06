@@ -143,6 +143,11 @@ public partial class DestronoiNode : RigidBody3D
 		// --- create a binarytreemap and set its root to be this node --- //
 
 		binaryTreeMapToActiveNodes = new(treeHeight, this);
+
+		// set damp
+
+		LinearDamp = 8.0f;
+		AngularDamp = 8.0f;
 	}
 
 	public static void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
@@ -305,6 +310,7 @@ public partial class DestronoiNode : RigidBody3D
 
 					// TRIANGLE CREATION
 					surfaceTool.AddVertex(dataTool.GetVertex(vid));
+					if (intersects[0] is null || intersects[1] is null) { GD.Print("intersects is null (?)"); }
 					surfaceTool.AddVertex((Vector3)intersects[0]);
 					surfaceTool.AddVertex((Vector3)intersects[1]);
 					continue;
@@ -505,15 +511,12 @@ public partial class DestronoiNode : RigidBody3D
 		destronoiNode.AddChild(shape);
 
 		// mass
-		float volume =  meshInstance.Mesh.GetAabb().Size.X *
-						meshInstance.Mesh.GetAabb().Size.Y *
-						meshInstance.Mesh.GetAabb().Size.Z;
+		float volume =  meshInstance.Mesh.GetAabb().Volume;
 		destronoiNode.Mass = Math.Max(baseObjectDensity * volume, 0.01f);
 
 		// needed (idk why lmao ?) for detecting explosions from RPGs
 		destronoiNode.ContactMonitor = true;
 		destronoiNode.MaxContactsReported = 5_000;
-
 
 		// --- destronoi node initialisation --- //
 
