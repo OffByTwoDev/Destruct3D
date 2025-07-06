@@ -14,6 +14,8 @@ public partial class VSTUnsplittingComponent : Node
 
 	public Player player;
 
+	[Export] public int unexplosionLevelsToGoUp = 2;
+
 	public override void _Ready()
 	{
 		base._Ready();
@@ -56,7 +58,7 @@ public partial class VSTUnsplittingComponent : Node
 		}
 		else
 		{
-			topmostParent = VSTUnsplittingComponent.GetTopMostParent(destronoiNode.vstRoot.permanentParent);
+			topmostParent = VSTUnsplittingComponent.GetTopMostParent(destronoiNode.vstRoot.permanentParent, unexplosionLevelsToGoUp);
 			instantiatedChildren = destronoiNode.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
 		}
 
@@ -80,7 +82,7 @@ public partial class VSTUnsplittingComponent : Node
 		// }
 	}
 
-	public static VSTNode GetTopMostParent(VSTNode vstNode)
+	public static VSTNode GetTopMostParent(VSTNode vstNode, int levelsToGoUp)
 	{
 		// just a null check
 		if (vstNode is null)
@@ -90,9 +92,10 @@ public partial class VSTUnsplittingComponent : Node
 		}
 
 		// actual logic begins
-		if (vstNode.parent is null) { return vstNode; }
+		// if no higher parent, or the node is at the height we want, return the current node
+		if (vstNode.parent is null || levelsToGoUp == 0) { return vstNode; }
 
-		return GetTopMostParent(vstNode.parent);
+		return GetTopMostParent(vstNode.parent,levelsToGoUp - 1);
 	}
 
 	public async Task InterpolateDestronoiNodesThenQueueFree(List<DestronoiNode> instantiatedChildren, Transform3D reversedExplosionCentre)
