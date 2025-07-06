@@ -64,6 +64,8 @@ public partial class VSTUnsplittingComponent : Node
 		// and then queuefree them alls
 		// and then instantiate the parent as a brand new, fresh, fragment with all its children and vstStuff reset
 
+		// reversedExplosionCentre = new(reversedExplosionCentre.Basis, reversedExplosionCentre.Origin - topmostParent.meshInstance.GetAabb().GetCenter());
+
 		await InterpolateDestronoiNodesThenQueueFree(instantiatedChildren, reversedExplosionCentre);
 		
 		topmostParent.Reset();
@@ -106,7 +108,10 @@ public partial class VSTUnsplittingComponent : Node
 			VSTSplittingComponent.Deactivate(destronoiNode);
 			destronoiNode.Visible = true;
 
-			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, 1.0f);
+			tween.SetEase(Tween.EaseType.In);
+			tween.SetTrans(Tween.TransitionType.Expo);
+
+			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, 1.5f);
 			tween.TweenCallback(Callable.From(() => destronoiNode.Visible = false));
 			// tween.TweenCallback(Callable.From(destronoiNode.QueueFree));
 			tween.TweenCallback(Callable.From(() => tcs.SetResult(true)));
