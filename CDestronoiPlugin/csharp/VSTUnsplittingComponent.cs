@@ -25,7 +25,9 @@ public partial class VSTUnsplittingComponent : Node
 		unfragmentationRayCast = player.unfragmentationHighlighting;
 	}
 
-	public void Activate()
+	// returns the location the unexplosion happens
+	// or null if no unexplosion occurs
+	public async Task<Transform3D?> Activate()
 	{
 		if (unfragmentationRayCast.GetCollider() is DestronoiNode fragment)
 		{
@@ -33,11 +35,15 @@ public partial class VSTUnsplittingComponent : Node
 
 			Transform3D transform3D = new(player.GlobalTransform.Basis, halfwayBetweenPlayerAndObject);
 
-			Unsplit(fragment, transform3D);
+			await Unsplit(fragment, transform3D);
+
+			return transform3D;
 		}
+
+		return null;
 	}
 	/// <param name="reversedExplosionCentre">in global coordinates</param>
-	public async void Unsplit(DestronoiNode destronoiNode, Transform3D reversedExplosionCentre)
+	public async Task Unsplit(DestronoiNode destronoiNode, Transform3D reversedExplosionCentre)
 	{
 		VSTNode topmostParent;
 		List<DestronoiNode> instantiatedChildren;
