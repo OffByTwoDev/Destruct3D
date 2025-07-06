@@ -27,22 +27,23 @@ public partial class VSTUnsplittingComponent : Node
 		unfragmentationRayCast = player.unfragmentationHighlighting;
 	}
 
-	// returns the location the unexplosion happens
-	// or null if no unexplosion occurs
-	public async Task<Transform3D?> Activate()
+	public async Task Activate(Transform3D? unfragmentationTransform, DestronoiNode fragmentToUnexplode)
 	{
-		if (unfragmentationRayCast.GetCollider() is DestronoiNode fragment)
+		// if (unfragmentationRayCast.GetCollider() is not DestronoiNode fragment)
+		// {
+		// 	return;
+		// }
+		
+		if (unfragmentationTransform is Transform3D nonNullUnfragmentationTransform)
 		{
-			Vector3 halfwayBetweenPlayerAndObject = (player.GlobalPosition + fragment.GlobalPosition) / 2.0f;
-
-			Transform3D transform3D = new(player.GlobalTransform.Basis, halfwayBetweenPlayerAndObject);
-
-			await Unsplit(fragment, transform3D);
-
-			return transform3D;
+			await Unsplit(fragmentToUnexplode, nonNullUnfragmentationTransform);
 		}
-
-		return null;
+		else
+		{
+			Vector3 halfwayBetweenPlayerAndObject = (player.GlobalPosition + fragmentToUnexplode.GlobalPosition) / 2.0f;
+			Transform3D transformBetweenPlayerAndObject = new(player.GlobalTransform.Basis, halfwayBetweenPlayerAndObject);
+			await Unsplit(fragmentToUnexplode, transformBetweenPlayerAndObject);
+		}
 	}
 	/// <param name="reversedExplosionCentre">in global coordinates</param>
 	public async Task Unsplit(DestronoiNode destronoiNode, Transform3D reversedExplosionCentre)
