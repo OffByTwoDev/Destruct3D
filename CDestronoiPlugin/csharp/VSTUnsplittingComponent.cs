@@ -36,7 +36,14 @@ public partial class VSTUnsplittingComponent : Node
 		
 		if (unfragmentationTransform is Transform3D nonNullUnfragmentationTransform)
 		{
-			await Unsplit(fragmentToUnexplode, nonNullUnfragmentationTransform);
+			try
+			{
+				await Unsplit(fragmentToUnexplode, nonNullUnfragmentationTransform);
+			}
+			catch (System.Exception)
+			{
+				throw;
+			}
 		}
 		else
 		{
@@ -74,8 +81,15 @@ public partial class VSTUnsplittingComponent : Node
 		topmostParent.Reset();
 
 		// create fresh parent destronoiNode and add to scene
-		DestronoiNode freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
-		freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
+		try
+		{
+			DestronoiNode freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
+			freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
+		}
+		catch (System.Exception)
+		{
+			throw;
+		}
 
 		// foreach (DestronoiNode child in instantiatedChildren)
 		// {
