@@ -1,6 +1,8 @@
 using Godot;
 using System.Collections.Generic;
 
+namespace CDestronoi;
+
 // none laterality applies only to a root node
 public enum Laterality
 {

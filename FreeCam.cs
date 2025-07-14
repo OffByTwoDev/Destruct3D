@@ -1,5 +1,7 @@
 using Godot;
 
+namespace CDestronoi;
+
 public partial class FreeCam : Camera3D
 {
 	// if true, this script will deactivate all collisions for the player after the first use of the freecam

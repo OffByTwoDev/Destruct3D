@@ -3,6 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Inversion;
+
+namespace CDestronoi;
 
 // for whatever reason, you might want to unfragment a node
 // that is, find all the instantiated children of a node, queufree them

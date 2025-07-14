@@ -1,6 +1,8 @@
 using Godot;
 using System;
 
+namespace CDestronoi;
+
 public partial class ExampleScene : Node3D
 {
 	public override void _UnhandledInput(InputEvent @event)

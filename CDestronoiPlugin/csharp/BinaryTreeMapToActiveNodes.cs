@@ -2,6 +2,8 @@ using Godot;
 using System.Collections.Generic;
 using System;
 
+namespace CDestronoi;
+
 // anytime you create or destroy a destronoi node
 // find the (1) binarytreemap which represents the topmost ancestor of said created or destroyed destronoiNode
 // and tell it "hey, i have this ID, i exist / have been queuefreed() now"

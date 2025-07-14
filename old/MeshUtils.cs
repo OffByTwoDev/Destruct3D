@@ -1,5 +1,7 @@
 using Godot;
 
+namespace CDestronoi;
+
 public static class MeshUtils
 {
 	public static bool AreMeshVerticesEqual(ArrayMesh mesh, int surfaceIndex1, int surfaceIndex2)

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 
+namespace CDestronoi;
+
 /// <summary>
 /// Subdivides a convex ArrayMesh belonging to a RigidBody3D by generating a Voronoi Subdivision Tree (VST).
 /// This code prolly fails if treeHeight is set to 1

@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+namespace CDestronoi;
+
 // the area3d uses the collisionshape3d
 // this script uses values from the meshinstance3d
 // so make sure the collisionshape3d and meshinstance3d child of this area3d represent the same thing

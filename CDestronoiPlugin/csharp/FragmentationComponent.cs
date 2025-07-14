@@ -1,5 +1,7 @@
 using Godot;
 
+namespace CDestronoi;
+
 public partial class FragmentationComponent : Node
 {
 	[Export] DestronoiNode destronoiNode;
