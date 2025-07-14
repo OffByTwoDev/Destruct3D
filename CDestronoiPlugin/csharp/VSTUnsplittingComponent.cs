@@ -81,15 +81,9 @@ public partial class VSTUnsplittingComponent : Node
 		topmostParent.Reset();
 
 		// create fresh parent destronoiNode and add to scene
-		try
-		{
-			DestronoiNode freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
-			freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
-		}
-		catch (System.Exception)
-		{
-			throw;
-		}
+		DestronoiNode freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
+		freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
+
 
 		// foreach (DestronoiNode child in instantiatedChildren)
 		// {
