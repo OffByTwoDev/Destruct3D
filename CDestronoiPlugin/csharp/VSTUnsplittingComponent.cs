@@ -18,6 +18,8 @@ public partial class VSTUnsplittingComponent : Node
 	public Player player;
 
 	[Export] public int unexplosionLevelsToGoUp = 2;
+	
+	public readonly float UnsplittingDuration = 1.5f;
 
 	public override void _Ready()
 	{
@@ -126,7 +128,7 @@ public partial class VSTUnsplittingComponent : Node
 			tween.SetEase(Tween.EaseType.In);
 			tween.SetTrans(Tween.TransitionType.Expo);
 
-			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, 1.5f);
+			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, UnsplittingDuration);
 			tween.TweenCallback(Callable.From(() => destronoiNode.Visible = false));
 			// tween.TweenCallback(Callable.From(destronoiNode.QueueFree));
 			tween.TweenCallback(Callable.From(() => tcs.SetResult(true)));
