@@ -41,14 +41,7 @@ public partial class VSTUnsplittingComponent : Node
 		
 		if (unfragmentationTransform is Transform3D nonNullUnfragmentationTransform)
 		{
-			try
-			{
-				await Unsplit(fragmentToUnexplode, nonNullUnfragmentationTransform);
-			}
-			catch (System.Exception)
-			{
-				throw;
-			}
+			await Unsplit(fragmentToUnexplode, nonNullUnfragmentationTransform);
 		}
 		else
 		{

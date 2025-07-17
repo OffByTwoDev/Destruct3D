@@ -71,10 +71,11 @@ public partial class VSTSplittingComponent : Area3D
 
 		if (DebugPrints) { GD.Print("splitting (large scale)"); }
 
-		Activate();
+		ShallowExplosion();
 	}
 
-	public void Activate()
+	/// <summary>carry out the explosion that goes to a tree depth of explosionTreeDepthShallow</summary>
+	public void ShallowExplosion()
 	{
 		foreach (Node3D node in GetOverlappingBodies())
 		{
