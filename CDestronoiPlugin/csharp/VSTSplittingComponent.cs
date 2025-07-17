@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CDestronoi;
 
@@ -28,13 +29,9 @@ public partial class VSTSplittingComponent : Area3D
 	float explosionDistancesSmall;
 	float explosionDistancesLarge;
 
-	int framesUntilCloseExplosion = -10;
-
 	[Export] bool DebugPrints = false;
 	// if true, the secondary explosion has a randomly coloured material (random for each explosion, i.e. one colour per explosion not per fragment)
 	[Export] bool DebugMaterialsOnSecondaryExplosion = false;
-
-	[Export] int PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION = 5;
 
 	// material to set for fragments
 	StandardMaterial3D fragmentMaterial = new();
@@ -69,13 +66,31 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		if (DebugPrints) { GD.Print("splitting (large scale)"); }
+		_ = Activate();
+	}
+
+	public async Task Activate()
+	{
+		if (DebugPrints)
+		{
+			GD.Print("primary explosion");
+		}
 
 		ShallowExplosion();
+
+		// await so there's enough time for fragments to be instantiated
+		await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
+
+		if (DebugPrints)
+		{
+			GD.Print("secondary explosion");
+		}
+
+		CloserExplosion();
 	}
 
 	/// <summary>carry out the explosion that goes to a tree depth of explosionTreeDepthShallow</summary>
-	public void ShallowExplosion()
+	private void ShallowExplosion()
 	{
 		foreach (Node3D node in GetOverlappingBodies())
 		{
@@ -86,25 +101,9 @@ public partial class VSTSplittingComponent : Area3D
 
 			SplitExplode(destronoiNode, explosionDistancesLarge, explosionTreeDepthShallow, new StandardMaterial3D());
 		}
-
-		framesUntilCloseExplosion = PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION;
 	}
 
-	public override void _PhysicsProcess(double delta)
-	{
-		base._PhysicsProcess(delta);
-
-		framesUntilCloseExplosion -= 1;
-
-		if (framesUntilCloseExplosion == 0)
-		{
-			if (DebugPrints) { GD.Print("2ndary explosion"); }
-			
-			CloserExplosion();
-		}
-	}
-
-	public void CloserExplosion()
+	private void CloserExplosion()
 	{
 		if (DebugMaterialsOnSecondaryExplosion)
 		{

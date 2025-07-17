@@ -64,7 +64,7 @@ public partial class VSTUnsplittingComponent : Node
 		}
 		else
 		{
-			topmostParent = VSTUnsplittingComponent.GetTopMostParent(destronoiNode.vstRoot.permanentParent, unexplosionLevelsToGoUp);
+			topmostParent = GetTopMostParent(destronoiNode.vstRoot.permanentParent, unexplosionLevelsToGoUp);
 			instantiatedChildren = destronoiNode.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
 		}
 
