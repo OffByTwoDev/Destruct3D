@@ -40,7 +40,7 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		base._Ready();
 	
-		if ((explosionTreeDepthDeep <= 0) || (explosionTreeDepthDeep <= 0))
+		if ((explosionTreeDepthDeep <= 0) || (explosionTreeDepthShallow <= 0))
 		{
 			GD.PushError("explosionDepths have to be strictly greater than 0");
 			return;
@@ -86,7 +86,7 @@ public partial class VSTSplittingComponent : Area3D
 			GD.Print("secondary explosion");
 		}
 
-		CloserExplosion();
+		// CloserExplosion();
 	}
 
 	/// <summary>carry out the explosion that goes to a tree depth of explosionTreeDepthShallow</summary>
@@ -131,8 +131,6 @@ public partial class VSTSplittingComponent : Area3D
 		// desired explosionTreeDepth is relative to a body's root node, hence we add the depth of the root node
 		explosionTreeDepth += originalVSTRoot.level;
 
-		// GD.Print(explosionTreeDepth);
-
 		// if (explosionTreeDepth > deepestNode)
 		// {
 			// set explosionTreeDepth to deepestNode i.e. just remove the smallest thing we have
@@ -168,7 +166,12 @@ public partial class VSTSplittingComponent : Area3D
 		foreach (VSTNode vstNode in fragmentsAtGivenDepth)
 		{
 			// if the node is not an end point, its children says something about what it represents
-			if (!vstNode.endPoint)
+			if (vstNode.endPoint && !(vstNode.left is null && vstNode.right is null) )
+			{
+				GD.PushWarning("all endpoints should have 2 null children, this one has at least 1 non null child. This is unexpected.");
+				return;
+			}
+			else if (!vstNode.endPoint)
 			{
 				if (vstNode.left is null && vstNode.right is null)
 				{
@@ -181,11 +184,6 @@ public partial class VSTSplittingComponent : Area3D
 					// this node has been split; no node of the required depth is available as it has already been split in 2
 					continue;
 				}
-			}
-			// redundant check, can just remove probs
-			else if ( !(vstNode.left is null && vstNode.right is null) )
-			{
-				GD.PushWarning("all endpoints should have 2 null children, this one has at least 1 non null child. This is unexpected.");
 			}
 			
 			// test for fragment centre's inclusion in explosion region
@@ -200,13 +198,6 @@ public partial class VSTSplittingComponent : Area3D
 			if ((globalLeafPosition - GlobalPosition).Length() < explosionDistanceMax)
 			{
 				fragmentsToRemove.Add(vstNode);
-				Orphan(vstNode);
-				TellParentThatChildChanged(vstNode);
-
-				if (vstNode.childrenChanged)
-				{
-					GD.Print("expect a subsequent warning about combining meshes");
-				}
 			}
 		}
 
@@ -228,6 +219,9 @@ public partial class VSTSplittingComponent : Area3D
 
 		foreach (VSTNode leaf in fragmentsToRemove)
 		{
+			Orphan(leaf);
+			TellParentThatChildChanged(leaf);
+
 			string leafName = destronoiNode.Name + $"_fragment_{fragmentNumber}";
 
 			MeshInstance3D meshToInstantate = new();
@@ -283,7 +277,7 @@ public partial class VSTSplittingComponent : Area3D
 		// --- create parent fragments --- //
 		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
 		// (assumes originalVSTRoot.childrenChanged is true, and hence we combine the relevant meshes)
-		
+
 		if (DebugPrints)
 		{
 			GD.Print("Creating Combined DN");
@@ -318,7 +312,6 @@ public partial class VSTSplittingComponent : Area3D
 			}
 
 			VSTNode newVSTRoot = originalVSTRoot.DeepCopy();
-			newVSTRoot.parent = null;
 			
 			// now we can create a list of non adjacent nodes. HOWEVER this list of VSTNodes is of DISTINCT objects compared to the ones in newVSTRoot
 			// as we just created a deepcopy of originalVSTRoot

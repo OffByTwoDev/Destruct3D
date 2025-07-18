@@ -50,13 +50,13 @@ public partial class DestronoiNode : RigidBody3D
 		GlobalTransform = inputGlobalTransform;
 
 		meshInstance = (MeshInstance3D)inputMeshInstance.Duplicate();
-		// meshInstance = inputMeshInstance;
 
-		if (meshInstance.GetParent() is not null)
-		{
-			GD.PushWarning("reparenting meshinstance");
-			meshInstance.GetParent().RemoveChild(meshInstance);
-		}
+		// meshInstance = inputMeshInstance;
+		// if (meshInstance.GetParent() is not null)
+		// {
+		// 	GD.PushWarning("reparenting meshinstance");
+		// 	meshInstance.GetParent().RemoveChild(meshInstance);
+		// }
 
 		AddChild(meshInstance);
 

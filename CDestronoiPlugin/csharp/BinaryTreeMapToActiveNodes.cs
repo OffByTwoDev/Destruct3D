@@ -70,9 +70,13 @@ public partial class BinaryTreeMapToActiveNodes : Node
 	public List<DestronoiNode> GetFragmentsInstantiatedChildren(int vstRootID)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[vstRootID];
+
 		List<DestronoiNode> instantiatedChildren = [];
 
-		RecursivelyAddActiveNodes(representativeNode, instantiatedChildren);
+		if (representativeNode is not null)
+		{
+			RecursivelyAddActiveNodes(representativeNode, instantiatedChildren);
+		}
 
 		return instantiatedChildren;
 	}
