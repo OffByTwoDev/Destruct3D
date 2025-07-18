@@ -32,33 +32,9 @@ public class VSTNode
 	/// <summary>just used for unfragmentation</summary>
 	public readonly VSTNode permanentParent;
 
-	// these are effectively "write-once only"
-	private VSTNode _permanentLeft;
-	private VSTNode _permanentRight;
-	public VSTNode PermanentLeft
-	{
-		get => _permanentLeft;
-		set
-		{
-			if (_permanentLeft != null)
-			{
-				throw new InvalidOperationException("permanentLeft can only be set once.");
-			}
-			_permanentLeft = value;
-		}
-	}
-	public VSTNode PermanentRight
-	{
-		get => _permanentRight;
-		set
-		{
-			if (_permanentRight != null)
-			{	
-				throw new InvalidOperationException("permanentRight can only be set once.");
-			}
-			_permanentRight = value;
-		}
-	}
+	// cant just be readonly as these are set in _ready() of a destronoinode
+	public WriteOnce<VSTNode> PermanentLeft = new();
+	public WriteOnce<VSTNode> PermanentRight = new();
 
 	/// <summary>whether this fragment is the smallest initialised fragment for this body<br></br>
 	/// not actually necessary, if logic is good then childrenChanged would always be false for endPoints anyways<br></br>
@@ -132,96 +108,48 @@ public class VSTNode
 	}
 
 	/// <summary>
-	/// Recursively populates outArr with each leaf VSTNode and returns the list of leaves.
+	/// Recursively populates outArr with VSTNodes at an optional given depth. Leave desiredlevel unspecified to get the deepest possible nodes
 	/// </summary>
-	public static List<VSTNode> GetLeafNodes(VSTNode root = null, List<VSTNode> outArr = null)
+	public static List<VSTNode> GetLeafNodes(VSTNode root, int? desiredLevel = null, int currentLevel = 0, List<VSTNode> outArr = null)
 	{
-		if (outArr == null)
+		if (currentLevel < 0 || desiredLevel < 0)
 		{
-			outArr = [];
+			GD.PushError("cannot use a negative currentlevel, nor desired level, in GetLeftLeafNodes. returning null");
+			return null;
 		}
 
-		if (root == null)
+		if (root is null)
 		{
+			GD.PushError("GetLeftLeafNodes was passed a null vstNode root");
 			return [];
 		}
 
-		if (root.left == null && root.right == null)
-		{
-			outArr.Add(root);
-			return outArr;
-		}
-		if (root.left != null)
-			GetLeafNodes(root.left, outArr);
-		if (root.right != null)
-			GetLeafNodes(root.right, outArr);
-
-		return outArr;
-	}
-
-	/// <summary>
-	/// Recursively populates outArr with VSTNodes of right laterality at a certain depth.
-	/// </summary>
-	public static List<VSTNode> GetRightLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
-	{
 		if (outArr is null)
 		{
 			outArr = [];
 		}
-		if (root is null)
+
+
+		bool isLeaf = root.left is null && root.right is null;
+		bool atTargetLevel;
+
+		if (desiredLevel is null)
 		{
-			return [];
+			atTargetLevel = false;
 		}
-
-		if ((root.left is null && root.right is null) || level == lim)
+		else
 		{
-			outArr.Add(root);
-			return outArr;
+			atTargetLevel = currentLevel == desiredLevel;
 		}
-
-		if (root.left is not null && level > 0)
-		{
-			GetRightLeafNodes(root.left, outArr, lim, level + 1);
-		}
-
-		if (root.right is not null)
-		{
-			GetRightLeafNodes(root.right, outArr, lim, level + 1);
-		}
-
-		return outArr;
-	}
-
-	/// <summary>
-	/// Recursively populates outArr with VSTNodes of left laterality at a certain depth.
-	/// </summary>
-	public static List<VSTNode> GetLeftLeafNodes(VSTNode root = null, List<VSTNode> outArr = null, int lim = 1, int level = 0)
-	{
-		if (outArr == null)
-		{
-			outArr = [];
-		}
-
-		if (root == null)
-		{
-			return [];
-		}
-
-		if ((root.left == null && root.right == null) || level == lim)
+		
+		if (isLeaf || atTargetLevel)
 		{
 			outArr.Add(root);
 			return outArr;
 		}
 
-		if (root.left is not null)
-		{
-			GetLeftLeafNodes(root.left, outArr, lim, level + 1);
-		}
-
-		if (root.right is not null && level > 0)
-		{
-			GetLeftLeafNodes(root.right, outArr, lim, level + 1);
-		}
+		GetLeafNodes(root.left, desiredLevel, currentLevel + 1, outArr);
+		GetLeafNodes(root.right, desiredLevel, currentLevel + 1, outArr);
 
 		return outArr;
 	}
@@ -231,18 +159,7 @@ public class VSTNode
 		return $"VSTNode {meshInstance}";
 	}
 
-	public void DebugPrint()
-	{
-		GD.Print("ID: ", ID);
-		GD.Print("left: ", left?.ID);
-		GD.Print("right: ", right?.ID);
-		GD.Print("parent: ", parent?.ID);
-		GD.Print("level: ", level);
-		GD.Print("laterality: ", laterality);
-		GD.Print("---");
-	}
-
-	public void RecursiveDebugPrint()
+	public void DebugPrint(bool recursive = false)
 	{
 		GD.Print("ID: ", ID);
 		GD.Print("left: ", left?.ID);
@@ -252,8 +169,11 @@ public class VSTNode
 		GD.Print("laterality: ", laterality);
 		GD.Print("---");
 
-		left?.RecursiveDebugPrint();
-		right?.RecursiveDebugPrint();
+		if (recursive)
+		{
+			left?.DebugPrint(true);
+			right?.DebugPrint(true);
+		}
 	}
 
 	// meshInstances are shared between all deepcopies, this is fine I dont think it affects behaviour

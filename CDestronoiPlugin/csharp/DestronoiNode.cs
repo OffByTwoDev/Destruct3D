@@ -117,7 +117,9 @@ public partial class DestronoiNode : RigidBody3D
 		for (int i = 0; i < treeHeight - 1; i++)
 		{
 			List<VSTNode> leaves = [];
-			VSTNode.GetLeafNodes(vstRoot, leaves);
+
+			VSTNode.GetLeafNodes(vstRoot, outArr: leaves);
+			
 			foreach (VSTNode leaf in leaves)
 			{
 				PlotSitesRandom(leaf);
@@ -403,23 +405,22 @@ public partial class DestronoiNode : RigidBody3D
 			Mesh = surfA.Commit()
 		};
 		node.left = new VSTNode(meshUp, node.ID * 2, node, node.level + 1, Laterality.LEFT, endPoint);
-		node.PermanentLeft = node.left;
+		node.PermanentLeft.Value = node.left;
 
 		MeshInstance3D meshDown = new()
 		{
 			Mesh = surfB.Commit()
 		};
 		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node, node.level + 1, Laterality.RIGHT, endPoint);
-		node.PermanentRight = node.right;
+		node.PermanentRight.Value = node.right;
 
 		return true;
 	}
 
-	public void Destroy(int leftVal = 1, int rightVal = 1, float combustVelocity = 0f)
+	public void Destroy(int depth, float combustVelocity = 0f)
 	{
 		List<VSTNode> leaves = [];
-		VSTNode.GetLeftLeafNodes(vstRoot, leaves, leftVal);
-		VSTNode.GetRightLeafNodes(vstRoot, leaves, rightVal);
+		VSTNode.GetLeafNodes(vstRoot, depth, outArr: leaves);
 
 		int fragmentNumber = 0;
 

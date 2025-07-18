@@ -82,8 +82,7 @@ public partial class VSTUnsplittingComponent : Node
 		DestronoiNode freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
 		freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
 
-
-		DebugPrintValidDepth(topmostParent);
+		// DebugPrintValidDepth(topmostParent);
 		// foreach (DestronoiNode child in instantiatedChildren)
 		// {
 		// 	child.QueueFree();
