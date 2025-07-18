@@ -44,17 +44,20 @@ public partial class BinaryTreeMapToActiveNodes : Node
 	/// get the relevant representativeNode for this destronoiNode
 	/// and then adds the input destronoiNode to the activeNodeList for that RN / ID
 	/// </summary>
-	/// <param name="destronoiNode"></param>
 	public void AddToActiveTree(DestronoiNode destronoiNode)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
 		representativeNode.activeNodesWhichRepresentThisLeafID.Add(destronoiNode);
+
+		if (!destronoiNode.IsInsideTree())
+		{
+			GD.PushError("a destronoi Node which is not inside a scene tree was added to the BinaryTreeMapToActiveNodes. this will cause errors in unsplitting & splitting components (probably)");
+		}
 	}
 
 	/// <summary>
 	/// removes a destronoiNode from the activeNodeList for a representative node
 	/// </summary>
-	/// <param name="destronoiNode"></param>
 	public void RemoveFromActiveTree(DestronoiNode destronoiNode)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
@@ -77,8 +80,14 @@ public partial class BinaryTreeMapToActiveNodes : Node
 	{
 		instantiatedChildren.AddRange(representativeNode.activeNodesWhichRepresentThisLeafID);
 
-		if (representativeNode.left is not null) { RecursivelyAddActiveNodes(representativeNode.left, instantiatedChildren); }
-		if (representativeNode.right is not null) { RecursivelyAddActiveNodes(representativeNode.right, instantiatedChildren); }
+		if (representativeNode.left is not null)
+		{
+			RecursivelyAddActiveNodes(representativeNode.left, instantiatedChildren);
+		}
+		if (representativeNode.right is not null)
+		{
+			RecursivelyAddActiveNodes(representativeNode.right, instantiatedChildren);
+		}
 	}
 }
 

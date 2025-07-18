@@ -246,12 +246,12 @@ public partial class DestronoiNode : RigidBody3D
 
 		SurfaceTool surfA = new();
 		surfA.Begin(Mesh.PrimitiveType.Triangles);
-		surfA.SetMaterial(node.GetOverrideMaterial());
+		// surfA.SetMaterial(node.GetOverrideMaterial());
 		surfA.SetSmoothGroup(UInt32.MaxValue);
 
 		SurfaceTool surfB = new();
 		surfB.Begin(Mesh.PrimitiveType.Triangles);
-		surfB.SetMaterial(node.GetOverrideMaterial());
+		// surfB.SetMaterial(node.GetOverrideMaterial());
 		surfB.SetSmoothGroup(UInt32.MaxValue);
 		
 		// GENERATE SUB MESHES
@@ -261,7 +261,7 @@ public partial class DestronoiNode : RigidBody3D
 		{
 			SurfaceTool surfaceTool = new();
 			surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
-			surfaceTool.SetMaterial(node.meshInstance.GetActiveMaterial(0));
+			// surfaceTool.SetMaterial(node.meshInstance.GetActiveMaterial(0));
 			surfaceTool.SetSmoothGroup(UInt32.MaxValue);
 
 			if (side == 1)
@@ -416,6 +416,7 @@ public partial class DestronoiNode : RigidBody3D
 		return true;
 	}
 
+	/// <summary>deprecated</summary>
 	public void Destroy(int depth, float combustVelocity = 0f)
 	{
 		List<VSTNode> leaves = [];
@@ -507,7 +508,7 @@ public partial class DestronoiNode : RigidBody3D
 		MeshInstance3D meshInstance = subVSTmeshInstance;
 		meshInstance.Name = $"{name}_MeshInstance3D";
 
-		meshInstance.SetSurfaceOverrideMaterial(0, material);
+		// meshInstance.SetSurfaceOverrideMaterial(0, material);
 
 		destronoiNode.AddChild(meshInstance);
 
@@ -540,7 +541,6 @@ public partial class DestronoiNode : RigidBody3D
 		// finally, tell the relevant binarytreemap that this node has been created //
 		// and also set the relevant binaryTreeMap to be this one
 		destronoiNode.binaryTreeMapToActiveNodes = this.binaryTreeMapToActiveNodes;
-		destronoiNode.binaryTreeMapToActiveNodes.AddToActiveTree(destronoiNode);
 		
 		return destronoiNode;
 	}

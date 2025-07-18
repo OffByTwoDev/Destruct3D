@@ -148,6 +148,11 @@ public partial class VSTSplittingComponent : Area3D
 
 		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, originalVSTRoot, explosionTreeDepth);
 
+		if (explosionTreeDepth == originalVSTRoot.level)
+		{
+			GD.PushError("explosionTreeDepth = originalVSTRoot.level. this might lead to issues idk, i can't work it out lmao");
+		}
+
 		if (fragmentsAtGivenDepth.Count == 0)
 		{
 			if (DebugPrints)
@@ -241,16 +246,18 @@ public partial class VSTSplittingComponent : Area3D
 				}
 			}
 
-			DestronoiNode body = destronoiNode.CreateDestronoiNode(leaf,
+			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(leaf,
 																meshToInstantate,
 																leafName,
 																fragmentMaterial);
 			
-			destronoiNode.fragmentContainer.AddChild(body);
+			destronoiNode.fragmentContainer.AddChild(newDestronoiNode);
+			destronoiNode.binaryTreeMapToActiveNodes.AddToActiveTree(newDestronoiNode);
+
 
 			if (ApplyImpulseOnSplit)
 			{
-				body.ApplyCentralImpulse(new Vector3(
+				newDestronoiNode.ApplyCentralImpulse(new Vector3(
 													GD.Randf()-0.5f,
 													GD.Randf()-0.5f,
 													GD.Randf()-0.5f
@@ -279,8 +286,8 @@ public partial class VSTSplittingComponent : Area3D
 
 		if (!originalVSTRoot.childrenChanged)
 		{
-			GD.PushWarning("i didnt expect this to be possible. if this vstroot has no changed children, then i would expect" +
-				" fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.");
+			GD.PushWarning("i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.");
+			originalVSTRoot.DebugPrint();
 			return;
 		}
 
@@ -316,7 +323,8 @@ public partial class VSTSplittingComponent : Area3D
 				return;
 			}
 
-			VSTNode newVSTRoot = originalVSTRoot.DeepCopy(newparent: null);
+			VSTNode newVSTRoot = originalVSTRoot.DeepCopy();
+			newVSTRoot.parent = null;
 			
 			// now we can create a list of non adjacent nodes. HOWEVER this list of VSTNodes is of DISTINCT objects compared to the ones in newVSTRoot
 			// as we just created a deepcopy of originalVSTRoot
@@ -339,39 +347,17 @@ public partial class VSTSplittingComponent : Area3D
 			GetDeepestMeshInstances(meshInstances, newVSTRoot);
 			MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
 
-			DestronoiNode body = destronoiNode.CreateDestronoiNode(newVSTRoot,
+			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(newVSTRoot,
 																overlappingCombinedMeshesToKeep,
 																leafName,
 																fragmentMaterial);
 
-			destronoiNode.fragmentContainer.AddChild(body);
+			destronoiNode.fragmentContainer.AddChild(newDestronoiNode);
+			destronoiNode.binaryTreeMapToActiveNodes.AddToActiveTree(newDestronoiNode);
 		}
 
-		// destronoiNode.QueueFree();
 		Deactivate(destronoiNode);
-
-		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
-		// if (DebugPrints) { GD.Print("Creating Combined DN"); }
-
-		// List<MeshInstance3D> meshInstances = [];
-
-		// InitialiseMeshInstances(meshInstances, originalVSTRoot);
-
-		// MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
-
-		// CollisionShape3D collisionShape = new()
-		// {
-		// 	Name = "CollisionShape3D",
-		// 	Shape = overlappingCombinedMeshesToKeep.Mesh.CreateConvexShape(false, false)
-		// };
-
-		// foreach (Node child in destronoiNode.GetChildren())
-		// {
-		// 	child.Free();
-		// }
-
-		// destronoiNode.AddChild(overlappingCombinedMeshesToKeep);
-		// destronoiNode.AddChild(collisionShape);
+		// destronoiNode.QueueFree();
 	}
 
 	// for now we dont queuefree as we need the original objects (i.e. the vst leafs) to stick around
@@ -379,14 +365,23 @@ public partial class VSTSplittingComponent : Area3D
 	// rather than just creating new ones and deactivating the old one
 	public static void Deactivate(DestronoiNode destronoiNode)
 	{
-		destronoiNode.Visible = false;
-		destronoiNode.Freeze = true;
-		destronoiNode.CollisionLayer = 0;
-		destronoiNode.CollisionMask = 0;
-		destronoiNode.Sleeping = true;
+		// destronoiNode.Visible = false;
+		// destronoiNode.Freeze = true;
+		// destronoiNode.CollisionLayer = 0;
+		// destronoiNode.CollisionMask = 0;
+		// destronoiNode.Sleeping = true;
+
+		// remove from scene tree
+
+		// foreach (Node child in destronoiNode.GetChildren())
+		// {
+		// 	GD.Print(child.Name);
+		// 	destronoiNode.RemoveChild(child);
+		// }
+
+		destronoiNode.GetParent()?.RemoveChild(destronoiNode);
 
 		destronoiNode.binaryTreeMapToActiveNodes.RemoveFromActiveTree(destronoiNode);
-
 	}
 
 	public static void OrphanDeepestNonAdjacentNodesByID(VSTNode vstNode, List<int> nonAdjacentNodeIDs)
@@ -449,6 +444,7 @@ public partial class VSTSplittingComponent : Area3D
 		}
 	}
 
+	/// <summary>must always be followed by TellParentsThatChildrenChanged(originally input vstNode)</summary>
 	public static void Orphan(VSTNode vstNode)
 	{
 		// represents root node of body having no children and no parent
