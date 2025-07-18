@@ -12,8 +12,9 @@ namespace CDestronoi;
 public partial class DestronoiNode : RigidBody3D
 {
 	// --- Exports --- //
-	// this meshInstance (which is also set in CreateDestronoiNode) is the actual meshInstance of the instantiated rigidbody
-	// ie its the sum of all relevant endPoints / nodes with unchanged children
+
+	/// <summary>this meshInstance (which is also set in CreateDestronoiNode) is the actual meshInstance of the instantiated rigidbody
+	/// ie its the sum of all relevant endPoints / nodes with unchanged children</summary>
 	[Export] public MeshInstance3D meshInstance;
 	// node under which fragments will be instanced
 	[Export] public Node fragmentContainer;
@@ -41,6 +42,33 @@ public partial class DestronoiNode : RigidBody3D
 		if (Input.IsActionJustPressed("debug_print_vst"))
 		{
 			DebugPrintVST(vstRoot);
+		}
+
+		if (Input.IsActionJustPressed("reset_destronoi_nodes_materials"))
+		{
+			if (meshInstance.GetActiveMaterial(0) is not null)
+			{
+				GD.Print($"mesh instance {meshInstance} with name {Name}..");
+				// ResetMeshInstance(meshInstance);
+			}
+		}
+	}
+
+	public void ResetMeshInstance(MeshInstance3D meshInstance)
+	{
+		var arrayMesh = meshInstance.Mesh as ArrayMesh;
+
+		if (arrayMesh is not null)
+		{
+			int surfaceCount = arrayMesh.GetSurfaceCount();
+			for (int i = 0; i < surfaceCount; i++)
+			{
+				// Remove surface override
+				this.meshInstance.SetSurfaceOverrideMaterial(i, null);
+
+				// Remove the material from the mesh itself (WARNING: affects all users of this mesh)
+				arrayMesh.SurfaceSetMaterial(i, null);
+			}
 		}
 	}
 

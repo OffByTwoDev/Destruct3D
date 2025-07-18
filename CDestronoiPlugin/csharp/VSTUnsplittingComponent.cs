@@ -84,14 +84,14 @@ public partial class VSTUnsplittingComponent : Node
 		freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
 		freshDestronoiNodeFragment.binaryTreeMapToActiveNodes.AddToActiveTree(freshDestronoiNodeFragment);
 
-		// DebugPrintValidDepth(topmostParent);
+		DebugPrintValidDepth(topmostParent);
 	}
 
 	public static void DebugPrintValidDepth(VSTNode vstNode)
 	{
 		if (vstNode.left is null && vstNode.right is null)
 		{
-			GD.Print(vstNode.level);
+			GD.Print($"max valid tree level is: {vstNode.level}");
 		}
 		else
 		{
@@ -134,7 +134,6 @@ public partial class VSTUnsplittingComponent : Node
 			completionSources.Add(taskCompletionSource);
 
 			Tween tween = GetTree().CreateTween();
-			// destronoiNode.Visible = true;
 
 			tween.SetEase(Tween.EaseType.In);
 			tween.SetTrans(Tween.TransitionType.Expo);
@@ -146,32 +145,12 @@ public partial class VSTUnsplittingComponent : Node
 			}
 			
 			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, UnsplittingDuration);
-			// tween.TweenCallback(Callable.From(() => destronoiNode.Visible = false));
-			// tween.TweenCallback(Callable.From(destronoiNode.QueueFree));
 			tween.TweenCallback(Callable.From(() => VSTSplittingComponent.Deactivate(destronoiNode)));
 			tween.TweenCallback(Callable.From(() => taskCompletionSource.SetResult(true)));
 		}
 
-		// Wait for all interpolations to complete
 		await Task.WhenAll(completionSources.Select(t => t.Task));
 	}
-
-	// public void InterpolateDestronoiNodesThenQueueFree(List<DestronoiNode> instantiatedChildren,
-	// 												Transform3D reversedExplosionCentre)
-	// {
-	// 	foreach (DestronoiNode destronoiNode in instantiatedChildren)
-	// 	{
-	// 		Tween tween = GetTree().CreateTween();
-
-	// 		// disable everything about the destronoiNode but keep it visible
-	// 		VSTSplittingComponent.Deactivate(destronoiNode);
-	// 		destronoiNode.Visible = true;
-
-	// 		tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, 1.0f);
-
-	// 		tween.TweenCallback(Callable.From(() => destronoiNode.Visible = false));
-	// 	}
-	// }
 
 	/// <summary>
 	/// creates a Destronoi Node from the given meshInstance and vstnode
@@ -195,10 +174,13 @@ public partial class VSTUnsplittingComponent : Node
 		// --- rigidbody initialisation --- //
 
 		// mesh instance
-		MeshInstance3D meshInstance = (MeshInstance3D)vstNode.meshInstance.Duplicate();
+		MeshInstance3D meshInstance = vstNode.meshInstance;
 		meshInstance.Name = $"{name}_MeshInstance3D";
 
 		// meshInstance.SetSurfaceOverrideMaterial(0, material);
+
+		// GD.PushWarning("mesh instance already has a parent, reparenting i think it the behaviour we want idk though lmao");
+		meshInstance.GetParent()?.RemoveChild(meshInstance);
 
 		destronoiNode.AddChild(meshInstance);
 

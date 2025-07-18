@@ -64,6 +64,9 @@ public partial class BinaryTreeMapToActiveNodes : Node
 		representativeNode.activeNodesWhichRepresentThisLeafID.Remove(destronoiNode);
 	}
 
+	/// <summary>
+	/// includes the node which is passed into the function initially
+	/// </summary>
 	public List<DestronoiNode> GetFragmentsInstantiatedChildren(int vstRootID)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[vstRootID];

@@ -189,6 +189,12 @@ public partial class VSTSplittingComponent : Area3D
 			}
 			
 			// test for fragment centre's inclusion in explosion region
+			if (!destronoiNode.IsInsideTree())
+			{
+				GD.PushError("destronoi node not in tree, returning early from splitexplode");
+				return;
+			}
+
 			Vector3 globalLeafPosition = destronoiNode.GlobalTransform * vstNode.meshInstance.GetAabb().GetCenter();
 
 			if ((globalLeafPosition - GlobalPosition).Length() < explosionDistanceMax)
@@ -288,6 +294,7 @@ public partial class VSTSplittingComponent : Area3D
 		{
 			GD.PushWarning("i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.");
 			originalVSTRoot.DebugPrint();
+			destronoiNode.QueueFree();
 			return;
 		}
 
