@@ -32,6 +32,7 @@ public partial class BinaryTreeMapToActiveNodes : Node
 		return node;
 	}
 
+	// legit no clue why treeHeight is needed here
 	public BinaryTreeMapToActiveNodes(int treeHeight, DestronoiNode rootDestronoiNode)
 	{
 		rootNode = BuildSubtree(null, Laterality.NONE, rootID, treeHeight);

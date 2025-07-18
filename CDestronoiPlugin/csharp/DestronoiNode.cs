@@ -54,7 +54,6 @@ public partial class DestronoiNode : RigidBody3D
 		GD.Print("parent: ", vstNode.parent?.ID);
 		GD.Print("level: ", vstNode.level);
 		GD.Print("laterality: ", vstNode.laterality);
-		GD.Print("ownerID: ", vstNode.ownerID);
 		GD.Print("---");
 
 		DebugPrintVST(vstNode.left);
@@ -108,7 +107,7 @@ public partial class DestronoiNode : RigidBody3D
 		}
 
 		// the topmost node has no parent hence null & no laterality & not endPoint
-		vstRoot = new VSTNode(meshInstance, 1, 1, null, 0, Laterality.NONE, false);
+		vstRoot = new VSTNode(meshInstance, 1, null, 0, Laterality.NONE, false);
 
 		// Plot 2 sites for the subdivision
 		PlotSitesRandom(vstRoot);
@@ -231,8 +230,10 @@ public partial class DestronoiNode : RigidBody3D
 	public static bool Bisect(VSTNode node, bool endPoint)
 	{
 		if (node.GetSiteCount() != 2)
+		{
 			return false;
-
+		}
+		
 		var siteA = node.sites[0];
 		var siteB = node.sites[1];
 		var planeNormal = (siteB - siteA).Normalized();
@@ -397,13 +398,19 @@ public partial class DestronoiNode : RigidBody3D
 		surfA.Index(); surfA.GenerateNormals();
 		surfB.Index(); surfB.GenerateNormals();
 
-		var meshUp = new MeshInstance3D { Mesh = surfA.Commit() };
-		node.left = new VSTNode(meshUp, node.ID * 2, node.ownerID, node, node.level + 1, Laterality.LEFT, endPoint);
-		node.permanentLeft = node.left;
+		MeshInstance3D meshUp = new()
+		{
+			Mesh = surfA.Commit()
+		};
+		node.left = new VSTNode(meshUp, node.ID * 2, node, node.level + 1, Laterality.LEFT, endPoint);
+		node.PermanentLeft = node.left;
 
-		var meshDown = new MeshInstance3D { Mesh = surfB.Commit() };
-		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node.ownerID, node, node.level + 1, Laterality.RIGHT, endPoint);
-		node.permanentRight = node.right;
+		MeshInstance3D meshDown = new()
+		{
+			Mesh = surfB.Commit()
+		};
+		node.right = new VSTNode(meshDown, node.ID * 2 + 1, node, node.level + 1, Laterality.RIGHT, endPoint);
+		node.PermanentRight = node.right;
 
 		return true;
 	}

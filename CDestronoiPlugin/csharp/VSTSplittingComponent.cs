@@ -142,9 +142,21 @@ public partial class VSTSplittingComponent : Area3D
 		// might also want to queuefree fragments and instantiate some temporary explosion looking particle effects
 		// if all sides of the aabb of the fragment are less than some value (or maybe the volume of the aabb is less than some value)
 
+		// add early return condition for if originalVSTRoot depth is 0?
+
 		List<VSTNode> fragmentsAtGivenDepth = [];
 
 		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, originalVSTRoot, explosionTreeDepth);
+
+		if (fragmentsAtGivenDepth.Count == 0)
+		{
+			if (DebugPrints)
+			{
+				GD.Print("fragmentsAtGivenDepth.Count is 0, returning early to avoid unnecessary computation");
+			}
+			
+			return;
+		}
 
 		List<VSTNode> fragmentsToRemove = [];
 
@@ -192,7 +204,10 @@ public partial class VSTSplittingComponent : Area3D
 		// so we can save some computation and skip it. also prevents bodies moving about weirdly (duplicating them resets their position)
 		if (fragmentsToRemove.Count == 0)
 		{
-			if (DebugPrints) { GD.Print("no fragments to remove"); }
+			if (DebugPrints)
+			{
+				GD.Print("no fragments to remove");
+			}
 			return;
 		}
 

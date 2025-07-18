@@ -83,10 +83,30 @@ public partial class VSTUnsplittingComponent : Node
 		freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
 
 
+		DebugPrintValidDepth(topmostParent);
 		// foreach (DestronoiNode child in instantiatedChildren)
 		// {
 		// 	child.QueueFree();
 		// }
+	}
+
+	public static void DebugPrintValidDepth(VSTNode vstNode)
+	{
+		if (vstNode.left is null && vstNode.right is null)
+		{
+			GD.Print(vstNode.level);
+		}
+		else
+		{
+			if (vstNode.left is not null)
+			{
+				DebugPrintValidDepth(vstNode.left);
+			}
+			else if (vstNode.right is not null)
+			{
+				DebugPrintValidDepth(vstNode.right);
+			}
+		}
 	}
 
 	public static VSTNode GetTopMostParent(VSTNode vstNode, int levelsToGoUp)
