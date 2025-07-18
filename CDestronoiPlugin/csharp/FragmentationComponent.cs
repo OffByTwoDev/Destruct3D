@@ -6,8 +6,7 @@ public partial class FragmentationComponent : Node
 {
 	[Export] DestronoiNode destronoiNode;
 
-	[Export(PropertyHint.Range, "1,8")] public int destructionFragmentsLeft = 1;
-	[Export(PropertyHint.Range, "1,8")] public int destructionFragmentsRight = 1;
+	[Export(PropertyHint.Range, "1,8")] public int depth = 1;
 
 	[Export] public float combustionStrength;
 
@@ -15,7 +14,7 @@ public partial class FragmentationComponent : Node
 	{
 		if (Input.IsActionJustPressed("cs_debug_explode"))
 		{
-			destronoiNode.Destroy(destructionFragmentsLeft, destructionFragmentsRight, combustionStrength);
+			destronoiNode.Destroy(depth, combustionStrength);
 		}
 	}
 }

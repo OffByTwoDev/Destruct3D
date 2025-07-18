@@ -132,7 +132,6 @@ public partial class DestronoiNode : RigidBody3D
 				{
 					Bisect(leaf, false);
 				}
-				
 			}
 		}
 
