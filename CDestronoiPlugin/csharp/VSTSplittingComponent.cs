@@ -13,28 +13,28 @@ namespace CDestronoi;
 // smaller mesh instance corresponds to the deeper explosion
 public partial class VSTSplittingComponent : Area3D
 {
-	// the layer of the VST that the fragments will be removed from, where the vstroot is the 0th layer
-	// [Export(PropertyHint.Range, "1,8")] int explosionDepth = 2;
+	/// <summary>the layer of the VST that the fragments will be removed from, where the vstroot is the 0th layer</summary>
+	[Export(PropertyHint.Range, "1,8")] int explosionDepth = 2;
 
-	[Export] MeshInstance3D explosionMeshSmall;
-	[Export] MeshInstance3D explosionMeshLarge;
+	[Export] private MeshInstance3D explosionMeshSmall;
+	[Export] private MeshInstance3D explosionMeshLarge;
 
-	[Export] int explosionTreeDepthDeep = 2;
-	[Export] int explosionTreeDepthShallow = 2;
+	[Export] private int explosionTreeDepthDeep = 2;
+	[Export] private int explosionTreeDepthShallow = 2;
 
-	[Export] bool ApplyImpulseOnSplit = false;
-	[Export] float ImpulseStrength = 1.0f;
+	[Export] private bool ApplyImpulseOnSplit = false;
+	[Export] private float ImpulseStrength = 1.0f;
 
 	// these are to be set to be the radius of the sphere
-	float explosionDistancesSmall;
-	float explosionDistancesLarge;
+	private float explosionDistancesSmall;
+	private float explosionDistancesLarge;
 
-	[Export] bool DebugPrints = false;
-	// if true, the secondary explosion has a randomly coloured material (random for each explosion, i.e. one colour per explosion not per fragment)
-	[Export] bool DebugMaterialsOnSecondaryExplosion = false;
+	[Export] private bool DebugPrints = false;
+	/// <summary>if true, the secondary explosion has a randomly coloured material (random for each explosion, i.e. one colour per explosion not per fragment)</summary>
+	[Export] private bool DebugMaterialsOnSecondaryExplosion = false;
 
 	// material to set for fragments
-	StandardMaterial3D fragmentMaterial = new();
+	private StandardMaterial3D fragmentMaterial = new();
 
 	public override void _Ready()
 	{
@@ -241,15 +241,7 @@ public partial class VSTSplittingComponent : Area3D
 			}
 			else
 			{
-				if (leaf.meshInstance.GetParent() is not null)
-				{
-					GD.PushWarning("leafs meshinstance already has a parent. duplicating and reusing.");
-					meshToInstantate = (MeshInstance3D)leaf.meshInstance.Duplicate();
-				}
-				else
-				{
-					meshToInstantate = leaf.meshInstance;
-				}
+				meshToInstantate = leaf.meshInstance;
 			}
 
 			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(leaf,
@@ -274,13 +266,12 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		// i think the weaker condition below makes this check redundant
-		// if (originalVSTRoot.parent is null &&
-		// 	originalVSTRoot.left is null &&
-		// 	originalVSTRoot.right is null)
-		// {
-		// 	destronoiNode.QueueFree();
-		// 	return;
-		// }
+		if (originalVSTRoot.parent is null &&
+			originalVSTRoot.left is null &&
+			originalVSTRoot.right is null)
+		{
+			GD.PushError("i dont know what this means");
+		}
 
 		// if this node now has no children, all its mass has been removed and it doesn't represent anything physical anymore
 		if (originalVSTRoot.left is null &&
@@ -302,15 +293,17 @@ public partial class VSTSplittingComponent : Area3D
 		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
 		// (assumes originalVSTRoot.childrenChanged is true, and hence we combine the relevant meshes)
 		
-		if (DebugPrints) { GD.Print("Creating Combined DN"); }
+		if (DebugPrints)
+		{
+			GD.Print("Creating Combined DN");
+		}
 
 		List<VSTNode> vstNodes = [];
 		GetDeepestVSTNodes(vstNodes, originalVSTRoot);
 
 		if (vstNodes.Count == 0)
 		{
-			GD.PushError("this doesnt make sense, we have a non zero number of fragments to remove but then no valid vstNodes were found" +
-				" by GetDeepestVSTNodes");
+			GD.PushError("this doesnt make sense, we have a non zero number of fragments to remove but then no valid vstNodes were found by GetDeepestVSTNodes");
 			originalVSTRoot.DebugPrint();
 			return;
 		}
@@ -342,11 +335,7 @@ public partial class VSTSplittingComponent : Area3D
 				.Select(vstNode => vstNode.ID)         // get their IDs
 				.ToList();
 
-			// orphan all vstnodes at the deepest depth of originalVSTRoot which are NOT part of vstNodeGroup
-
 			OrphanDeepestNonAdjacentNodesByID(newVSTRoot, nonAdjacentNodeIDs);
-
-			// instantiate as a DestronoiNode
 
 			string leafName = destronoiNode.Name + $"_fragment_{fragmentNumber}";
 
@@ -364,7 +353,6 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		Deactivate(destronoiNode);
-		// destronoiNode.QueueFree();
 	}
 
 	// for now we dont queuefree as we need the original objects (i.e. the vst leafs) to stick around
@@ -378,19 +366,14 @@ public partial class VSTSplittingComponent : Area3D
 		// destronoiNode.CollisionMask = 0;
 		// destronoiNode.Sleeping = true;
 
-		// remove from scene tree
-
-		// foreach (Node child in destronoiNode.GetChildren())
-		// {
-		// 	GD.Print(child.Name);
-		// 	destronoiNode.RemoveChild(child);
-		// }
-
 		destronoiNode.GetParent()?.RemoveChild(destronoiNode);
 
 		destronoiNode.binaryTreeMapToActiveNodes.RemoveFromActiveTree(destronoiNode);
 	}
 
+	/// <summary>
+	/// orphan all vstnodes at the deepest depth of originalVSTRoot which are NOT part of vstNodeGroup
+	/// </summary>
 	public static void OrphanDeepestNonAdjacentNodesByID(VSTNode vstNode, List<int> nonAdjacentNodeIDs)
 	{
 		if (nonAdjacentNodeIDs.Contains(vstNode.ID))
@@ -456,7 +439,10 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		// represents root node of body having no children and no parent
 		// in this sitch we check later in main function and queuefree the destronoiNode
-		if (vstNode.parent is null) { return; }
+		if (vstNode.parent is null)
+		{
+			return;
+		}
 
 		// remove reference to this node from the parent's section of the tree
 		if (vstNode.laterality == Laterality.LEFT)
@@ -543,10 +529,16 @@ public partial class VSTSplittingComponent : Area3D
 					break;
 				}
 
-				if (addedToGroup) { break; }
+				if (addedToGroup)
+				{
+					break;
+				}
 			}
 
-			if (addedToGroup) { continue; }
+			if (addedToGroup)
+			{
+				continue;
+			}
 
 			// if we're here, the meshToCheck is NOT adjacent to ANY mesh currently in a group
 			// so we create a new group for it
@@ -611,50 +603,4 @@ public partial class VSTSplittingComponent : Area3D
 			Mesh = combinedArrayMesh
 		};
 	}
-
-	// semi deprecated / not used right now
-	// public static MeshInstance3D RemoveDuplicateSurfaces(MeshInstance3D meshInstance3D)
-	// {
-	// 	if (meshInstance3D.Mesh is not ArrayMesh arrayMesh)
-	// 	{
-	// 		GD.PushError("mesh passed to RemoveDuplicateSurfaces must have an arraymesh mesh. returning early");
-	// 		return null;
-	// 	}
-
-	// 	HashSet<int> surfaceIndicesToRemove = [];
-
-	// 	for (int i = 0; i < arrayMesh.GetSurfaceCount(); i++)
-	// 	{
-	// 		for (int j = 0; j < arrayMesh.GetSurfaceCount(); j++)
-	// 		{
-	// 			if (MeshUtils.AreMeshVerticesEqual(arrayMesh, i, j))
-	// 			{
-	// 				surfaceIndicesToRemove.Add(i);
-	// 			}
-	// 		}
-	// 	}
-
-	// 	ArrayMesh newArrayMesh = new();
-
-	// 	for (int i = 0; i < arrayMesh.GetSurfaceCount(); i++)
-	// 	{
-	// 		if (surfaceIndicesToRemove.Contains(i))
-	// 		{
-	// 			continue;
-	// 		}
-
-	// 		var arrays = arrayMesh.SurfaceGetArrays(i);
-	// 		var primitive = arrayMesh.SurfaceGetPrimitiveType(i);
-
-	// 		newArrayMesh.AddSurfaceFromArrays(primitive, arrays);
-
-	// 	}
-
-	// 	MeshInstance3D newMesh = new()
-	// 	{
-	// 		Mesh = newArrayMesh
-	// 	};
-
-	// 	return newMesh;
-	// }
 }

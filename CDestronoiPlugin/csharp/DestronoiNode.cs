@@ -26,35 +26,37 @@ public partial class DestronoiNode : RigidBody3D
 	// --- internal variables --- //
 	public VSTNode vstRoot;
 	public float baseObjectDensity;
-	/// <summary>
-	/// this should be true if the node needs its own vstRoot created
-	/// if you are creating a fragment and are passing in a known vstRoot, mesh etc, then this flag should be false
-	/// </summary>
+	/// <summary>this should be true if the node needs its own vstRoot created. if you are creating a fragment and are passing in a known vstRoot, mesh etc, then this flag should be false</summary>
 	public bool needsInitialising = true;
 
 	// --- meta variables --- //
 	public readonly int MAX_PLOTSITERANDOM_TRIES = 5_000;
-	public readonly float LINEAR_DAMP = 8.0f;
-	public readonly float ANGULAR_DAMP = 8.0f;
+	public readonly float LINEAR_DAMP = 1.0f;
+	public readonly float ANGULAR_DAMP = 1.0f;
 
-	public DestronoiNode(string inputName, Transform3D inputGlobalTransform, MeshInstance3D inputMeshInstance, Node inputFragmentContainer, VSTNode inputVSTRoot, float inputDensity, bool inputNeedsInitialising, BinaryTreeMapToActiveNodes inputBinaryTreeMapToActiveNodes)
+	// required for godot
+	public DestronoiNode() { }
+
+	public DestronoiNode(	string inputName,
+							Transform3D inputGlobalTransform,
+							MeshInstance3D inputMeshInstance,
+							Node inputFragmentContainer,
+							VSTNode inputVSTRoot,
+							float inputDensity,
+							bool inputNeedsInitialising,
+							BinaryTreeMapToActiveNodes inputBinaryTreeMapToActiveNodes)
 	{
 		Name = inputName;
-
-		baseObjectDensity = inputDensity;
-		
 		GlobalTransform = inputGlobalTransform;
 
-		vstRoot = inputVSTRoot;
-
-
-		// setting this to true will break everything. this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
-		needsInitialising = inputNeedsInitialising;
-
-		fragmentContainer = inputFragmentContainer;
-		binaryTreeMapToActiveNodes = inputBinaryTreeMapToActiveNodes;
-
 		meshInstance = inputMeshInstance;
+
+		if (meshInstance.GetParent() is not null)
+		{
+			GD.PushWarning("reparenting meshinstance");
+			meshInstance.GetParent().RemoveChild(meshInstance);
+		}
+
 		AddChild(inputMeshInstance);
 
 		var shape = new CollisionShape3D
@@ -65,16 +67,28 @@ public partial class DestronoiNode : RigidBody3D
 
 		AddChild(shape);
 
+		fragmentContainer = inputFragmentContainer;
+
+		vstRoot = inputVSTRoot;
+
 		// mass
+		baseObjectDensity = inputDensity;
 		float volume =  meshInstance.Mesh.GetAabb().Volume;
 		Mass = Math.Max(baseObjectDensity * volume, 0.01f);
+
+		// setting this to true will break everything. this flag must be false as the vstRoot is being reused and must not be regenerated for fragments. it should only be used when the scene is being loaded
+		needsInitialising = inputNeedsInitialising;
+
+		binaryTreeMapToActiveNodes = inputBinaryTreeMapToActiveNodes;
 
 		// needed for detecting explosions from RPGs
 		ContactMonitor = true;
 		MaxContactsReported = 5_000;
+
+		LinearDamp = LINEAR_DAMP;
+		AngularDamp = ANGULAR_DAMP;
 	}
 	
-
 	// --- //
 
 	public override void _UnhandledInput(InputEvent @event)
@@ -89,7 +103,10 @@ public partial class DestronoiNode : RigidBody3D
 
 	public static void DebugPrintVST(VSTNode vstNode)
 	{
-		if (vstNode is null) { return; }
+		if (vstNode is null)
+		{
+			return;
+		}
 
 		GD.Print("ID: ", vstNode.ID);
 		GD.Print("left: ", vstNode.left?.ID);
@@ -187,18 +204,10 @@ public partial class DestronoiNode : RigidBody3D
 			}
 		}
 
-		// --- find density --- //
-		float volume = meshInstance.Mesh.GetAabb().Size.X *
-								 meshInstance.Mesh.GetAabb().Size.Y *
-								 meshInstance.Mesh.GetAabb().Size.Z;
-		
-		baseObjectDensity = Mass / volume;
+		baseObjectDensity = Mass / meshInstance.Mesh.GetAabb().Volume;
 
 		// --- create a binarytreemap and set its root to be this node --- //
-
 		binaryTreeMapToActiveNodes = new(treeHeight, this);
-
-		// set damp
 
 		LinearDamp = LINEAR_DAMP;
 		AngularDamp = ANGULAR_DAMP;
@@ -213,7 +222,7 @@ public partial class DestronoiNode : RigidBody3D
 	{
 		node.sites = [];
 
-        MeshDataTool mdt = new();
+		MeshDataTool mdt = new();
 
 		if (node.meshInstance.Mesh is not ArrayMesh arrayMesh)
 		{
