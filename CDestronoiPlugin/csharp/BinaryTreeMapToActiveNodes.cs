@@ -25,8 +25,8 @@ public partial class BinaryTreeMapToActiveNodes : Node
 
 		if (height > 0)
 		{
-			node.left = BuildSubtree(node, Laterality.LEFT, inputID * 2, height - 1);
-			node.right = BuildSubtree(node, Laterality.RIGHT, inputID * 2 + 1, height - 1);
+			node.left.Value = BuildSubtree(node, Laterality.LEFT, inputID * 2, height - 1);
+			node.right.Value = BuildSubtree(node, Laterality.RIGHT, inputID * 2 + 1, height - 1);
 		}
 
 		return node;
@@ -102,10 +102,9 @@ public class RepresentativeNode(RepresentativeNode inputParent,
 	public readonly RepresentativeNode parent = inputParent;
 	public readonly Laterality laterality = inputLaterality;
 	public readonly int ID = inputID;
-	
-	// these should be writeonce ideally
-	public RepresentativeNode left;
-	public RepresentativeNode right;
+
+	public WriteOnce<RepresentativeNode> left = new();
+	public WriteOnce<RepresentativeNode> right = new();
 
 	// this should be always editable
 	public List<DestronoiNode> activeNodesWhichRepresentThisLeafID = [];

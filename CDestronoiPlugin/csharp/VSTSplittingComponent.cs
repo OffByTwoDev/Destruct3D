@@ -265,14 +265,6 @@ public partial class VSTSplittingComponent : Area3D
 			fragmentNumber++;
 		}
 
-		// i think the weaker condition below makes this check redundant
-		if (originalVSTRoot.parent is null &&
-			originalVSTRoot.left is null &&
-			originalVSTRoot.right is null)
-		{
-			GD.PushError("i dont know what this means");
-		}
-
 		// if this node now has no children, all its mass has been removed and it doesn't represent anything physical anymore
 		if (originalVSTRoot.left is null &&
 			originalVSTRoot.right is null)
@@ -284,8 +276,7 @@ public partial class VSTSplittingComponent : Area3D
 		if (!originalVSTRoot.childrenChanged)
 		{
 			GD.PushWarning("i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.");
-			originalVSTRoot.DebugPrint();
-			destronoiNode.QueueFree();
+			GD.Print($"fragmentsToRemove = {fragmentsToRemove.Count}");
 			return;
 		}
 
@@ -314,6 +305,9 @@ public partial class VSTSplittingComponent : Area3D
 		// by having this node become groupedMeshes[0], orphan non adjacent vstNodes
 		// and for the rest, we create a new destronoiNode with a copy of the vstNode, orphan non adjacent vstNodes
 		// i.e. create n-1 new destronoi nodes rather than n
+
+		GD.Print($"creating {groupedVSTNodes.Count} groups of nodes");
+
 		foreach (List<VSTNode> vstNodeGroup in groupedVSTNodes)
 		{
 			// parent of root node is null, hence pass null in
@@ -360,13 +354,13 @@ public partial class VSTSplittingComponent : Area3D
 	// rather than just creating new ones and deactivating the old one
 	public static void Deactivate(DestronoiNode destronoiNode)
 	{
-		// destronoiNode.Visible = false;
-		// destronoiNode.Freeze = true;
-		// destronoiNode.CollisionLayer = 0;
-		// destronoiNode.CollisionMask = 0;
-		// destronoiNode.Sleeping = true;
+		destronoiNode.Visible = false;
+		destronoiNode.Freeze = true;
+		destronoiNode.CollisionLayer = 0;
+		destronoiNode.CollisionMask = 0;
+		destronoiNode.Sleeping = true;
 
-		destronoiNode.GetParent()?.RemoveChild(destronoiNode);
+		// destronoiNode.GetParent()?.RemoveChild(destronoiNode);
 
 		destronoiNode.binaryTreeMapToActiveNodes.RemoveFromActiveTree(destronoiNode);
 	}

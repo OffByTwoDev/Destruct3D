@@ -49,7 +49,8 @@ public partial class DestronoiNode : RigidBody3D
 		Name = inputName;
 		GlobalTransform = inputGlobalTransform;
 
-		meshInstance = inputMeshInstance;
+		meshInstance = (MeshInstance3D)inputMeshInstance.Duplicate();
+		// meshInstance = inputMeshInstance;
 
 		if (meshInstance.GetParent() is not null)
 		{
@@ -57,7 +58,7 @@ public partial class DestronoiNode : RigidBody3D
 			meshInstance.GetParent().RemoveChild(meshInstance);
 		}
 
-		AddChild(inputMeshInstance);
+		AddChild(meshInstance);
 
 		var shape = new CollisionShape3D
 		{

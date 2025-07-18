@@ -13,13 +13,11 @@ namespace CDestronoi;
 // this component simply takes an input destronoiNode and does exactly that
 public partial class VSTUnsplittingComponent : Node
 {
-	public RayCast3D unfragmentationRayCast;
+	[Export] public int unexplosionLevelsToGoUp = 2;
+	[Export] public Node3D fragmentContainer;
 
 	public Player player;
 
-	[Export] public int unexplosionLevelsToGoUp = 2;
-	[Export] public Node3D fragmentContainer;
-	
 	public readonly float UnsplittingDuration = 1.5f;
 
 	public override void _Ready()
@@ -29,13 +27,11 @@ public partial class VSTUnsplittingComponent : Node
 		LevelSwitcher levelSwitcher = GetNode<LevelSwitcher>("/root/Main/LevelSwitcher");
 
 		player = levelSwitcher.player;
-
-		unfragmentationRayCast = player.unfragmentationHighlighting;
 	}
 
 	public async Task Activate(Transform3D? unfragmentationTransform, DestronoiNode fragmentToUnexplode)
 	{
-		// if (unfragmentationRayCast.GetCollider() is not DestronoiNode fragment)
+		// if (player.unfragmentationHighlighting.GetCollider() is not DestronoiNode fragment)
 		// {
 		// 	return;
 		// }
@@ -51,13 +47,14 @@ public partial class VSTUnsplittingComponent : Node
 			await Unsplit(fragmentToUnexplode, transformBetweenPlayerAndObject);
 		}
 	}
+
 	/// <param name="reversedExplosionCentre">in global coordinates</param>
 	public async Task Unsplit(DestronoiNode destronoiNode, Transform3D reversedExplosionCentre)
 	{
 		VSTNode topmostParent;
 		List<DestronoiNode> instantiatedChildren;
 
-		// if there are no parent (i.e. this fragment itself is the topmost fragment), then just use the original vstNode
+		// if there is no parent (i.e. this fragment itself is the topmost fragment), then just use the original vstNode
 		if (destronoiNode.vstRoot.permanentParent is null)
 		{
 			topmostParent = destronoiNode.vstRoot;
@@ -159,16 +156,12 @@ public partial class VSTUnsplittingComponent : Node
 	/// used for density, binarytreemap reference, and fragment container reference
 	/// i.e. stuff that any child would agree on, it doesnt have to be some specific parent or anything
 	/// </param>
-	public DestronoiNode CreateFreshDestronoiNode(VSTNode vstNode, Transform3D globalTransform, DestronoiNode anyChildDestronoiNode)
+	public static DestronoiNode CreateFreshDestronoiNode(VSTNode vstNode, Transform3D globalTransform, DestronoiNode anyChildDestronoiNode)
 	{
 		string name = "unfragmented_with_ID_" + vstNode.ID.ToString();
 
 		MeshInstance3D meshInstanceToSet = vstNode.meshInstance;
 		meshInstanceToSet.Name = $"{name}_MeshInstance3D";
-
-		// meshInstanceToSet.GetParent()?.RemoveChild(meshInstanceToSet);
-
-		// --- destronoi node initialisation --- //
 
 		DestronoiNode destronoiNode = new(
 			inputName: name,
