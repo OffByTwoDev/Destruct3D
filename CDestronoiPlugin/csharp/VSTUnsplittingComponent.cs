@@ -161,61 +161,26 @@ public partial class VSTUnsplittingComponent : Node
 	/// </param>
 	public DestronoiNode CreateFreshDestronoiNode(VSTNode vstNode, Transform3D globalTransform, DestronoiNode anyChildDestronoiNode)
 	{
-		// temporary shit
 		string name = "unfragmented_with_ID_" + vstNode.ID.ToString();
-		StandardMaterial3D material = new();
 
-		DestronoiNode destronoiNode = new()
-		{
-			Name = name,
-			GlobalTransform = globalTransform
-		};
+		MeshInstance3D meshInstanceToSet = vstNode.meshInstance;
+		meshInstanceToSet.Name = $"{name}_MeshInstance3D";
 
-		// --- rigidbody initialisation --- //
-
-		// mesh instance
-		MeshInstance3D meshInstance = vstNode.meshInstance;
-		meshInstance.Name = $"{name}_MeshInstance3D";
-
-		// meshInstance.SetSurfaceOverrideMaterial(0, material);
-
-		// GD.PushWarning("mesh instance already has a parent, reparenting i think it the behaviour we want idk though lmao");
-		meshInstance.GetParent()?.RemoveChild(meshInstance);
-
-		destronoiNode.AddChild(meshInstance);
-
-		// collisionshape
-		var shape = new CollisionShape3D
-		{
-			Name = "CollisionShape3D",
-			Shape = meshInstance.Mesh.CreateConvexShape(false, false)
-		};
-		destronoiNode.AddChild(shape);
-
-		// mass
-		float volume =  meshInstance.Mesh.GetAabb().Size.X *
-						meshInstance.Mesh.GetAabb().Size.Y *
-						meshInstance.Mesh.GetAabb().Size.Z;
-		destronoiNode.Mass = Math.Max(anyChildDestronoiNode.baseObjectDensity * volume, 0.01f);
-
-		// needed (idk why lmao ?) for detecting explosions from RPGs
-		destronoiNode.ContactMonitor = true;
-		destronoiNode.MaxContactsReported = 5_000;
-
+		// meshInstanceToSet.GetParent()?.RemoveChild(meshInstanceToSet);
 
 		// --- destronoi node initialisation --- //
 
-		destronoiNode.meshInstance = vstNode.meshInstance;
-		destronoiNode.fragmentContainer = anyChildDestronoiNode.fragmentContainer;
-		destronoiNode.vstRoot = vstNode;
-		destronoiNode.baseObjectDensity = anyChildDestronoiNode.baseObjectDensity;
-		// setting this to true will break everything,
-		// this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
-		destronoiNode.needsInitialising = false;
+		DestronoiNode destronoiNode = new(
+			inputName: name,
+			inputGlobalTransform: globalTransform,
+			inputMeshInstance: meshInstanceToSet,
+			inputFragmentContainer: anyChildDestronoiNode.fragmentContainer,
+			inputVSTRoot: vstNode,
+			inputDensity: anyChildDestronoiNode.baseObjectDensity,
+			inputNeedsInitialising: false,
+			inputBinaryTreeMapToActiveNodes: anyChildDestronoiNode.binaryTreeMapToActiveNodes
+		);
 
-		// finally, tell the relevant binarytreemap that this node has been created //
-		// and also set the relevant binaryTreeMap to be this one
-		destronoiNode.binaryTreeMapToActiveNodes = anyChildDestronoiNode.binaryTreeMapToActiveNodes;
 		return destronoiNode;
 	}
 }

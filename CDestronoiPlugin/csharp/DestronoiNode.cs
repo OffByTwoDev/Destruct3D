@@ -36,6 +36,43 @@ public partial class DestronoiNode : RigidBody3D
 	public readonly int MAX_PLOTSITERANDOM_TRIES = 5_000;
 	public readonly float LINEAR_DAMP = 8.0f;
 	public readonly float ANGULAR_DAMP = 8.0f;
+
+	public DestronoiNode(string inputName, Transform3D inputGlobalTransform, MeshInstance3D inputMeshInstance, Node inputFragmentContainer, VSTNode inputVSTRoot, float inputDensity, bool inputNeedsInitialising, BinaryTreeMapToActiveNodes inputBinaryTreeMapToActiveNodes)
+	{
+		Name = inputName;
+
+		baseObjectDensity = inputDensity;
+		
+		GlobalTransform = inputGlobalTransform;
+
+		vstRoot = inputVSTRoot;
+
+
+		// setting this to true will break everything. this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
+		needsInitialising = inputNeedsInitialising;
+
+		fragmentContainer = inputFragmentContainer;
+		binaryTreeMapToActiveNodes = inputBinaryTreeMapToActiveNodes;
+
+		meshInstance = inputMeshInstance;
+		AddChild(inputMeshInstance);
+
+		var shape = new CollisionShape3D
+		{
+			Name = "CollisionShape3D",
+			Shape = meshInstance.Mesh.CreateConvexShape(false, false)
+		};
+
+		AddChild(shape);
+
+		// mass
+		float volume =  meshInstance.Mesh.GetAabb().Volume;
+		Mass = Math.Max(baseObjectDensity * volume, 0.01f);
+
+		// needed for detecting explosions from RPGs
+		ContactMonitor = true;
+		MaxContactsReported = 5_000;
+	}
 	
 
 	// --- //
@@ -436,56 +473,23 @@ public partial class DestronoiNode : RigidBody3D
 											String name,
 											StandardMaterial3D material)
 	{
-		// a newly created node has no parent
-		// (but we leave its permanentParent alone of course, so it can be reset if this node is recreated / unfragmented later on)
+		// a newly created node has no parent (but we leave its permanentParent alone of course, so it can be reset if this node is recreated / unfragmented later on)
 		subVST.parent = null;
 
-		DestronoiNode destronoiNode = new()
-		{
-			Name = name,
-			GlobalTransform = this.GlobalTransform
-		};
+		MeshInstance3D meshInstanceToSet = subVSTmeshInstance;
+		meshInstanceToSet.Name = $"{name}_MeshInstance3D";
 
-		// --- rigidbody initialisation --- //
+		DestronoiNode destronoiNode = new(
+			inputName: name,
+			inputGlobalTransform: this.GlobalTransform,
+			inputMeshInstance: meshInstanceToSet,
+			inputFragmentContainer: this.fragmentContainer,
+			inputVSTRoot: subVST,
+			inputDensity: baseObjectDensity,
+			inputNeedsInitialising: false,
+			inputBinaryTreeMapToActiveNodes: this.binaryTreeMapToActiveNodes
+		);
 
-		// mesh instance
-		MeshInstance3D meshInstance = subVSTmeshInstance;
-		meshInstance.Name = $"{name}_MeshInstance3D";
-
-		// meshInstance.SetSurfaceOverrideMaterial(0, material);
-
-		destronoiNode.AddChild(meshInstance);
-
-		// collisionshape
-		var shape = new CollisionShape3D
-		{
-			Name = "CollisionShape3D",
-			Shape = meshInstance.Mesh.CreateConvexShape(false, false)
-		};
-		destronoiNode.AddChild(shape);
-
-		// mass
-		float volume =  meshInstance.Mesh.GetAabb().Volume;
-		destronoiNode.Mass = Math.Max(baseObjectDensity * volume, 0.01f);
-
-		// needed (idk why lmao ?) for detecting explosions from RPGs
-		destronoiNode.ContactMonitor = true;
-		destronoiNode.MaxContactsReported = 5_000;
-
-		// --- destronoi node initialisation --- //
-
-		destronoiNode.meshInstance = subVSTmeshInstance;
-		destronoiNode.fragmentContainer = fragmentContainer;
-		destronoiNode.vstRoot = subVST;
-		destronoiNode.baseObjectDensity = baseObjectDensity;
-		// setting this to true will break everything,
-		// this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
-		destronoiNode.needsInitialising = false;
-
-		// finally, tell the relevant binarytreemap that this node has been created //
-		// and also set the relevant binaryTreeMap to be this one
-		destronoiNode.binaryTreeMapToActiveNodes = this.binaryTreeMapToActiveNodes;
-		
 		return destronoiNode;
 	}
 
@@ -566,11 +570,7 @@ public partial class DestronoiNode : RigidBody3D
 			};
 			body.AddChild(shape);
 
-			// mass
-			float volume =  meshInstance.Mesh.GetAabb().Size.X *
-							meshInstance.Mesh.GetAabb().Size.Y *
-							meshInstance.Mesh.GetAabb().Size.Z;
-			body.Mass = baseObjectDensity * volume;
+			body.Mass = baseObjectDensity * meshInstance.Mesh.GetAabb().Volume;
 
 			// needed (idk why lmao ?) for detecting explosions from RPGs
 			body.ContactMonitor = true;
