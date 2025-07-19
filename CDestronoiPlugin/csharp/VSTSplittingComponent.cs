@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace CDestronoi;
 
@@ -37,6 +38,11 @@ public partial class VSTSplittingComponent : Area3D
 	private StandardMaterial3D fragmentMaterial = new();
 
 	[Export] public StandardMaterial3D debugMaterial;
+
+	/// <summary>
+	/// when true, the main abstracted functions are timed and lines are printed to seperate the events which are being timed
+	/// </summary>
+	[Export] private bool DebugTimings = false;
 
 	public override void _Ready()
 	{
@@ -131,6 +137,8 @@ public partial class VSTSplittingComponent : Area3D
 							int explosionTreeDepth,
 							StandardMaterial3D fragmentMaterial)
 	{
+		if (DebugTimings) { GD.Print("------------ split explode ------------"); }
+
 		VSTNode originalVSTRoot = destronoiNode.vstRoot;
 
 		// desired explosionTreeDepth is relative to a body's root node, hence we add the depth of the root node
@@ -364,9 +372,12 @@ public partial class VSTSplittingComponent : Area3D
 
 		int currentFragmentNumber = 0;
 
+		if (DebugPrints) { GD.Print($"number of parent groups: {groupedVSTNodes.Count}"); }
+
 		foreach (List<VSTNode> currentVSTNodeGroup in groupedVSTNodes)
 		{
-			GD.Print($"group count: {currentVSTNodeGroup.Count}");
+
+			if (DebugPrints) { GD.Print($"new group, number of nodes in group: {currentVSTNodeGroup.Count}"); }
 
 			if (originalVSTRoot is null)
 			{
@@ -390,7 +401,9 @@ public partial class VSTSplittingComponent : Area3D
 			string leafName = destronoiNode.Name + $"_parent_fragment_{currentFragmentNumber}";
 
 			List<MeshInstance3D> meshInstances = [];
+
 			GetDeepestMeshInstances(meshInstances, newVSTRoot);
+
 			MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
 
 			overlappingCombinedMeshesToKeep.SetSurfaceOverrideMaterial(0, debugMaterial);
@@ -465,6 +478,7 @@ public partial class VSTSplittingComponent : Area3D
 		if (!vstNode.childrenChanged || vstNode.endPoint)
 		{
 			meshInstances.Add(vstNode.meshInstance);
+			return;
 		}
 
 		if (vstNode.left is not null)
@@ -579,7 +593,7 @@ public partial class VSTSplittingComponent : Area3D
 			{
 				foreach (VSTNode groupedVSTNode in group)
 				{
-					if (!IsAdjacent(vstNodeToCheck.meshInstance, groupedVSTNode.meshInstance))
+					if (!IsAdjacentEstimator(vstNodeToCheck.meshInstance, groupedVSTNode.meshInstance))
 					{
 						continue;
 					}
@@ -617,7 +631,7 @@ public partial class VSTSplittingComponent : Area3D
 	// 2 meshes can be adjacent iff centre of mesh 2 - centre of mesh 1 <= (maxlength of mesh 2 / 2) + (max length of mesh 1 / 2)
 	// i.e. we are checking a necessary but not sufficient condition
 	// this test massively reduces the meshes we need to check, but may still group non adjacent meshes together
-	public static bool IsAdjacentOld(MeshInstance3D mesh1, MeshInstance3D mesh2)
+	public static bool IsAdjacentEstimatorOld(MeshInstance3D mesh1, MeshInstance3D mesh2)
 	{
 		Aabb aabb1 = mesh1.GetAabb();
 		Aabb aabb2 = mesh2.GetAabb();
@@ -630,31 +644,22 @@ public partial class VSTSplittingComponent : Area3D
 
 		if (distanceBetween <= maxLengthScale1 / 2.0f + maxLengthScale2 / 2.0f)
 		{
-			GD.Print($"distanceBetween is {distanceBetween}");
 			return true;
 		}
 
 		return false;
 	}
 
-	public static bool IsAdjacent(MeshInstance3D mesh1, MeshInstance3D mesh2)
+	public static bool IsAdjacentEstimator(MeshInstance3D mesh1, MeshInstance3D mesh2)
 	{
 		Aabb aabb1 = mesh1.GetAabb();
 		Aabb aabb2 = mesh2.GetAabb();
-
-		GD.Print($"aabb1 size: {aabb1.Size}");
-		GD.Print($"aabb2 size: {aabb2.Size}");
 
 		// Expand slightly to allow near-adjacency (tweak as needed)
 		aabb1 = aabb1.Grow(0.05f);
 		aabb2 = aabb2.Grow(0.05f);
 
 		bool intersects = aabb1.Intersects(aabb2);
-
-		if (intersects)
-		{
-			GD.Print($"AABBs intersect (or touch)");
-		}
 
 		return intersects;
 	}
@@ -664,7 +669,7 @@ public partial class VSTSplittingComponent : Area3D
 		var surfaceTool = new SurfaceTool();
 		surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
 
-		foreach (var meshInstance in meshInstances)
+		foreach (MeshInstance3D meshInstance in meshInstances)
 		{
 			Mesh mesh = meshInstance.Mesh;
 
@@ -674,14 +679,13 @@ public partial class VSTSplittingComponent : Area3D
 			}
 
 			// Append all surfaces from this mesh with the MeshInstance's transform
-			int surfaceCount = mesh.GetSurfaceCount();
-			for (int s = 0; s < surfaceCount; s++)
+			for (int surfaceIndex = 0; surfaceIndex < mesh.GetSurfaceCount(); surfaceIndex++)
 			{
-				surfaceTool.AppendFrom(mesh, s, meshInstance.Transform);
+				surfaceTool.AppendFrom(mesh, surfaceIndex, meshInstance.Transform);
 			}
 		}
 
-		var combinedArrayMesh = surfaceTool.Commit();
+		ArrayMesh combinedArrayMesh = surfaceTool.Commit();
 
 		return new MeshInstance3D
 		{

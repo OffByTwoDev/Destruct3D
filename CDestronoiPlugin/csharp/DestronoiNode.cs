@@ -2,6 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Diagnostics;
 
 namespace CDestronoi;
 
@@ -63,7 +64,7 @@ public partial class DestronoiNode : RigidBody3D
 		var shape = new CollisionShape3D
 		{
 			Name = "CollisionShape3D",
-			Shape = meshInstance.Mesh.CreateConvexShape(false, false)
+			Shape = meshInstance.Mesh.CreateConvexShape(false, false),
 		};
 
 		AddChild(shape);
@@ -189,7 +190,7 @@ public partial class DestronoiNode : RigidBody3D
 		Bisect(vstRoot, false);
 
 		// Perform additional subdivisions depending on tree height
-		for (int i = 0; i < treeHeight - 1; i++)
+		for (int depthIndex = 0; depthIndex < treeHeight - 1; depthIndex++)
 		{
 			List<VSTNode> leaves = [];
 
@@ -199,7 +200,7 @@ public partial class DestronoiNode : RigidBody3D
 			{
 				PlotSitesRandom(leaf);
 				// on final pass, set children as endPoints
-				if (i == treeHeight - 2)
+				if (depthIndex == treeHeight - 2)
 				{
 					Bisect(leaf, true);
 				}
@@ -278,14 +279,15 @@ public partial class DestronoiNode : RigidBody3D
 				var p2 = mdt.GetVertex(v2);
 
 				Variant intersectionPoint = Geometry3D.RayIntersectsTriangle(site, direction, p0, p1, p2);
+				
 				if (intersectionPoint.VariantType != Variant.Type.Nil)
 				{
 					intersections++;
 				}
 			}
 
-			// if number of intersections is 1, its inside
-			if (intersections == 1)
+			// if number of intersections % 2 is 1, its inside
+			if (intersections % 2 == 1)
 			{
 				node.sites.Add(site);
 			}
