@@ -179,7 +179,7 @@ public class VSTNode
 	// meshInstances are shared between all deepcopies, this is fine I dont think it affects behaviour
 	// the only things we need to deepcopy really are the VSTNodes themself and the references
 	// as we will be nullifying some references in sibling nodes when splitting nodes in 2 etc
-	public VSTNode DeepCopy()
+	public VSTNode DeepCopy(VSTNode newParent)
 	{
 		if (this.meshInstance is null)
 		{
@@ -196,19 +196,19 @@ public class VSTNode
         VSTNode copy = new(
             this.meshInstance,
             this.ID,
-            this.parent,
+            newParent,
             this.level,
             this.laterality,
             this.endPoint
         )
         {
             childrenChanged = this.childrenChanged,
-			
-            left = this.left?.DeepCopy(),
-            right = this.right?.DeepCopy(),
-            PermanentLeft = this.PermanentLeft,
-            PermanentRight = this.PermanentRight
         };
+
+		copy.left = this.left?.DeepCopy(copy);
+        copy.right = this.right?.DeepCopy(copy);
+        copy.PermanentLeft = this.PermanentLeft;
+        copy.PermanentRight = this.PermanentRight;
 
         return copy;
 	}

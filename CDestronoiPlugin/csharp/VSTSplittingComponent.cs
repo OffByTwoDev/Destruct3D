@@ -328,7 +328,7 @@ public partial class VSTSplittingComponent : Area3D
 				return;
 			}
 
-			VSTNode newVSTRoot = originalVSTRoot.DeepCopy();
+			VSTNode newVSTRoot = originalVSTRoot.DeepCopy(newParent: null);
 			// newVSTRoot.parent = null;
 			
 			// now we can create a list of non adjacent nodes. HOWEVER this list of VSTNodes is of DISTINCT objects compared to the ones in newVSTRoot
