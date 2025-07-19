@@ -203,12 +203,12 @@ public class VSTNode
         )
         {
             childrenChanged = this.childrenChanged,
+			
+            left = this.left?.DeepCopy(),
+            right = this.right?.DeepCopy(),
+            PermanentLeft = this.PermanentLeft,
+            PermanentRight = this.PermanentRight
         };
-
-		copy.left = this.left?.DeepCopy();
-		copy.right = this.right?.DeepCopy();
-		copy.PermanentLeft = this.PermanentLeft;
-		copy.PermanentRight = this.PermanentRight;
 
         return copy;
 	}

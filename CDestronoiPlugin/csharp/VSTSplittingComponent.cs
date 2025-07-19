@@ -36,6 +36,8 @@ public partial class VSTSplittingComponent : Area3D
 	// material to set for fragments
 	private StandardMaterial3D fragmentMaterial = new();
 
+	[Export] public StandardMaterial3D debugMaterial;
+
 	public override void _Ready()
 	{
 		base._Ready();
@@ -263,7 +265,11 @@ public partial class VSTSplittingComponent : Area3D
 		if (originalVSTRoot.left is null &&
 			originalVSTRoot.right is null)
 		{
+			Orphan(destronoiNode.vstRoot);
+			TellParentThatChildChanged(destronoiNode.vstRoot);
+
 			Deactivate(destronoiNode);
+
 			return;
 		}
 
@@ -284,7 +290,7 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		List<VSTNode> vstNodes = [];
-		GetDeepestVSTNodes(vstNodes, originalVSTRoot);
+		GetDeepestUnchangedVSTNodes(vstNodes, originalVSTRoot);
 
 		if (vstNodes.Count == 0)
 		{
@@ -293,7 +299,17 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		List<List<VSTNode>> groupedVSTNodes = GetGroupedVSTNode(vstNodes);
+		List<List<VSTNode>> groupedVSTNodes = GetGroupedVSTNodes(vstNodes);
+
+		foreach (List<VSTNode> list in groupedVSTNodes)
+		{
+			GD.Print("--- list change ---");
+
+			foreach(VSTNode node in list)
+			{
+				GD.Print($"{node.meshInstance.GetAabb().GetCenter()} with level {node.level}");
+			}
+		}
 
 		// could save 1 destronoinode creation
 		// by having this node become groupedMeshes[0], orphan non adjacent vstNodes
@@ -302,9 +318,10 @@ public partial class VSTSplittingComponent : Area3D
 
 		GD.Print($"creating {groupedVSTNodes.Count} groups of nodes");
 
-		foreach (List<VSTNode> vstNodeGroup in groupedVSTNodes)
+		foreach (List<VSTNode> currentVSTNodeGroup in groupedVSTNodes)
 		{
-			// parent of root node is null, hence pass null in
+			GD.Print($"group count: {currentVSTNodeGroup.Count}");
+
 			if (originalVSTRoot is null)
 			{
 				GD.PushWarning("hmm this is unexpected");
@@ -312,12 +329,13 @@ public partial class VSTSplittingComponent : Area3D
 			}
 
 			VSTNode newVSTRoot = originalVSTRoot.DeepCopy();
+			// newVSTRoot.parent = null;
 			
 			// now we can create a list of non adjacent nodes. HOWEVER this list of VSTNodes is of DISTINCT objects compared to the ones in newVSTRoot
 			// as we just created a deepcopy of originalVSTRoot
 			// hence when orphaning, we have to check against IDs (which are not allowed to change after initialisation), not object references themselves
 			List<int> nonAdjacentNodeIDs = groupedVSTNodes
-				.Where(innerList => !ReferenceEquals(innerList, vstNodeGroup))
+				.Where(vstNodeGroup => !ReferenceEquals(vstNodeGroup, currentVSTNodeGroup))
 				.SelectMany(innerList => innerList)    // flatten all nodes in the other groups
 				.Select(vstNode => vstNode.ID)         // get their IDs
 				.ToList();
@@ -329,6 +347,8 @@ public partial class VSTSplittingComponent : Area3D
 			List<MeshInstance3D> meshInstances = [];
 			GetDeepestMeshInstances(meshInstances, newVSTRoot);
 			MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
+
+			overlappingCombinedMeshesToKeep.SetSurfaceOverrideMaterial(0, debugMaterial);
 
 			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(newVSTRoot,
 																overlappingCombinedMeshesToKeep,
@@ -404,20 +424,21 @@ public partial class VSTSplittingComponent : Area3D
 		}
 	}
 
-	public static void GetDeepestVSTNodes(List<VSTNode> vstNodeList, VSTNode vstNode)
+	public static void GetDeepestUnchangedVSTNodes(List<VSTNode> vstNodeList, VSTNode vstNode)
 	{
 		if (!vstNode.childrenChanged || vstNode.endPoint)
 		{
 			vstNodeList.Add(vstNode);
+			return;
 		}
 
 		if (vstNode.left is not null)
 		{
-			GetDeepestVSTNodes(vstNodeList, vstNode.left);
+			GetDeepestUnchangedVSTNodes(vstNodeList, vstNode.left);
 		}
 		if (vstNode.right is not null)
 		{
-			GetDeepestVSTNodes(vstNodeList, vstNode.right);
+			GetDeepestUnchangedVSTNodes(vstNodeList, vstNode.right);
 		}
 	}
 
@@ -484,7 +505,7 @@ public partial class VSTSplittingComponent : Area3D
 	// repeat for all groups
 	// if that group doesn't exist, create a new group and add the node to it
 	// finds groups of VSTNodes who are adjacent
-	public static List<List<VSTNode>> GetGroupedVSTNode(List<VSTNode> ungroupedVSTNodes)
+	public static List<List<VSTNode>> GetGroupedVSTNodes(List<VSTNode> ungroupedVSTNodes)
 	{
 		if (ungroupedVSTNodes.Count == 0)
 		{
@@ -543,7 +564,7 @@ public partial class VSTSplittingComponent : Area3D
 	// 2 meshes can be adjacent iff centre of mesh 2 - centre of mesh 1 <= (maxlength of mesh 2 / 2) + (max length of mesh 1 / 2)
 	// i.e. we are checking a necessary but not sufficient condition
 	// this test massively reduces the meshes we need to check, but may still group non adjacent meshes together
-	public static bool IsAdjacent(MeshInstance3D mesh1, MeshInstance3D mesh2)
+	public static bool IsAdjacentOld(MeshInstance3D mesh1, MeshInstance3D mesh2)
 	{
 		Aabb aabb1 = mesh1.GetAabb();
 		Aabb aabb2 = mesh2.GetAabb();
@@ -556,10 +577,33 @@ public partial class VSTSplittingComponent : Area3D
 
 		if (distanceBetween <= maxLengthScale1 / 2.0f + maxLengthScale2 / 2.0f)
 		{
+			GD.Print($"distanceBetween is {distanceBetween}");
 			return true;
 		}
 
 		return false;
+	}
+
+	public static bool IsAdjacent(MeshInstance3D mesh1, MeshInstance3D mesh2)
+	{
+		Aabb aabb1 = mesh1.GetAabb();
+		Aabb aabb2 = mesh2.GetAabb();
+
+		GD.Print($"aabb1 size: {aabb1.Size}");
+		GD.Print($"aabb2 size: {aabb2.Size}");
+
+		// Expand slightly to allow near-adjacency (tweak as needed)
+		aabb1 = aabb1.Grow(0.05f);
+		aabb2 = aabb2.Grow(0.05f);
+
+		bool intersects = aabb1.Intersects(aabb2);
+
+		if (intersects)
+		{
+			GD.Print($"AABBs intersect (or touch)");
+		}
+
+		return intersects;
 	}
 
 	public static MeshInstance3D CombineMeshes(List<MeshInstance3D> meshInstances)
@@ -569,7 +613,8 @@ public partial class VSTSplittingComponent : Area3D
 
 		foreach (var meshInstance in meshInstances)
 		{
-			var mesh = meshInstance.Mesh;
+			Mesh mesh = meshInstance.Mesh;
+
 			if (mesh is null)
 			{
 				continue;
