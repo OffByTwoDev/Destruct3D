@@ -85,15 +85,18 @@ public partial class BinaryTreeMapToActiveNodes : Node
 	// tbh prolly makes like 0 difference to runtime
 	public static void RecursivelyAddActiveNodes(RepresentativeNode representativeNode, List<DestronoiNode> instantiatedChildren)
 	{
-		instantiatedChildren.AddRange(representativeNode.activeNodesWhichRepresentThisLeafID);
-
-		if (representativeNode.left is not null)
+		if (representativeNode.activeNodesWhichRepresentThisLeafID is not null)
 		{
-			RecursivelyAddActiveNodes(representativeNode.left, instantiatedChildren);
+			instantiatedChildren.AddRange(representativeNode.activeNodesWhichRepresentThisLeafID);
 		}
-		if (representativeNode.right is not null)
+
+		if (representativeNode.left?.Value is not null)
 		{
-			RecursivelyAddActiveNodes(representativeNode.right, instantiatedChildren);
+			RecursivelyAddActiveNodes(representativeNode.left.Value, instantiatedChildren);
+		}
+		if (representativeNode.right?.Value is not null)
+		{
+			RecursivelyAddActiveNodes(representativeNode.right.Value, instantiatedChildren);
 		}
 	}
 }
