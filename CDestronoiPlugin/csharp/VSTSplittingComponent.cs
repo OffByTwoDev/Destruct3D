@@ -123,6 +123,9 @@ public partial class VSTSplittingComponent : Area3D
 		}
 	}
 
+	/// <summary>
+	/// carries out an explosion on the body destronoiNode by removing & instantiating fragments from its VST
+	/// </summary>
 	public void SplitExplode(DestronoiNode destronoiNode,
 							float explosionDistanceMax,
 							int explosionTreeDepth,
@@ -144,6 +147,65 @@ public partial class VSTSplittingComponent : Area3D
 
 		// add early return condition for if originalVSTRoot depth is 0?
 
+		// the node has to be in the tree in order to check for inclusion in the explosion areas
+		if (!destronoiNode.IsInsideTree())
+		{
+			GD.PushError("destronoi node not in tree, returning early from splitexplode");
+			return;
+		}
+
+		List<VSTNode> fragmentsToRemove = GetFragmentsToRemove(destronoiNode, originalVSTRoot, explosionTreeDepth, explosionDistanceMax);
+
+		// if we are removing no fragments, then the rest of this code is just gonna create a duplicate of the current node
+		// ie in this case, nothing would be changed. nothing about the vst either i believe (hence no need to clean the VST)
+		// so we can save some computation and skip it. also prevents bodies moving about weirdly (duplicating them resets their position)
+		if (fragmentsToRemove.Count == 0)
+		{
+			if (DebugPrints)
+			{
+				GD.Print("no fragments to remove");
+			}
+
+			return;
+		}
+
+		// --- create small fragments --- //
+		CreateSmallFragments(fragmentsToRemove, destronoiNode);
+
+		// if this node now has no children, all its mass has been removed and it doesn't represent anything physical anymore
+		if (originalVSTRoot.left is null &&
+			originalVSTRoot.right is null)
+		{
+			Orphan(destronoiNode.vstRoot);
+			TellParentThatChildChanged(destronoiNode.vstRoot);
+
+			Deactivate(destronoiNode);
+
+			return;
+		}
+
+		if (!originalVSTRoot.childrenChanged)
+		{
+			GD.PushWarning("i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.");
+			GD.Print("just gonna set children changed to true and hope it fixes it lmao... (it seems to for now at least)");
+			GD.Print($"fragmentsToRemove = {fragmentsToRemove.Count}");
+			originalVSTRoot.childrenChanged = true;
+			// return;
+		}
+
+		// --- create parent fragments --- //
+		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
+		// (assumes originalVSTRoot.childrenChanged is true, and hence we combine the relevant meshes)
+		CreateParentFragments(originalVSTRoot, destronoiNode);
+
+		Deactivate(destronoiNode);
+	}
+
+	/// <summary>
+	/// finds all VSTNodes of a specified depth within a given VST root Node, that are within explosionDistanceMax from this VSTSplittingComponent
+	/// </summary>
+	public List<VSTNode> GetFragmentsToRemove(DestronoiNode destronoiNode, VSTNode originalVSTRoot, int explosionTreeDepth, float explosionDistanceMax)
+	{
 		List<VSTNode> fragmentsAtGivenDepth = [];
 
 		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, originalVSTRoot, explosionTreeDepth);
@@ -160,9 +222,10 @@ public partial class VSTSplittingComponent : Area3D
 				GD.Print("fragmentsAtGivenDepth.Count is 0, returning early to avoid unnecessary computation");
 			}
 			
-			return;
+			return [];
 		}
 
+		
 		List<VSTNode> fragmentsToRemove = [];
 
 		foreach (VSTNode vstNode in fragmentsAtGivenDepth)
@@ -171,7 +234,8 @@ public partial class VSTSplittingComponent : Area3D
 			if (vstNode.endPoint && !(vstNode.left is null && vstNode.right is null) )
 			{
 				GD.PushWarning("all endpoints should have 2 null children, this one has at least 1 non null child. This is unexpected.");
-				return;
+				// i think just continuing is the best option for error handling here, to avoid fucking up everything if just one node is broken
+				continue;
 			}
 			else if (!vstNode.endPoint)
 			{
@@ -189,12 +253,6 @@ public partial class VSTSplittingComponent : Area3D
 			}
 			
 			// test for fragment centre's inclusion in explosion region
-			if (!destronoiNode.IsInsideTree())
-			{
-				GD.PushError("destronoi node not in tree, returning early from splitexplode");
-				return;
-			}
-
 			Vector3 globalLeafPosition = destronoiNode.GlobalTransform * vstNode.meshInstance.GetAabb().GetCenter();
 
 			if ((globalLeafPosition - GlobalPosition).Length() < explosionDistanceMax)
@@ -203,28 +261,22 @@ public partial class VSTSplittingComponent : Area3D
 			}
 		}
 
-		// if we are removing no fragments, then the rest of this code is just gonna create a duplicate of the current node
-		// ie in this case, nothing would be changed. nothing about the vst either i believe (hence no need to clean the VST)
-		// so we can save some computation and skip it. also prevents bodies moving about weirdly (duplicating them resets their position)
-		if (fragmentsToRemove.Count == 0)
-		{
-			if (DebugPrints)
-			{
-				GD.Print("no fragments to remove");
-			}
-			return;
-		}
+		return fragmentsToRemove;
+	}
 
-		// --- create small fragments --- //
-
-		int fragmentNumber = 0;
+	/// <summary>
+	/// this is the main function which creates fragments. it creates destronoi nodes for each VSTNode in fragmentsToRemove.
+	/// </summary>
+	public void CreateSmallFragments(List<VSTNode> fragmentsToRemove, DestronoiNode destronoiNode)
+	{
+		int currentFragmentNumber = 0;
 
 		foreach (VSTNode leaf in fragmentsToRemove)
 		{
 			Orphan(leaf);
 			TellParentThatChildChanged(leaf);
 
-			string leafName = destronoiNode.Name + $"_fragment_{fragmentNumber}";
+			string leafName = destronoiNode.Name + $"_child_fragment_{currentFragmentNumber}";
 
 			MeshInstance3D meshToInstantate = new();
 
@@ -258,34 +310,18 @@ public partial class VSTSplittingComponent : Area3D
 													).Normalized() * ImpulseStrength);
 			}
 
-			fragmentNumber++;
+			currentFragmentNumber++;
 		}
+	}
 
-		// if this node now has no children, all its mass has been removed and it doesn't represent anything physical anymore
-		if (originalVSTRoot.left is null &&
-			originalVSTRoot.right is null)
-		{
-			Orphan(destronoiNode.vstRoot);
-			TellParentThatChildChanged(destronoiNode.vstRoot);
-
-			Deactivate(destronoiNode);
-
-			return;
-		}
-
-		if (!originalVSTRoot.childrenChanged)
-		{
-			GD.PushWarning("i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.");
-			GD.Print("just gonna set children changed to true and hope it fixes it lmao... (it seems to for now at least)");
-			GD.Print($"fragmentsToRemove = {fragmentsToRemove.Count}");
-			originalVSTRoot.childrenChanged = true;
-			// return;
-		}
-
-		// --- create parent fragments --- //
-		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
-		// (assumes originalVSTRoot.childrenChanged is true, and hence we combine the relevant meshes)
-
+	/// <summary>
+	/// recalculates the meshes of the originalVSTRoot (i.e. the thing that fragments have been removed from by CreateSmallFramgents())
+	/// <para>
+	/// fragmentation can (theoretically) split the original root destronoiNode in arbitrarily many "parent sections". If we did not test for adjacency, then if an explosion e.g. splits a long bar in half, our code would still see both those sections as the same body. Hence we must group the originalVSTRoot into collections of fragments which are adjacent, and then instantiate each group as a new destronoiNode.
+	/// </para>
+	/// </summary>
+	public void CreateParentFragments(VSTNode originalVSTRoot, DestronoiNode destronoiNode)
+	{
 		if (DebugPrints)
 		{
 			GD.Print("Creating Combined DN");
@@ -303,22 +339,30 @@ public partial class VSTSplittingComponent : Area3D
 
 		List<List<VSTNode>> groupedVSTNodes = GetGroupedVSTNodes(vstNodes);
 
-		foreach (List<VSTNode> list in groupedVSTNodes)
+		if (DebugPrints)
 		{
-			GD.Print("--- list change ---");
-
-			foreach(VSTNode node in list)
+			foreach (List<VSTNode> list in groupedVSTNodes)
 			{
-				GD.Print($"{node.meshInstance.GetAabb().GetCenter()} with level {node.level}");
+				GD.Print("--- list change ---");
+
+				foreach(VSTNode node in list)
+				{
+					GD.Print($"{node.meshInstance.GetAabb().GetCenter()} with level {node.level}");
+				}
 			}
 		}
-
+		
 		// could save 1 destronoinode creation
 		// by having this node become groupedMeshes[0], orphan non adjacent vstNodes
 		// and for the rest, we create a new destronoiNode with a copy of the vstNode, orphan non adjacent vstNodes
 		// i.e. create n-1 new destronoi nodes rather than n
+		
+		if (DebugPrints)
+		{
+			GD.Print($"creating {groupedVSTNodes.Count} groups of nodes");
+		}
 
-		GD.Print($"creating {groupedVSTNodes.Count} groups of nodes");
+		int currentFragmentNumber = 0;
 
 		foreach (List<VSTNode> currentVSTNodeGroup in groupedVSTNodes)
 		{
@@ -331,7 +375,6 @@ public partial class VSTSplittingComponent : Area3D
 			}
 
 			VSTNode newVSTRoot = originalVSTRoot.DeepCopy(newParent: null, originalVSTRoot.permanentParent);
-			// newVSTRoot.parent = null;
 			
 			// now we can create a list of non adjacent nodes. HOWEVER this list of VSTNodes is of DISTINCT objects compared to the ones in newVSTRoot
 			// as we just created a deepcopy of originalVSTRoot
@@ -344,7 +387,7 @@ public partial class VSTSplittingComponent : Area3D
 
 			OrphanDeepestNonAdjacentNodesByID(newVSTRoot, nonAdjacentNodeIDs);
 
-			string leafName = destronoiNode.Name + $"_fragment_{fragmentNumber}";
+			string leafName = destronoiNode.Name + $"_parent_fragment_{currentFragmentNumber}";
 
 			List<MeshInstance3D> meshInstances = [];
 			GetDeepestMeshInstances(meshInstances, newVSTRoot);
@@ -359,14 +402,20 @@ public partial class VSTSplittingComponent : Area3D
 
 			destronoiNode.fragmentContainer.AddChild(newDestronoiNode);
 			destronoiNode.binaryTreeMapToActiveNodes.AddToActiveTree(newDestronoiNode);
-		}
 
-		Deactivate(destronoiNode);
+			currentFragmentNumber++;
+		}
 	}
 
-	// for now we dont queuefree as we need the original objects (i.e. the vst leafs) to stick around
-	// would be fixed if we reused the old destronoiNode when creating new ones
-	// rather than just creating new ones and deactivating the old one
+
+	/// <summary>
+	/// removes a destronoiNode from the scene without removing it from memory
+	/// <para>
+	/// for now we dont queuefree as we need the original objects (i.e. the vst leafs) to stick around.
+	/// would be fixed if we reused the old destronoiNode when creating new parent fragments (see comment about n-1 above)
+	/// rather than just creating new parents and deactivating the old destronoiNode
+	/// </para>
+	/// </summary>
 	public static void Deactivate(DestronoiNode destronoiNode)
 	{
 		destronoiNode.Visible = false;
