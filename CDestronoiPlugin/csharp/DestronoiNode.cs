@@ -100,6 +100,11 @@ public partial class DestronoiNode : RigidBody3D
 		{
 			DebugPrintVST(vstRoot);
 		}
+
+		if (Input.IsActionJustPressed("debug_print_thing"))
+		{
+			GD.Print(vstRoot.childrenChanged);
+		}
 	}
 
 	public static void DebugPrintVST(VSTNode vstNode)

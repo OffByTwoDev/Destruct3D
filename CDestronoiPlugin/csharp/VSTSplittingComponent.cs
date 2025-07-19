@@ -88,7 +88,7 @@ public partial class VSTSplittingComponent : Area3D
 			GD.Print("secondary explosion");
 		}
 
-		// CloserExplosion();
+		CloserExplosion();
 	}
 
 	/// <summary>carry out the explosion that goes to a tree depth of explosionTreeDepthShallow</summary>
@@ -276,8 +276,10 @@ public partial class VSTSplittingComponent : Area3D
 		if (!originalVSTRoot.childrenChanged)
 		{
 			GD.PushWarning("i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.");
+			GD.Print("just gonna set children changed to true and hope it fixes it lmao... (it seems to for now at least)");
 			GD.Print($"fragmentsToRemove = {fragmentsToRemove.Count}");
-			return;
+			originalVSTRoot.childrenChanged = true;
+			// return;
 		}
 
 		// --- create parent fragments --- //
@@ -373,7 +375,9 @@ public partial class VSTSplittingComponent : Area3D
 		destronoiNode.CollisionMask = 0;
 		destronoiNode.Sleeping = true;
 
-		// destronoiNode.GetParent()?.RemoveChild(destronoiNode);
+		destronoiNode.SetProcessUnhandledInput(false);
+
+		destronoiNode.GetParent()?.RemoveChild(destronoiNode);
 
 		destronoiNode.binaryTreeMapToActiveNodes.RemoveFromActiveTree(destronoiNode);
 	}

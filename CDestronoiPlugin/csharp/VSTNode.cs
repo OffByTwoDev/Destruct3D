@@ -129,7 +129,6 @@ public class VSTNode
 			outArr = [];
 		}
 
-
 		bool isLeaf = root.left is null && root.right is null;
 		bool atTargetLevel;
 
