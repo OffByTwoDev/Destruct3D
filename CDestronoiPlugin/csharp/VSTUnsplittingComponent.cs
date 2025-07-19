@@ -13,12 +13,11 @@ namespace CDestronoi;
 // this component simply takes an input destronoiNode and does exactly that
 public partial class VSTUnsplittingComponent : Node
 {
-	public RayCast3D unfragmentationRayCast;
+	[Export] public int unexplosionLevelsToGoUp = 2;
+	[Export] public Node3D fragmentContainer;
 
 	public Player player;
 
-	[Export] public int unexplosionLevelsToGoUp = 2;
-	
 	public readonly float UnsplittingDuration = 1.5f;
 
 	public override void _Ready()
@@ -28,13 +27,11 @@ public partial class VSTUnsplittingComponent : Node
 		LevelSwitcher levelSwitcher = GetNode<LevelSwitcher>("/root/Main/LevelSwitcher");
 
 		player = levelSwitcher.player;
-
-		unfragmentationRayCast = player.unfragmentationHighlighting;
 	}
 
 	public async Task Activate(Transform3D? unfragmentationTransform, DestronoiNode fragmentToUnexplode)
 	{
-		// if (unfragmentationRayCast.GetCollider() is not DestronoiNode fragment)
+		// if (player.unfragmentationHighlighting.GetCollider() is not DestronoiNode fragment)
 		// {
 		// 	return;
 		// }
@@ -50,23 +47,24 @@ public partial class VSTUnsplittingComponent : Node
 			await Unsplit(fragmentToUnexplode, transformBetweenPlayerAndObject);
 		}
 	}
+
 	/// <param name="reversedExplosionCentre">in global coordinates</param>
 	public async Task Unsplit(DestronoiNode destronoiNode, Transform3D reversedExplosionCentre)
 	{
 		VSTNode topmostParent;
 		List<DestronoiNode> instantiatedChildren;
 
-		// if there are no parent (i.e. this fragment itself is the topmost fragment), then just use the original vstNode
+		// if there is no parent (i.e. this fragment itself is the topmost fragment), then just use the original vstNode
 		if (destronoiNode.vstRoot.permanentParent is null)
 		{
 			topmostParent = destronoiNode.vstRoot;
-			instantiatedChildren = destronoiNode.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
 		}
 		else
 		{
-			topmostParent = GetTopMostParent(destronoiNode.vstRoot.permanentParent, unexplosionLevelsToGoUp);
-			instantiatedChildren = destronoiNode.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
+			topmostParent = GetParentAGivenNumberOfLevelsUp(destronoiNode.vstRoot.permanentParent, unexplosionLevelsToGoUp);
 		}
+
+		instantiatedChildren = destronoiNode.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
 
 		// now we need to interpolate all instantiated children towards the reverse explosion
 		// and then queuefree them alls
@@ -74,26 +72,23 @@ public partial class VSTUnsplittingComponent : Node
 
 		// reversedExplosionCentre = new(reversedExplosionCentre.Basis, reversedExplosionCentre.Origin - topmostParent.meshInstance.GetAabb().GetCenter());
 
-		await InterpolateDestronoiNodesThenQueueFree(instantiatedChildren, reversedExplosionCentre);
-		
+		await InterpolateDestronoiNodesThenDeactivate(instantiatedChildren, reversedExplosionCentre);
+
 		topmostParent.Reset();
 
 		// create fresh parent destronoiNode and add to scene
 		DestronoiNode freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
 		freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
+		freshDestronoiNodeFragment.binaryTreeMapToActiveNodes.AddToActiveTree(freshDestronoiNodeFragment);
 
-		// DebugPrintValidDepth(topmostParent);
-		// foreach (DestronoiNode child in instantiatedChildren)
-		// {
-		// 	child.QueueFree();
-		// }
+		DebugPrintValidDepth(topmostParent);
 	}
 
 	public static void DebugPrintValidDepth(VSTNode vstNode)
 	{
 		if (vstNode.left is null && vstNode.right is null)
 		{
-			GD.Print(vstNode.level);
+			GD.Print($"max valid tree level is: {vstNode.level}");
 		}
 		else
 		{
@@ -108,9 +103,8 @@ public partial class VSTUnsplittingComponent : Node
 		}
 	}
 
-	public static VSTNode GetTopMostParent(VSTNode vstNode, int levelsToGoUp)
+	public static VSTNode GetParentAGivenNumberOfLevelsUp(VSTNode vstNode, int levelsToGoUp)
 	{
-		// just a null check
 		if (vstNode is null)
 		{
 			GD.PushError("a null vstNode was passed to GetTopMostParent");
@@ -119,53 +113,41 @@ public partial class VSTUnsplittingComponent : Node
 
 		// actual logic begins
 		// if no higher parent, or the node is at the height we want, return the current node
-		if (vstNode.parent is null || levelsToGoUp == 0) { return vstNode; }
+		if (vstNode.permanentParent is null || levelsToGoUp == 0)
+		{
+			return vstNode;
+		}
 
-		return GetTopMostParent(vstNode.parent,levelsToGoUp - 1);
+		return GetParentAGivenNumberOfLevelsUp(vstNode.permanentParent,levelsToGoUp - 1);
 	}
 
-	public async Task InterpolateDestronoiNodesThenQueueFree(List<DestronoiNode> instantiatedChildren, Transform3D reversedExplosionCentre)
+	public async Task InterpolateDestronoiNodesThenDeactivate(List<DestronoiNode> instantiatedChildren, Transform3D reversedExplosionCentre)
 	{
 		var completionSources = new List<TaskCompletionSource<bool>>();
 
 		foreach (DestronoiNode destronoiNode in instantiatedChildren)
 		{
-			var tcs = new TaskCompletionSource<bool>();
-			completionSources.Add(tcs);
+			var taskCompletionSource = new TaskCompletionSource<bool>();
+			completionSources.Add(taskCompletionSource);
 
 			Tween tween = GetTree().CreateTween();
-			VSTSplittingComponent.Deactivate(destronoiNode);
-			destronoiNode.Visible = true;
 
 			tween.SetEase(Tween.EaseType.In);
 			tween.SetTrans(Tween.TransitionType.Expo);
 
+			if (!destronoiNode.IsInsideTree())
+			{
+				GD.PushError($"{destronoiNode.Name} not inside tree, returning early in unsplitting component");
+				return;
+			}
+			
 			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, UnsplittingDuration);
-			tween.TweenCallback(Callable.From(() => destronoiNode.Visible = false));
-			// tween.TweenCallback(Callable.From(destronoiNode.QueueFree));
-			tween.TweenCallback(Callable.From(() => tcs.SetResult(true)));
+			tween.TweenCallback(Callable.From(() => VSTSplittingComponent.Deactivate(destronoiNode)));
+			tween.TweenCallback(Callable.From(() => taskCompletionSource.SetResult(true)));
 		}
 
-		// Wait for all interpolations to complete
 		await Task.WhenAll(completionSources.Select(t => t.Task));
 	}
-
-	// public void InterpolateDestronoiNodesThenQueueFree(List<DestronoiNode> instantiatedChildren,
-	// 												Transform3D reversedExplosionCentre)
-	// {
-	// 	foreach (DestronoiNode destronoiNode in instantiatedChildren)
-	// 	{
-	// 		Tween tween = GetTree().CreateTween();
-
-	// 		// disable everything about the destronoiNode but keep it visible
-	// 		VSTSplittingComponent.Deactivate(destronoiNode);
-	// 		destronoiNode.Visible = true;
-
-	// 		tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, 1.0f);
-
-	// 		tween.TweenCallback(Callable.From(() => destronoiNode.Visible = false));
-	// 	}
-	// }
 
 	/// <summary>
 	/// creates a Destronoi Node from the given meshInstance and vstnode
@@ -174,62 +156,24 @@ public partial class VSTUnsplittingComponent : Node
 	/// used for density, binarytreemap reference, and fragment container reference
 	/// i.e. stuff that any child would agree on, it doesnt have to be some specific parent or anything
 	/// </param>
-	public DestronoiNode CreateFreshDestronoiNode(VSTNode vstNode, Transform3D globalTransform, DestronoiNode anyChildDestronoiNode)
+	public static DestronoiNode CreateFreshDestronoiNode(VSTNode vstNode, Transform3D globalTransform, DestronoiNode anyChildDestronoiNode)
 	{
-		// temporary shit
 		string name = "unfragmented_with_ID_" + vstNode.ID.ToString();
-		StandardMaterial3D material = new();
 
-		DestronoiNode destronoiNode = new()
-		{
-			Name = name,
-			GlobalTransform = globalTransform
-		};
+		MeshInstance3D meshInstanceToSet = vstNode.meshInstance;
+		meshInstanceToSet.Name = $"{name}_MeshInstance3D";
 
-		// --- rigidbody initialisation --- //
+		DestronoiNode destronoiNode = new(
+			inputName: name,
+			inputGlobalTransform: globalTransform,
+			inputMeshInstance: meshInstanceToSet,
+			inputFragmentContainer: anyChildDestronoiNode.fragmentContainer,
+			inputVSTRoot: vstNode,
+			inputDensity: anyChildDestronoiNode.baseObjectDensity,
+			inputNeedsInitialising: false,
+			inputBinaryTreeMapToActiveNodes: anyChildDestronoiNode.binaryTreeMapToActiveNodes
+		);
 
-		// mesh instance
-		MeshInstance3D meshInstance = (MeshInstance3D)vstNode.meshInstance.Duplicate();
-		meshInstance.Name = $"{name}_MeshInstance3D";
-
-		meshInstance.SetSurfaceOverrideMaterial(0, material);
-
-		destronoiNode.AddChild(meshInstance);
-
-		// collisionshape
-		var shape = new CollisionShape3D
-		{
-			Name = "CollisionShape3D",
-			Shape = meshInstance.Mesh.CreateConvexShape(false, false)
-		};
-		destronoiNode.AddChild(shape);
-
-		// mass
-		float volume =  meshInstance.Mesh.GetAabb().Size.X *
-						meshInstance.Mesh.GetAabb().Size.Y *
-						meshInstance.Mesh.GetAabb().Size.Z;
-		destronoiNode.Mass = Math.Max(anyChildDestronoiNode.baseObjectDensity * volume, 0.01f);
-
-		// needed (idk why lmao ?) for detecting explosions from RPGs
-		destronoiNode.ContactMonitor = true;
-		destronoiNode.MaxContactsReported = 5_000;
-
-
-		// --- destronoi node initialisation --- //
-
-		destronoiNode.meshInstance = vstNode.meshInstance;
-		destronoiNode.fragmentContainer = anyChildDestronoiNode.fragmentContainer;
-		destronoiNode.vstRoot = vstNode;
-		destronoiNode.baseObjectDensity = anyChildDestronoiNode.baseObjectDensity;
-		// setting this to true will break everything,
-		// this flag must be false as the vstRoot is being reused and must not be regenerated for fragments
-		destronoiNode.needsInitialising = false;
-
-		// finally, tell the relevant binarytreemap that this node has been created //
-		// and also set the relevant binaryTreeMap to be this one
-		destronoiNode.binaryTreeMapToActiveNodes = anyChildDestronoiNode.binaryTreeMapToActiveNodes;
-		destronoiNode.binaryTreeMapToActiveNodes.AddToActiveTree(destronoiNode);
-		
 		return destronoiNode;
 	}
 }

@@ -25,8 +25,8 @@ public partial class BinaryTreeMapToActiveNodes : Node
 
 		if (height > 0)
 		{
-			node.left = BuildSubtree(node, Laterality.LEFT, inputID * 2, height - 1);
-			node.right = BuildSubtree(node, Laterality.RIGHT, inputID * 2 + 1, height - 1);
+			node.left.Value = BuildSubtree(node, Laterality.LEFT, inputID * 2, height - 1);
+			node.right.Value = BuildSubtree(node, Laterality.RIGHT, inputID * 2 + 1, height - 1);
 		}
 
 		return node;
@@ -44,29 +44,39 @@ public partial class BinaryTreeMapToActiveNodes : Node
 	/// get the relevant representativeNode for this destronoiNode
 	/// and then adds the input destronoiNode to the activeNodeList for that RN / ID
 	/// </summary>
-	/// <param name="destronoiNode"></param>
 	public void AddToActiveTree(DestronoiNode destronoiNode)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
 		representativeNode.activeNodesWhichRepresentThisLeafID.Add(destronoiNode);
+
+		if (!destronoiNode.IsInsideTree())
+		{
+			GD.PushError("a destronoi Node which is not inside a scene tree was added to the BinaryTreeMapToActiveNodes. this will cause errors in unsplitting & splitting components (probably)");
+		}
 	}
 
 	/// <summary>
 	/// removes a destronoiNode from the activeNodeList for a representative node
 	/// </summary>
-	/// <param name="destronoiNode"></param>
 	public void RemoveFromActiveTree(DestronoiNode destronoiNode)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
 		representativeNode.activeNodesWhichRepresentThisLeafID.Remove(destronoiNode);
 	}
 
+	/// <summary>
+	/// includes the node which is passed into the function initially
+	/// </summary>
 	public List<DestronoiNode> GetFragmentsInstantiatedChildren(int vstRootID)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[vstRootID];
+
 		List<DestronoiNode> instantiatedChildren = [];
 
-		RecursivelyAddActiveNodes(representativeNode, instantiatedChildren);
+		if (representativeNode is not null)
+		{
+			RecursivelyAddActiveNodes(representativeNode, instantiatedChildren);
+		}
 
 		return instantiatedChildren;
 	}
@@ -75,10 +85,19 @@ public partial class BinaryTreeMapToActiveNodes : Node
 	// tbh prolly makes like 0 difference to runtime
 	public static void RecursivelyAddActiveNodes(RepresentativeNode representativeNode, List<DestronoiNode> instantiatedChildren)
 	{
-		instantiatedChildren.AddRange(representativeNode.activeNodesWhichRepresentThisLeafID);
+		if (representativeNode.activeNodesWhichRepresentThisLeafID is not null)
+		{
+			instantiatedChildren.AddRange(representativeNode.activeNodesWhichRepresentThisLeafID);
+		}
 
-		if (representativeNode.left is not null) { RecursivelyAddActiveNodes(representativeNode.left, instantiatedChildren); }
-		if (representativeNode.right is not null) { RecursivelyAddActiveNodes(representativeNode.right, instantiatedChildren); }
+		if (representativeNode.left?.Value is not null)
+		{
+			RecursivelyAddActiveNodes(representativeNode.left.Value, instantiatedChildren);
+		}
+		if (representativeNode.right?.Value is not null)
+		{
+			RecursivelyAddActiveNodes(representativeNode.right.Value, instantiatedChildren);
+		}
 	}
 }
 
@@ -90,10 +109,9 @@ public class RepresentativeNode(RepresentativeNode inputParent,
 	public readonly RepresentativeNode parent = inputParent;
 	public readonly Laterality laterality = inputLaterality;
 	public readonly int ID = inputID;
-	
-	// these should be writeonce ideally
-	public RepresentativeNode left;
-	public RepresentativeNode right;
+
+	public WriteOnce<RepresentativeNode> left = new();
+	public WriteOnce<RepresentativeNode> right = new();
 
 	// this should be always editable
 	public List<DestronoiNode> activeNodesWhichRepresentThisLeafID = [];
