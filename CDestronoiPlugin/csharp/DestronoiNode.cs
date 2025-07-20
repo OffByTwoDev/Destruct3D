@@ -61,8 +61,8 @@ public partial class DestronoiNode : RigidBody3D
 
 		AddChild(meshInstance);
 
-		var shape = new CollisionShape3D
-		{
+		CollisionShape3D shape = new()
+        {
 			Name = "CollisionShape3D",
 			Shape = meshInstance.Mesh.CreateConvexShape(false, false),
 		};
@@ -253,9 +253,9 @@ public partial class DestronoiNode : RigidBody3D
 
 		int tries = 0;
 
-		var direction = Vector3.Up;
+		Vector3 direction = Vector3.Up;
 
-		var aabb = node.meshInstance.GetAabb();
+		Aabb aabb = node.meshInstance.GetAabb();
 
 		while (node.sites.Count < 2)
 		{
@@ -266,8 +266,8 @@ public partial class DestronoiNode : RigidBody3D
 				GD.PushWarning($"over {MAX_PLOTSITERANDOM_TRIES} tries exceeded, exiting PlotSitesRandom");
 				return;
 			}
-			
-			var site = new Vector3(
+
+			Vector3 site = new(
 				(float)GD.RandRange(aabb.Position.X, aabb.End.X),
 				(float)GD.RandRange(aabb.Position.Y, aabb.End.Y),
 				(float)GD.RandRange(aabb.Position.Z, aabb.End.Z)
@@ -280,9 +280,9 @@ public partial class DestronoiNode : RigidBody3D
 				int v0 = mdt.GetFaceVertex(face, 0);
 				int v1 = mdt.GetFaceVertex(face, 1);
 				int v2 = mdt.GetFaceVertex(face, 2);
-				var p0 = mdt.GetVertex(v0);
-				var p1 = mdt.GetVertex(v1);
-				var p2 = mdt.GetVertex(v2);
+				Vector3 p0 = mdt.GetVertex(v0);
+				Vector3 p1 = mdt.GetVertex(v1);
+				Vector3 p2 = mdt.GetVertex(v2);
 
 				Variant intersectionPoint = Geometry3D.RayIntersectsTriangle(site, direction, p0, p1, p2);
 				
@@ -306,12 +306,12 @@ public partial class DestronoiNode : RigidBody3D
 		{
 			return false;
 		}
-		
-		var siteA = node.sites[0];
-		var siteB = node.sites[1];
-		var planeNormal = (siteB - siteA).Normalized();
-		var planePosition = siteA + (siteB - siteA) * 0.5f;
-		var plane = new Plane(planeNormal, planePosition);
+
+		Vector3 siteA = node.sites[0];
+		Vector3 siteB = node.sites[1];
+		Vector3 planeNormal = (siteB - siteA).Normalized();
+		Vector3 planePosition = siteA + (siteB - siteA) * 0.5f;
+		Plane plane = new(planeNormal, planePosition);
 
 		MeshDataTool dataTool = new();
 		dataTool.CreateFromSurface(node.meshInstance.Mesh as ArrayMesh, 0);
@@ -345,14 +345,16 @@ public partial class DestronoiNode : RigidBody3D
 			// for new vertices which intersect the plane
 			List<Vector3?> coplanar = [];
 
-			for (int f = 0; f < dataTool.GetFaceCount(); f++)
+			for (int faceIndex = 0; faceIndex < dataTool.GetFaceCount(); faceIndex++)
 			{
-				var faceVertices = new int[] { dataTool.GetFaceVertex(f, 0), dataTool.GetFaceVertex(f, 1), dataTool.GetFaceVertex(f, 2) };
+				int[] faceVertices = [	dataTool.GetFaceVertex(faceIndex, 0),
+										dataTool.GetFaceVertex(faceIndex, 1),
+										dataTool.GetFaceVertex(faceIndex, 2)	];
 				List<int> verticesAbovePlane = [];
 				List<Vector3?> intersects = [];
 
 				// ITERATE OVER EACH VERTEX AND DETERMINE "ABOVENESS"
-				foreach (var vertexIndex in faceVertices)
+				foreach (int vertexIndex in faceVertices)
 				{
 					if (plane.IsPointOver(dataTool.GetVertex(vertexIndex)))
 					{
@@ -362,11 +364,15 @@ public partial class DestronoiNode : RigidBody3D
 
 				// INTERSECTION CASE 0/0.5: ALL or NOTHING above the plane
 				if (verticesAbovePlane.Count == 0)
+				{
 					continue;
+				}
 				if (verticesAbovePlane.Count == 3)
 				{
-					foreach (var vid in faceVertices)
+					foreach (int vid in faceVertices)
+					{
 						surfaceTool.AddVertex(dataTool.GetVertex(vid));
+					}
 					continue;
 				}
 
@@ -379,6 +385,13 @@ public partial class DestronoiNode : RigidBody3D
 					int indexBefore = (Array.IndexOf(faceVertices, vid) + 2) % 3;
 					Vector3? intersectionAfter = plane.IntersectsSegment(dataTool.GetVertex(vid), dataTool.GetVertex(faceVertices[indexAfter]));
 					Vector3? intersectionBefore = plane.IntersectsSegment(dataTool.GetVertex(vid), dataTool.GetVertex(faceVertices[indexBefore]));
+
+					if (!intersectionAfter.HasValue || !intersectionBefore.HasValue)
+					{
+						GD.PushWarning($"[CDestronoi] one or more intersects has no value. skipping this face. (from bisecting node with ID {node.ID} and level {node.level})");
+						continue;
+					}
+
 					intersects.Add(intersectionAfter);
 					intersects.Add(intersectionBefore);
 					coplanar.Add(intersectionAfter);
@@ -386,8 +399,6 @@ public partial class DestronoiNode : RigidBody3D
 
 					// TRIANGLE CREATION
 					surfaceTool.AddVertex(dataTool.GetVertex(vid));
-					if (intersects[0] is null || intersects[1] is null) { GD.PushWarning("intersects is null (?)"); }
-					if (!intersects[0].HasValue || !intersects[1].HasValue) { GD.PushWarning("one or more intersects has no value"); }
 					surfaceTool.AddVertex((Vector3)intersects[0]);
 					surfaceTool.AddVertex((Vector3)intersects[1]);
 					continue;
@@ -402,8 +413,8 @@ public partial class DestronoiNode : RigidBody3D
 						verticesAbovePlane.Reverse();
 						indexRemaining = 1;
 					}
-					else if (verticesAbovePlane[0] != faceVertices[0] &&
-						verticesAbovePlane[1] != faceVertices[0])
+					else if (	verticesAbovePlane[0] != faceVertices[0] &&
+								verticesAbovePlane[1] != faceVertices[0])
 					{
 						indexRemaining = 0;
 					}
@@ -412,13 +423,19 @@ public partial class DestronoiNode : RigidBody3D
 						indexRemaining = 2;
 					}
 
-					var intersectionAfter = plane.IntersectsSegment(
+					Vector3? intersectionAfter = plane.IntersectsSegment(
 						dataTool.GetVertex(verticesAbovePlane[1]),
 						dataTool.GetVertex(faceVertices[indexRemaining]));
 
-					var intersectionBefore = plane.IntersectsSegment(
+					Vector3? intersectionBefore = plane.IntersectsSegment(
 						dataTool.GetVertex(verticesAbovePlane[0]),
 						dataTool.GetVertex(faceVertices[indexRemaining]));
+
+					if (!intersectionAfter.HasValue || !intersectionBefore.HasValue)
+					{
+						GD.PushWarning($"[CDestronoi] one or more intersects has no value. skipping this face. (from bisecting node with ID {node.ID} and level {node.level})");
+						continue;
+					}
 
 					intersects.Add(intersectionAfter);
 					intersects.Add(intersectionBefore);
@@ -455,9 +472,11 @@ public partial class DestronoiNode : RigidBody3D
 			// END for face in range(data_tool.get_face_count())
 
 			// cap polygon
-			var center = Vector3.Zero;
+			Vector3 center = Vector3.Zero;
 			foreach (Vector3 v in coplanar.Select(v => (Vector3)v))
+			{
 				center += v;
+			}
 			center /= coplanar.Count;
 			for (int i = 0; i < coplanar.Count - 1; i += 2)
 			{
@@ -466,7 +485,14 @@ public partial class DestronoiNode : RigidBody3D
 				surfaceTool.AddVertex(center);
 			}
 
-			if (side == 0) surfA = surfaceTool; else surfB = surfaceTool;
+			if (side == 0)
+			{
+				surfA = surfaceTool;
+			}
+			else
+			{
+				surfB = surfaceTool;
+			}
 		}
 
 		surfA.Index(); surfA.GenerateNormals();
@@ -555,7 +581,7 @@ public partial class DestronoiNode : RigidBody3D
 			if (!Mathf.IsZeroApprox(combustVelocity))
 			{
 				// simple outward velocity
-				var dir = meshInstance.Mesh.GetAabb().Position - Position;
+				Vector3 dir = meshInstance.Mesh.GetAabb().Position - Position;
 				// was .axisvelocity, i just replaced it with linearvelocity idk if thats correct
 				body.LinearVelocity = dir.Normalized() * combustVelocity;
 			}
@@ -587,7 +613,7 @@ public partial class DestronoiNode : RigidBody3D
 			body.AddChild(meshInstance);
 
 			// collisionshape
-			var shape = new CollisionShape3D
+			CollisionShape3D shape = new()
 			{
 				Name = "CollisionShape3D",
 				Shape = meshInstance.Mesh.CreateConvexShape(false, false)

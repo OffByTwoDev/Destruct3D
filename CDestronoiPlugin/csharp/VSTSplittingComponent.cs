@@ -77,6 +77,12 @@ public partial class VSTSplittingComponent : Area3D
 		_ = Activate();
 	}
 
+	/// <summary>
+	/// carries out 2 explosions on 2 different spatial scales, 1 physics frame apart
+	/// </summary>
+	/// <remarks>
+	/// if you await this function, it will return a task which will complete AFTER all the fragments have been instantiated into the scene tree (i.e. this function awaits an extra PhysicsFrame after calling <c>CloserExplosion()</c>)
+	/// </remarks>
 	public async Task Activate()
 	{
 		if (DebugPrints)
@@ -95,6 +101,8 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		CloserExplosion();
+
+		await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
 	}
 
 	/// <summary>carry out the explosion that goes to a tree depth of explosionTreeDepthShallow</summary>
