@@ -62,7 +62,7 @@ public partial class DestronoiNode : RigidBody3D
 		AddChild(meshInstance);
 
 		CollisionShape3D shape = new()
-        {
+		{
 			Name = "CollisionShape3D",
 			Shape = meshInstance.Mesh.CreateConvexShape(false, false),
 		};

@@ -44,6 +44,8 @@ public partial class VSTSplittingComponent : Area3D
 	/// </summary>
 	private const float ADJACENCY_ESTIMATOR_ABSOLUTE_GROWTH = 0.05f;
 
+	private bool suppressCDestronoiWarnings = false;
+
 	public override void _Ready()
 	{
 		base._Ready();
@@ -90,7 +92,7 @@ public partial class VSTSplittingComponent : Area3D
 			GD.Print("primary explosion");
 		}
 
-		ShallowExplosion();
+		Explosion(explosionDistancesLarge, explosionTreeDepthShallow, new StandardMaterial3D());
 
 		// await so there's enough time for fragments to be instantiated
 		await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
@@ -100,13 +102,13 @@ public partial class VSTSplittingComponent : Area3D
 			GD.Print("secondary explosion");
 		}
 
-		CloserExplosion();
+		Explosion(explosionDistancesSmall, explosionTreeDepthDeep, new StandardMaterial3D());
 
 		await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
 	}
 
-	/// <summary>carry out the explosion that goes to a tree depth of explosionTreeDepthShallow</summary>
-	private void ShallowExplosion()
+	/// <summary>carry out the explosion that goes to a tree depth of explosionTreeDepth and covers a radius explosionDistance</summary>
+	private void Explosion(float explosionDistance, int explosionTreeDepth, StandardMaterial3D material)
 	{
 		foreach (Node3D node in GetOverlappingBodies())
 		{
@@ -115,25 +117,17 @@ public partial class VSTSplittingComponent : Area3D
 				continue;
 			}
 
-			SplitExplode(destronoiNode, explosionDistancesLarge, explosionTreeDepthShallow, new StandardMaterial3D());
-		}
-	}
-
-	private void CloserExplosion()
-	{
-		if (DebugMaterialsOnSecondaryExplosion)
-		{
-			fragmentMaterial.AlbedoColor = new Color(GD.Randf(), GD.Randf(), GD.Randf());
-		}
-
-		foreach (Node3D node in GetOverlappingBodies())
-		{
-			if (node is not DestronoiNode destronoiNode)
+			if (!destronoiNode.IsInsideTree())
 			{
+				// this corresponds to a destronoiNode which was part of GetOverlappingBodies() but is now not in the scene tree? kinda weird lmao. i think it might be if you spam Activate(), then destronoinodes are still being de-parented (by Deactivate()) (and hence removed from the scene tree) during another call to Activate().
+				if (!suppressCDestronoiWarnings)
+				{
+					GD.PushWarning("destronoi node not in tree, skipping splitexplode for this fragment.");
+				}
 				continue;
 			}
 
-			SplitExplode(destronoiNode, explosionDistancesSmall, explosionTreeDepthDeep, fragmentMaterial);
+			SplitExplode(destronoiNode, explosionDistance, explosionTreeDepth, material);
 		}
 	}
 
@@ -164,7 +158,8 @@ public partial class VSTSplittingComponent : Area3D
 		// the node has to be in the tree in order to check for inclusion in the explosion areas
 		if (!destronoiNode.IsInsideTree())
 		{
-			GD.PushError("destronoi node not in tree, returning early from splitexplode");
+			// this corresponds to a destronoiNode which was part of GetOvelappingBodies() but is now not in the scene tree? kinda weird lmao
+			GD.PushWarning("[CDestronoi] destronoi node not in tree, returning early from splitexplode (this is the later IsInsideTree check)");
 			return;
 		}
 
