@@ -237,6 +237,12 @@ public partial class DestronoiNode : RigidBody3D
 			return;
 		}
 
+		if (arrayMesh.GetSurfaceCount() == 0)
+		{
+			GD.PushWarning($"Mesh has no surfaces (surface count = 0), cannot run PlotSitesRandom on this node, returning early. node that has this meshinstance has ID {node.ID} and level {node.level}");
+			return;
+		}
+
 		mdt.CreateFromSurface(arrayMesh, 0);
 
 		if (mdt.GetFaceCount() == 0)
@@ -380,7 +386,8 @@ public partial class DestronoiNode : RigidBody3D
 
 					// TRIANGLE CREATION
 					surfaceTool.AddVertex(dataTool.GetVertex(vid));
-					if (intersects[0] is null || intersects[1] is null) { GD.Print("intersects is null (?)"); }
+					if (intersects[0] is null || intersects[1] is null) { GD.PushWarning("intersects is null (?)"); }
+					if (!intersects[0].HasValue || !intersects[1].HasValue) { GD.PushWarning("one or more intersects has no value"); }
 					surfaceTool.AddVertex((Vector3)intersects[0]);
 					surfaceTool.AddVertex((Vector3)intersects[1]);
 					continue;

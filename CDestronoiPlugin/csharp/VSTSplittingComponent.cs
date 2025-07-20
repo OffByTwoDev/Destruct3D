@@ -40,9 +40,9 @@ public partial class VSTSplittingComponent : Area3D
 	[Export] public StandardMaterial3D debugMaterial;
 
 	/// <summary>
-	/// when true, the main abstracted functions are timed and lines are printed to seperate the events which are being timed
+	/// used by IsAdjacentEstimatorOverlap. determines how much each aabb grows before testing for intersection.
 	/// </summary>
-	[Export] private bool DebugTimings = false;
+	private const float ADJACENCY_ESTIMATOR_ABSOLUTE_GROWTH = 0.05f;
 
 	public override void _Ready()
 	{
@@ -137,8 +137,6 @@ public partial class VSTSplittingComponent : Area3D
 							int explosionTreeDepth,
 							StandardMaterial3D fragmentMaterial)
 	{
-		if (DebugTimings) { GD.Print("------------ split explode ------------"); }
-
 		VSTNode originalVSTRoot = destronoiNode.vstRoot;
 
 		// desired explosionTreeDepth is relative to a body's root node, hence we add the depth of the root node
@@ -593,7 +591,7 @@ public partial class VSTSplittingComponent : Area3D
 			{
 				foreach (VSTNode groupedVSTNode in group)
 				{
-					if (!IsAdjacentEstimator(vstNodeToCheck.meshInstance, groupedVSTNode.meshInstance))
+					if (!IsAdjacentEstimatorOverlap(vstNodeToCheck.meshInstance, groupedVSTNode.meshInstance))
 					{
 						continue;
 					}
@@ -626,12 +624,15 @@ public partial class VSTSplittingComponent : Area3D
 		return groups;
 	}
 
-	// this is currently an ESTIMATOR for adjacency and NOT a true test. this function WILL be logically incorrect occasionally
-	// (but probably in not a very noticeable way)
-	// 2 meshes can be adjacent iff centre of mesh 2 - centre of mesh 1 <= (maxlength of mesh 2 / 2) + (max length of mesh 1 / 2)
-	// i.e. we are checking a necessary but not sufficient condition
-	// this test massively reduces the meshes we need to check, but may still group non adjacent meshes together
-	public static bool IsAdjacentEstimatorOld(MeshInstance3D mesh1, MeshInstance3D mesh2)
+	/// <summary>
+	/// this is currently an estimator for adjacency and <i>not</i> a true test. this function will be logically incorrect occasionally
+	/// (but probably in not a very noticeable way).<br></br><br></br>
+	/// 2 meshes can be adjacent iff centre of mesh 2 - centre of mesh 1 &lt;= (maxlength of mesh 2 / 2) + (max length of mesh 1 / 2)
+	/// i.e. we are checking a necessary but not sufficient condition.<br></br><br></br>
+	/// this test massively reduces the meshes we need to check, but may still group non adjacent meshes together
+	/// </summary>
+	/// <returns>whether or not 2 meshinstances are touching</returns>
+	public static bool IsAdjacentEstimatorAABB(MeshInstance3D mesh1, MeshInstance3D mesh2)
 	{
 		Aabb aabb1 = mesh1.GetAabb();
 		Aabb aabb2 = mesh2.GetAabb();
@@ -650,14 +651,18 @@ public partial class VSTSplittingComponent : Area3D
 		return false;
 	}
 
-	public static bool IsAdjacentEstimator(MeshInstance3D mesh1, MeshInstance3D mesh2)
+	/// <summary>
+	/// same idea as IsAdjacentEstimatorAABB, but grows the aabbs by a small amount and tests for intersection
+	/// </summary>
+	/// <returns>whether or not 2 meshinstances are touching</returns>
+	public static bool IsAdjacentEstimatorOverlap(MeshInstance3D mesh1, MeshInstance3D mesh2)
 	{
 		Aabb aabb1 = mesh1.GetAabb();
 		Aabb aabb2 = mesh2.GetAabb();
 
 		// Expand slightly to allow near-adjacency (tweak as needed)
-		aabb1 = aabb1.Grow(0.05f);
-		aabb2 = aabb2.Grow(0.05f);
+		aabb1 = aabb1.Grow(ADJACENCY_ESTIMATOR_ABSOLUTE_GROWTH);
+		aabb2 = aabb2.Grow(ADJACENCY_ESTIMATOR_ABSOLUTE_GROWTH);
 
 		bool intersects = aabb1.Intersects(aabb2);
 
