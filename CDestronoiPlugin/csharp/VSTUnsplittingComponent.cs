@@ -84,25 +84,6 @@ public partial class VSTUnsplittingComponent : Node
 		DebugPrintValidDepth(topmostParent);
 	}
 
-	public static void DebugPrintValidDepth(VSTNode vstNode)
-	{
-		if (vstNode.left is null && vstNode.right is null)
-		{
-			GD.Print($"max valid tree level is: {vstNode.level}");
-		}
-		else
-		{
-			if (vstNode.left is not null)
-			{
-				DebugPrintValidDepth(vstNode.left);
-			}
-			else if (vstNode.right is not null)
-			{
-				DebugPrintValidDepth(vstNode.right);
-			}
-		}
-	}
-
 	public static VSTNode GetParentAGivenNumberOfLevelsUp(VSTNode vstNode, int levelsToGoUp)
 	{
 		if (vstNode is null)
@@ -175,5 +156,24 @@ public partial class VSTUnsplittingComponent : Node
 		);
 
 		return destronoiNode;
+	}
+
+	public static void DebugPrintValidDepth(VSTNode vstNode)
+	{
+		if (vstNode.left is null && vstNode.right is null)
+		{
+			GD.Print($"max valid tree level is: {vstNode.level}");
+		}
+		else
+		{
+			if (vstNode.left is not null)
+			{
+				DebugPrintValidDepth(vstNode.left);
+			}
+			else if (vstNode.right is not null)
+			{
+				DebugPrintValidDepth(vstNode.right);
+			}
+		}
 	}
 }

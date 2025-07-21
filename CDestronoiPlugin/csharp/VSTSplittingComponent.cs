@@ -148,6 +148,7 @@ public partial class VSTSplittingComponent : Area3D
 		// {
 			// set explosionTreeDepth to deepestNode i.e. just remove the smallest thing we have
 			// OR create a particle effect for the fragments to remove
+			// or could remove the smallest thing possible, unless this is an endpoint, in which case then create some particle effects (like do the particle effects thing but only when there is no other splitting that could be done)
 		// }
 
 		// might also want to queuefree fragments and instantiate some temporary explosion looking particle effects
