@@ -23,7 +23,7 @@ public partial class VSTUnsplittingComponent : Node
 
 	public Player player;
 
-	public readonly float UnsplittingDuration = 1.5f;
+	public readonly float UnsplittingDurationSeconds = 1.5f;
 
 	public override void _Ready()
 	{
@@ -139,7 +139,7 @@ public partial class VSTUnsplittingComponent : Node
 				return;
 			}
 			
-			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, UnsplittingDuration);
+			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, UnsplittingDurationSeconds);
 			tween.TweenCallback(Callable.From(() => destronoiNode.Deactivate()));
 			tween.TweenCallback(Callable.From(() => taskCompletionSource.SetResult(true)));
 		}
