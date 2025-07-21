@@ -195,9 +195,8 @@ public partial class VSTSplittingComponent : Area3D
 
 		if (!originalVSTRoot.childrenChanged)
 		{
-			GD.PushWarning("i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.");
-			GD.Print("just gonna set children changed to true and hope it fixes it lmao... (it seems to for now at least)");
-			GD.Print($"fragmentsToRemove = {fragmentsToRemove.Count}");
+			GD.PushWarning($"i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.\n. I'm just gonna set children changed to true and hope it fixes it lmao... (it seems to for now at least)\n fragmentsToRemove = {fragmentsToRemove.Count}");
+			
 			originalVSTRoot.childrenChanged = true;
 			// return;
 		}
@@ -440,9 +439,11 @@ public partial class VSTSplittingComponent : Area3D
 
 		destronoiNode.SetProcessUnhandledInput(false);
 
-		destronoiNode.GetParent()?.RemoveChild(destronoiNode);
+		// destronoiNode.GetParent()?.RemoveChild(destronoiNode);
 
 		destronoiNode.binaryTreeMapToActiveNodes.RemoveFromActiveTree(destronoiNode);
+
+		destronoiNode.QueueFree();
 	}
 
 	/// <summary>

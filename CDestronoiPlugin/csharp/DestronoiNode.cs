@@ -177,7 +177,7 @@ public partial class DestronoiNode : RigidBody3D
 		}
 
 		// the topmost node has no parent hence null & no laterality & not endPoint
-		vstRoot = new VSTNode(	inputMeshInstance: meshInstance,
+		vstRoot = new VSTNode(	inputMeshInstance: (MeshInstance3D)meshInstance.Duplicate(),
 								inputID: 1,
 								inputParent: null,
 								inputLevel: 0,
