@@ -188,7 +188,7 @@ public partial class VSTSplittingComponent : Area3D
 			Orphan(destronoiNode.vstRoot);
 			TellParentThatChildChanged(destronoiNode.vstRoot);
 
-			Deactivate(destronoiNode);
+			destronoiNode.Deactivate();
 
 			return;
 		}
@@ -196,7 +196,7 @@ public partial class VSTSplittingComponent : Area3D
 		if (!originalVSTRoot.childrenChanged)
 		{
 			GD.PushWarning($"i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.\n. I'm just gonna set children changed to true and hope it fixes it lmao... (it seems to for now at least)\n fragmentsToRemove = {fragmentsToRemove.Count}");
-			
+
 			originalVSTRoot.childrenChanged = true;
 			// return;
 		}
@@ -206,7 +206,7 @@ public partial class VSTSplittingComponent : Area3D
 		// (assumes originalVSTRoot.childrenChanged is true, and hence we combine the relevant meshes)
 		CreateParentFragments(originalVSTRoot, destronoiNode);
 
-		Deactivate(destronoiNode);
+		destronoiNode.Deactivate();
 	}
 
 	/// <summary>
@@ -418,32 +418,6 @@ public partial class VSTSplittingComponent : Area3D
 
 			currentFragmentNumber++;
 		}
-	}
-
-
-	/// <summary>
-	/// removes a destronoiNode from the scene without removing it from memory
-	/// <para>
-	/// for now we dont queuefree as we need the original objects (i.e. the vst leafs) to stick around.
-	/// would be fixed if we reused the old destronoiNode when creating new parent fragments (see comment about n-1 above)
-	/// rather than just creating new parents and deactivating the old destronoiNode
-	/// </para>
-	/// </summary>
-	public static void Deactivate(DestronoiNode destronoiNode)
-	{
-		destronoiNode.Visible = false;
-		destronoiNode.Freeze = true;
-		destronoiNode.CollisionLayer = 0;
-		destronoiNode.CollisionMask = 0;
-		destronoiNode.Sleeping = true;
-
-		destronoiNode.SetProcessUnhandledInput(false);
-
-		// destronoiNode.GetParent()?.RemoveChild(destronoiNode);
-
-		destronoiNode.binaryTreeMapToActiveNodes.RemoveFromActiveTree(destronoiNode);
-
-		destronoiNode.QueueFree();
 	}
 
 	/// <summary>

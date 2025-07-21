@@ -142,7 +142,7 @@ public partial class VSTUnsplittingComponent : Node
 			}
 			
 			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, UnsplittingDuration);
-			tween.TweenCallback(Callable.From(() => VSTSplittingComponent.Deactivate(destronoiNode)));
+			tween.TweenCallback(Callable.From(() => destronoiNode.Deactivate()));
 			tween.TweenCallback(Callable.From(() => taskCompletionSource.SetResult(true)));
 		}
 

@@ -52,13 +52,6 @@ public partial class DestronoiNode : RigidBody3D
 
 		meshInstance = (MeshInstance3D)inputMeshInstance.Duplicate();
 
-		// meshInstance = inputMeshInstance;
-		// if (meshInstance.GetParent() is not null)
-		// {
-		// 	GD.PushWarning("reparenting meshinstance");
-		// 	meshInstance.GetParent().RemoveChild(meshInstance);
-		// }
-
 		AddChild(meshInstance);
 
 		CollisionShape3D shape = new()
@@ -543,8 +536,30 @@ public partial class DestronoiNode : RigidBody3D
 		return destronoiNode;
 	}
 
+	/// <summary>
+	/// removes a destronoiNode from the scene without removing it from memory
+	/// <para>
+	/// for now we dont queuefree as we need the original objects (i.e. the vst leafs) to stick around.
+	/// would be fixed if we reused the old destronoiNode when creating new parent fragments (see comment about n-1 above)
+	/// rather than just creating new parents and deactivating the old destronoiNode
+	/// </para>
+	/// </summary>
+	public void Deactivate()
+	{
+		Visible = false;
+		Freeze = true;
+		CollisionLayer = 0;
+		CollisionMask = 0;
+		Sleeping = true;
 
+		SetProcessUnhandledInput(false);
 
+		// destronoiNode.GetParent()?.RemoveChild(destronoiNode);
+
+		binaryTreeMapToActiveNodes.RemoveFromActiveTree(this);
+
+		QueueFree();
+	}
 
 
 
