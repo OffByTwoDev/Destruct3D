@@ -2,7 +2,7 @@
 
 A Godot addon written in C# that generates fragments on startup, and removes these fragments in a customisable way, in realtime.
 
-No knowledge of C# is needed to use the plugin, customise the basic behaviour or create good looking destruction.
+No knowledge of C# is needed to use the plugin or customise the basic behaviour.
 
 # Technicalities / Theory
 
@@ -12,7 +12,7 @@ VSTSplittingComponent.Unsplit() searches this tree, and instantiates fragments o
 
 If the fragmentation splits the parent fragment into more than 1 segment (e.g. if an explosion happens in the middle of a long beam), VSTUnsplittingComponent detects this and creates however many new parent fragments are needed.
 
-This way, removing any subset of the fragments is supported and will be accurately represented by the meshes. This plugin does not just convert a mesh into its fragments - it removes subsets of fragments and recalculates what the remaining parent fragment(s) would look like. Thats why I call this plugin "multi scale" destruction.
+This way, removing any subset of the fragments is supported and will be accurately represented by the instantiated meshes. This plugin does not just convert a mesh into its fragments - it removes subsets of fragments and recalculates what the remaining parent fragment(s) would look like.
 
 Once fragments are removed, the binary tree(s) are updated, so that any fragments that have been removed have their references nullified. This way the "sum" of the bottom-most meshinstances (that are gettable-to) in any VST always accurately represents the current state of the destronoi node.
 
@@ -37,8 +37,6 @@ For comparison, my system is:
 - AMD Radeon 6600XT (8GB VRAM)
 - 32GB RAM
 
-A destronoi node with depth 14 (so $2^{14} = 16,384$ fragments) uses ~400mb of RAM. (but of course, instantiating all these fragments would be difficult in godot, and once they are instantiated then far far far more RAM would be used. The point is that this plugin itself does not use tons of RAM; the number of rigidbodies the plugin creates is the limiting factor, not the way the plugin stores information.)
-
 I would recommend using a binary tree depth of 8 (so $2^8 = 256$ fragments) as a starting point. This seems to give good looking destruction and has reasonable startup time for ~10 objects (~5 seconds for me).
 
 I would recommend setting treeHeight to e.g. 3 whilst you are making parts of your game that don't depend on detailed destruction. That way you won't waste time waiting for levels to load, but the destruction will still occur (so you'll see if something's broken etc as soon as possible).
@@ -48,10 +46,12 @@ I would consider making a manager to set the appropriate debug vs testing vs rel
 The plugin can deal with many more fragments than what I've suggested above (seems usable at $2^{12} = 4096$ or even more fragments). There are some issues going this high though
 - Some warnings (which are by default suppressed) may occur during startup and runtime. They don't seem to negatively impact the plugin (I think it might be something to do with the Bisect() function finding it difficult to split very small meshes)
 - Very long startup time (~15+ seconds even for 1 body)
-- If (like me) you are using an area3d to explode objects, by the time the fragments are at say the 8th level, you will have 128 very small fragments that still have 4 levels left. This means that, even for a small explosion, the plugin may be instantiating $~ 100 \times 2^4 > 1000$ fragments, and godot / jolt cannot do this in less than 16ms i.e. you will drop frames. If you really need this behaviour then perhaps you could come up with a pool system (to avoid needing to instantiate new rigidbodies) and/or if you have a long enough explosion animation, you might be able to spread out instantiating bodies over 10+ frames and you may have a useable system
+- If (like me) you are using an area3d to explode objects, by the time the fragments are at say the 8th level, you will have 128 very small fragments that still have 4 levels left. This means that, even for a small explosion, the plugin may be instantiating $~100 \times 2^4 > 1000$ fragments, and godot / jolt cannot do this in less than 16ms i.e. you will drop frames. If you really need this behaviour then perhaps you could come up with a pool system (to avoid needing to instantiate new rigidbodies) and/or if you have a long enough explosion animation, you might be able to spread out instantiating bodies over 10+ frames and you may have a useable system
 - very small fragments have a tendency to interact weirdly with characterbody3d's, e.g. launching the player very high
 
 It's important to note that VSTSplitting's runtime is _independent_ of the destronoi node's treeHeight, and only dependent on the `explosionDepth` requested (i.e. the binary tree will only be searched to a level of `explosionDepth`). So essentially the performance considerations are 1) startup time and 2) how many bodies godot can instantiate. (Unless my code is wrong ofc. But from my testing this seems generally true.)
+
+A destronoi node with depth 14 (so $2^{14} = 16,384$ fragments) uses ~400mb of RAM. (but of course, instantiating all these fragments would be difficult in godot, and once they are instantiated then far far far more RAM would be used. The point is that this plugin itself does not use tons of RAM; the number of rigidbodies the plugin creates is the limiting factor, not the way the plugin stores information.)
 
 # Current Disadvantages / Downsides
 
