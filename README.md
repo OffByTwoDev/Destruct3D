@@ -1,12 +1,32 @@
 # Multi Scale Procedural Destruction in Godot
 
-Note: Jolt is highly recommended when using this plugin. Using the default engine leads to fragments oscillating unphysically (might be something to do with Centre of Mass calculations).
+A Godot addon written in C# that generates fragments on startup, and removes these fragments in a customisable way, in realtime.
+
+No knowledge of C# is needed to use the plugin, customise the basic behaviour or create good looking destruction.
+
+# Technicalities / Theory
+
+On startup, each destronoi node creates a binary tree of a specified depth (i.e. the bottom-most layer has 2^depth total fragments). The top level is the mesh, the 2nd level is 2 halves of the mesh, the 3rd is 4 quarters of the mesh, the 3th is 8 eighths of the mesh, etc.
+
+VSTSplittingComponent.Unsplit() searches this tree, and instantiates fragments of a specified depth which are within a bounding area3d (which represents e.g. an explosions) as new destronoi Nodes. VSTSplittingComponent.Activate() does this twice per explosion on 2 different explosion depths and spatial scales, so that the fragments closer to the explosion that are freed are smaller than ones further away (to simulate some level of realism).
+
+If the fragmentation splits the parent fragment into more than 1 segment (e.g. if an explosion happens in the middle of a long beam), VSTUnsplittingComponent detects this and creates however many new parent fragments are needed.
+
+Once fragments are removed, the binary tree(s) are updated, so that any fragments that have been removed have their references nullified. This way the "sum" of the bottom-most meshinstances in any VST always accurately represents the current state of the destronoi node.
+
+There is also some (beta) code for unfragmentation i.e. forming a parent fragment from a list of children (although this is probably a lot less useful than the fragmentation code).
 
 # Credits
 
 I am extremely thankful to seadaemon for the [Destronoi plugin](https://github.com/seadaemon/Destronoi), which this plugin was built off of. If Destronoi didn't exist this project would've taken significantly longer and I may never have made it.
 
 For clarity: my C# code "VSTNode.cs" and "DestronoiNode.cs" were initially a direct port of seadaemon's gdscript code. I then added some functions and different components to each to create this project.
+
+# Dependencies
+
+- Godot 4.4.1+ - .NET version
+
+Note: Jolt is highly recommended when using this plugin. Using the default engine leads to fragments oscillating unphysically (might be something to do with Centre of Mass calculations).
 
 # Recommendations & Performance
 
@@ -15,7 +35,7 @@ For comparison my system is:
 - AMD Radeon 6600XT (8GB VRAM)
 - 32GB RAM
 
-I would recommend using a binary tree depth of 8 (so 2^8 = 256 fragments) as a starting point. This seems to give good looking destruction and has reasonable startup time (~ 5 seconds for me) for ~10 objects.
+I would recommend using a binary tree depth of 8 (so 2^8 = 256 fragments) as a starting point. This seems to give good looking destruction and has reasonable startup time for ~10 objects (~5 seconds for me).
 
 I would recommend setting treeHeight to e.g. 3 whilst you are making parts of your game that don't depend on detailed destruction. That way you won't waste time waiting for levels to load, but the destruction will still occur (so you'll see if something's broken etc as soon as possible).
 
@@ -28,6 +48,19 @@ The plugin can deal with many more fragments than what I've suggested above (see
 - very small fragments have a tendency to interact weirdly with characterbody3d's, e.g. launching the player very high
 
 It's important to note that VSTSplitting's runtime is _independent_ of the treeHeight, and only dependent on the explosionDepth requested (i.e. the Binary tree will only be searched to level = explosionDepth). So essentially the performance considerations are 1) startup time and 2) how many bodies godot can instantiate. (Unless my code is wrong ofc. But from my testing this seems generally true.)
+
+# Current Disadvantages / Downsides
+
+- CreateConvexShape doesn't create perfect collisionshapes for complex fragments - e.g. if you have some jagged edge of a body that's just been destroyed, the collisionshape may "smooth over" the spiky bits (sometimes quite significantly).
+-> perhaps could create a function which creates a more accurate collisionShape, and not use CreateConvexShape?
+
+- Concave shapes are unsupported (but I don't think this matters that much as concave shapes are to be avoided anyway, except in the case of static bodies)
+
+- No physics / engineering finite-element style simulation, like e.g. Red Faction Guerilla has
+-> is there a good estimator for weak points in a mesh?
+
+- It's written in C# which not everyone knows
+-> make a gdscript port
 
 # Commit Convention
 
