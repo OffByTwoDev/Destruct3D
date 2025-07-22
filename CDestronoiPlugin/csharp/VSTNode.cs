@@ -108,8 +108,11 @@ public class VSTNode
 	}
 
 	/// <summary>
-	/// Recursively populates <paramref name="leaves"/> with VSTNodes at an optional given depth. Leave desiredlevel unspecified to get the deepest possible nodes
+	/// Recursively populates <paramref name="leaves"/> with VSTNodes at an optional given depth. Leave desiredlevel unspecified to get the deepest possible nodes.
 	/// </summary>
+	/// <remarks>
+	/// This function is designed for use by _Ready() in DestronoiNode.cs. It is not suitable for being used in VSTSplittingComponent.cs (that has its own recursive search functions, which are dependent on the childrenChanged flag)
+	/// </remarks>
 	public static void GetLeafNodes(VSTNode root, List<VSTNode> leaves, int? desiredLevel = null, int currentLevel = 0)
 	{
 		if (currentLevel < 0 || desiredLevel < 0)

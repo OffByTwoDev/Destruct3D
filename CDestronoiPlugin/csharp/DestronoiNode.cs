@@ -8,7 +8,6 @@ namespace CDestronoi;
 
 /// <summary>
 /// Subdivides a convex ArrayMesh belonging to a RigidBody3D by generating a Voronoi Subdivision Tree (VST).
-/// This code prolly fails if treeHeight is set to 1
 /// </summary>
 public partial class DestronoiNode : RigidBody3D
 {
@@ -84,69 +83,7 @@ public partial class DestronoiNode : RigidBody3D
 		AngularDamp = ANGULAR_DAMP;
 	}
 	
-	// --- //
-
-	public override void _UnhandledInput(InputEvent @event)
-	{
-		base._UnhandledInput(@event);
-		
-		if (Input.IsActionJustPressed("debug_print_vst"))
-		{
-			DebugPrintVST(vstRoot);
-		}
-
-		if (Input.IsActionJustPressed("debug_print_thing"))
-		{
-			GD.Print(vstRoot.childrenChanged);
-		}
-	}
-
-	public static void DebugPrintVST(VSTNode vstNode)
-	{
-		if (vstNode is null)
-		{
-			return;
-		}
-
-		GD.Print("ID: ", vstNode.ID);
-		GD.Print("left: ", vstNode.left?.ID);
-		GD.Print("right: ", vstNode.right?.ID);
-		GD.Print("parent: ", vstNode.parent?.ID);
-		GD.Print("level: ", vstNode.level);
-		GD.Print("laterality: ", vstNode.laterality);
-		GD.Print("---");
-
-		DebugPrintVST(vstNode.left);
-		DebugPrintVST(vstNode.right);
-	}
-
-	public void ErrorChecks()
-	{
-		if (!(GetChildCount() == 2))
-		{
-			GD.PushError($"CDestronoiNodes must have only 2 children. The node named {Name} does not");
-			return;
-		}
-
-		if (!(
-			(GetChildren()[0] is MeshInstance3D && GetChildren()[1] is CollisionShape3D) ||
-			(GetChildren()[1] is MeshInstance3D && GetChildren()[0] is CollisionShape3D)
-			))
-		{
-			GD.PushError($"CDestronoiNodes must have 1 collisionshape3d child and 1 meshinstance3d child. The node named {Name} does not");
-			return;
-		}
-
-		foreach (Node3D child in GetChildren().Cast<Node3D>())
-		{
-			if (child.Transform != Transform3D.Identity)
-			{
-				// if the transform is modified, then fragments will be instantiated in incorrect positions
-				// just move the CDestronoi node directly and keep the mesh and collisionshape centered around the origin
-				GD.PushError("the collisionshape and mesh children of a CDestronoi node must have an unmodified transform");
-			}
-		}
-	}
+	// --- godot specific implementation --- //
 
 	public override void _Ready()
 	{
@@ -208,11 +145,82 @@ public partial class DestronoiNode : RigidBody3D
 		AngularDamp = ANGULAR_DAMP;
 	}
 
+	/// <summary>
+	/// error checks for the ready function
+	/// </summary>
+	public void ErrorChecks()
+	{
+		if (!(GetChildCount() == 2))
+		{
+			GD.PushError($"CDestronoiNodes must have only 2 children. The node named {Name} does not");
+			return;
+		}
+
+		if (!(
+			(GetChildren()[0] is MeshInstance3D && GetChildren()[1] is CollisionShape3D) ||
+			(GetChildren()[1] is MeshInstance3D && GetChildren()[0] is CollisionShape3D)
+			))
+		{
+			GD.PushError($"CDestronoiNodes must have 1 collisionshape3d child and 1 meshinstance3d child. The node named {Name} does not");
+			return;
+		}
+
+		foreach (Node3D child in GetChildren().Cast<Node3D>())
+		{
+			if (child.Transform != Transform3D.Identity)
+			{
+				// if the transform is modified, then fragments will be instantiated in incorrect positions
+				// just move the CDestronoi node directly and keep the mesh and collisionshape centered around the origin
+				GD.PushError("the collisionshape and mesh children of a CDestronoi node must have an unmodified transform");
+			}
+		}
+	}
+
+	public override void _UnhandledInput(InputEvent @event)
+	{
+		base._UnhandledInput(@event);
+		
+		if (Input.IsActionJustPressed("debug_print_vst"))
+		{
+			DebugPrintVST(vstRoot);
+		}
+
+		if (Input.IsActionJustPressed("debug_print_thing"))
+		{
+			GD.Print(vstRoot.childrenChanged);
+		}
+	}
+
+	public static void DebugPrintVST(VSTNode vstNode)
+	{
+		if (vstNode is null)
+		{
+			return;
+		}
+
+		GD.Print("ID: ", vstNode.ID);
+		GD.Print("left: ", vstNode.left?.ID);
+		GD.Print("right: ", vstNode.right?.ID);
+		GD.Print("parent: ", vstNode.parent?.ID);
+		GD.Print("level: ", vstNode.level);
+		GD.Print("laterality: ", vstNode.laterality);
+		GD.Print("---");
+
+		DebugPrintVST(vstNode.left);
+		DebugPrintVST(vstNode.right);
+	}
+
 	// public static void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
 	// {
 	// 	node.sites = [node.meshInstance.Position + site1, node.meshInstance.Position + site2];
 	// }
 
+	/// <summary>
+	/// adds 2 vector3's to the <paramref name="node"/>'s .sites list, where both points are within the <paramref name="node"/>'s meshInstance
+	/// </summary>
+	/// <remarks>
+	/// uniformly randomly samples a point within the AABB of the meshInstance, then tests for inclusion in the meshInstance using a raycast. Maybe there's a quicker way, but this way is uniformly random within the mesh too (i.e. any subvolume of a uniformly sampled volume will also in turn be uniformly sampled) and I can't think of a simple performant alternative that achieves this too.
+	/// </remarks>
 	public void PlotSitesRandom(VSTNode node)
 	{
 		node.sites = [];
@@ -288,6 +296,10 @@ public partial class DestronoiNode : RigidBody3D
 		}
 	}
 
+	/// <summary>
+	/// splits the input <paramref name="node"/>'s mesh into 2, and populates the input <paramref name="node"/>'s left and right fields with 2 new VSTNodes which represent those 2 "halves"
+	/// </summary>
+	/// <returns>a bool but idk why lmao</returns>
 	public static bool Bisect(VSTNode node, bool endPoint)
 	{
 		if (node.GetSiteCount() != 2)
@@ -532,13 +544,11 @@ public partial class DestronoiNode : RigidBody3D
 	}
 
 	/// <summary>
-	/// removes a destronoiNode from the scene without removing it from memory
-	/// <para>
-	/// for now we dont queuefree as we need the original objects (i.e. the vst leafs) to stick around.
-	/// would be fixed if we reused the old destronoiNode when creating new parent fragments (see comment about n-1 above)
-	/// rather than just creating new parents and deactivating the old destronoiNode
-	/// </para>
+	/// removes a destronoiNode from the scene safely
 	/// </summary>
+	/// <remarks>
+	/// this function queuefrees() the meshInstance child of the destronoiNode, but that is a duplicate of the meshInstance from the VST (see paramaterised constructor above), so we aren't removing information from the VST.
+	/// </remarks>
 	public void Deactivate()
 	{
 		Visible = false;
@@ -548,8 +558,6 @@ public partial class DestronoiNode : RigidBody3D
 		Sleeping = true;
 
 		SetProcessUnhandledInput(false);
-
-		// destronoiNode.GetParent()?.RemoveChild(destronoiNode);
 
 		binaryTreeMapToActiveNodes.RemoveFromActiveTree(this);
 
