@@ -177,23 +177,18 @@ public partial class DestronoiNode : RigidBody3D
 								inputLaterality: Laterality.NONE,
 								inputEndPoint: false);
 
-		// Plot 2 sites for the subdivision
-		PlotSitesRandom(vstRoot);
-		// Generate 2 children from the root
-		Bisect(vstRoot, false);
-
-		// Perform additional subdivisions depending on tree height
-		for (int depthIndex = 0; depthIndex < treeHeight - 1; depthIndex++)
+		// Perform subdivisions, depending on tree height
+		for (int depthIndex = 0; depthIndex < treeHeight; depthIndex++)
 		{
 			List<VSTNode> leaves = [];
-
-			VSTNode.GetLeafNodes(vstRoot, outArr: leaves);
+			VSTNode.GetLeafNodes(vstRoot, leaves);
 			
 			foreach (VSTNode leaf in leaves)
 			{
 				PlotSitesRandom(leaf);
+
 				// on final pass, set children as endPoints
-				if (depthIndex == treeHeight - 2)
+				if (depthIndex == treeHeight - 1)
 				{
 					Bisect(leaf, true);
 				}
@@ -584,7 +579,7 @@ public partial class DestronoiNode : RigidBody3D
 	public void Destroy(int depth, float combustVelocity = 0f)
 	{
 		List<VSTNode> leaves = [];
-		VSTNode.GetLeafNodes(vstRoot, depth, outArr: leaves);
+		VSTNode.GetLeafNodes(vstRoot, leaves, depth);
 
 		int fragmentNumber = 0;
 

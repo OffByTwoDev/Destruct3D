@@ -108,25 +108,32 @@ public class VSTNode
 	}
 
 	/// <summary>
-	/// Recursively populates outArr with VSTNodes at an optional given depth. Leave desiredlevel unspecified to get the deepest possible nodes
+	/// Recursively populates <paramref name="leaves"/> with VSTNodes at an optional given depth. Leave desiredlevel unspecified to get the deepest possible nodes
 	/// </summary>
-	public static List<VSTNode> GetLeafNodes(VSTNode root, int? desiredLevel = null, int currentLevel = 0, List<VSTNode> outArr = null)
+	public static void GetLeafNodes(VSTNode root, List<VSTNode> leaves, int? desiredLevel = null, int currentLevel = 0)
 	{
 		if (currentLevel < 0 || desiredLevel < 0)
 		{
 			GD.PushError("cannot use a negative currentlevel, nor desired level, in GetLeftLeafNodes. returning null");
-			return null;
+			return;
 		}
 
 		if (root is null)
 		{
-			GD.PushError("GetLeftLeafNodes was passed a null vstNode root");
-			return [];
+			GD.PushError("GetLeafNodes was passed a null vstNode root");
+			return;
 		}
 
-		if (outArr is null)
+		if (leaves is null)
 		{
-			outArr = [];
+			GD.PushError("outArr null in GetLeafNodes");
+			return;
+		}
+
+		if (root.left is null ^ root.right is null)
+		{
+			GD.PushError("A node with exactly 1 null child was passed to GetLeafNodes. GetLeafNodes should only be used on startup, for a tree where every node is guaranteed to have either 0 or 2 null children.");
+			return;
 		}
 
 		bool isLeaf = root.left is null && root.right is null;
@@ -143,14 +150,12 @@ public class VSTNode
 		
 		if (isLeaf || atTargetLevel)
 		{
-			outArr.Add(root);
-			return outArr;
+			leaves.Add(root);
+			return;
 		}
 
-		GetLeafNodes(root.left, desiredLevel, currentLevel + 1, outArr);
-		GetLeafNodes(root.right, desiredLevel, currentLevel + 1, outArr);
-
-		return outArr;
+		GetLeafNodes(root.left, leaves, desiredLevel, currentLevel + 1);
+		GetLeafNodes(root.right, leaves, desiredLevel, currentLevel + 1);
 	}
 
 	public override string ToString()
@@ -193,23 +198,23 @@ public class VSTNode
 		}
 
 		VSTNode copy = new(
-            this.meshInstance,
-            this.ID,
-            permanentParentOverride ?? newParent,
-            this.level,
-            this.laterality,
-            this.endPoint
-        )
-        {
-            childrenChanged = this.childrenChanged,
-        };
+			this.meshInstance,
+			this.ID,
+			permanentParentOverride ?? newParent,
+			this.level,
+			this.laterality,
+			this.endPoint
+		)
+		{
+			childrenChanged = this.childrenChanged,
+		};
 
 		copy.left = this.left?.DeepCopy(copy);
-        copy.right = this.right?.DeepCopy(copy);
-        copy.PermanentLeft = this.PermanentLeft;
-        copy.PermanentRight = this.PermanentRight;
+		copy.right = this.right?.DeepCopy(copy);
+		copy.PermanentLeft = this.PermanentLeft;
+		copy.PermanentRight = this.PermanentRight;
 
-        return copy;
+		return copy;
 	}
 
 	/// <summary>
