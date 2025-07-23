@@ -1,11 +1,10 @@
-[gd_scene load_steps=30 format=3 uid="uid://c7oqy8jsemyg1"]
+[gd_scene load_steps=27 format=3 uid="uid://c7oqy8jsemyg1"]
 
 [ext_resource type="Script" uid="uid://k0jup8gwalph" path="res://ExampleScene.cs" id="1_n7n8g"]
-[ext_resource type="Script" uid="uid://du0auwhgemk8f" path="res://original_gdscript_destronoi/DestronoiNode.gd" id="1_xvrj6"]
-[ext_resource type="Script" uid="uid://co7g407u2vd1x" path="res://CDestronoiPlugin/csharp/DestronoiNode.cs" id="2_epgrm"]
+[ext_resource type="Script" uid="uid://co7g407u2vd1x" path="res://CDestronoi/DestronoiNode.cs" id="2_epgrm"]
 [ext_resource type="Script" uid="uid://bvae885dfsom2" path="res://FreeCam.cs" id="2_xpmf3"]
-[ext_resource type="Script" uid="uid://cy0lbch8hfx72" path="res://CDestronoiPlugin/csharp/FragmentationComponent.cs" id="3_fhs12"]
-[ext_resource type="Script" uid="uid://beevd6g3rmhxp" path="res://CDestronoiPlugin/csharp/VSTSplittingComponent.cs" id="4_fgqed"]
+[ext_resource type="Script" uid="uid://cy0lbch8hfx72" path="res://CDestronoi/FragmentationComponent.cs" id="3_fhs12"]
+[ext_resource type="Script" uid="uid://beevd6g3rmhxp" path="res://CDestronoi/VSTSplittingComponent.cs" id="4_fgqed"]
 [ext_resource type="Material" uid="uid://vccoqm71k406" path="res://TransparentMeshMaterial.tres" id="7_p3r26"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
@@ -26,11 +25,6 @@ size = Vector3(50, 1, 50)
 
 [sub_resource type="ConcavePolygonShape3D" id="ConcavePolygonShape3D_p3r26"]
 data = PackedVector3Array(-25, 0.5, 25, 25, 0.5, 25, -25, -0.5, 25, 25, 0.5, 25, 25, -0.5, 25, -25, -0.5, 25, 25, 0.5, -25, -25, 0.5, -25, 25, -0.5, -25, -25, 0.5, -25, -25, -0.5, -25, 25, -0.5, -25, 25, 0.5, 25, 25, 0.5, -25, 25, -0.5, 25, 25, 0.5, -25, 25, -0.5, -25, 25, -0.5, 25, -25, 0.5, -25, -25, 0.5, 25, -25, -0.5, -25, -25, 0.5, 25, -25, -0.5, 25, -25, -0.5, -25, 25, 0.5, 25, -25, 0.5, 25, 25, 0.5, -25, -25, 0.5, 25, -25, 0.5, -25, 25, 0.5, -25, -25, -0.5, 25, 25, -0.5, 25, -25, -0.5, -25, 25, -0.5, 25, 25, -0.5, -25, -25, -0.5, -25)
-
-[sub_resource type="BoxMesh" id="BoxMesh_glv2v"]
-
-[sub_resource type="ConvexPolygonShape3D" id="ConvexPolygonShape3D_cm0pq"]
-points = PackedVector3Array(0.5, 0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, -0.5)
 
 [sub_resource type="BoxMesh" id="BoxMesh_r0du0"]
 size = Vector3(4, 4, 4)
@@ -116,24 +110,6 @@ mesh = SubResource("BoxMesh_p3r26")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/Floor"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 shape = SubResource("ConcavePolygonShape3D_p3r26")
-
-[node name="GDDestronoiNode" type="Node3D" parent="Environment" node_paths=PackedStringArray("mesh_instance", "fragment_container", "base_object")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 2.40281, 0.5, 0)
-script = ExtResource("1_xvrj6")
-tree_height = 5
-mesh_instance = NodePath("OriginalObject/MeshInstance3D")
-fragment_container = NodePath("FragmentContainer")
-base_object = NodePath("OriginalObject")
-
-[node name="OriginalObject" type="RigidBody3D" parent="Environment/GDDestronoiNode"]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Environment/GDDestronoiNode/OriginalObject"]
-mesh = SubResource("BoxMesh_glv2v")
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Environment/GDDestronoiNode/OriginalObject"]
-shape = SubResource("ConvexPolygonShape3D_cm0pq")
-
-[node name="FragmentContainer" type="Node" parent="Environment/GDDestronoiNode"]
 
 [node name="FragmentationComponent" type="Node" parent="Environment" node_paths=PackedStringArray("destronoiNode")]
 script = ExtResource("3_fhs12")
