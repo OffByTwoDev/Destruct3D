@@ -158,7 +158,8 @@ public partial class VSTUnsplittingComponent : Node
 			inputVSTRoot: vstNode,
 			inputDensity: anyChildDestronoiNode.baseObjectDensity,
 			inputNeedsInitialising: false,
-			inputBinaryTreeMapToActiveNodes: anyChildDestronoiNode.binaryTreeMapToActiveNodes
+			inputBinaryTreeMapToActiveNodes: anyChildDestronoiNode.binaryTreeMapToActiveNodes,
+			inputFragmentMaterial: anyChildDestronoiNode.fragmentMaterial
 		);
 
 		return destronoiNode;

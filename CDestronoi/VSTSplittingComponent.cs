@@ -14,9 +14,6 @@ namespace CDestronoi;
 // smaller mesh instance corresponds to the deeper explosion
 public partial class VSTSplittingComponent : Area3D
 {
-	/// <summary>the layer of the VST that the fragments will be removed from, where the vstroot is the 0th layer</summary>
-	[Export(PropertyHint.Range, "1,8")] int explosionDepth = 2;
-
 	[Export] private MeshInstance3D explosionMeshSmall;
 	[Export] private MeshInstance3D explosionMeshLarge;
 

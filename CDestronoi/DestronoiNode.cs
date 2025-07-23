@@ -19,6 +19,10 @@ public partial class DestronoiNode : RigidBody3D
 	[Export] public Node fragmentContainer;
 	/// <summary>Generates 2^n fragments, where n is treeHeight.</summary>
 	[Export] public int treeHeight = 2;
+
+	/// <summary>for now, this is the material set on all faces of any fragments (parent or child) made from a destronoiNode</summary>
+	/// <remarks> rn the implementation is not that ideal as faces seemingly on the original object will still be changed to this. this is public as its used in CreateFreshDestronoiNode, which references (a random child of the VST)'s fragmentMaterial</remarks>
+	[Export] public Material fragmentMaterial;
 	
 	/// <summary>only relevant for DestronoiNodes which are present on level startup</summary>
 	public BinaryTreeMapToActiveNodes binaryTreeMapToActiveNodes;
@@ -44,13 +48,13 @@ public partial class DestronoiNode : RigidBody3D
 							VSTNode inputVSTRoot,
 							float inputDensity,
 							bool inputNeedsInitialising,
-							BinaryTreeMapToActiveNodes inputBinaryTreeMapToActiveNodes)
+							BinaryTreeMapToActiveNodes inputBinaryTreeMapToActiveNodes,
+							Material inputFragmentMaterial)
 	{
 		Name = inputName;
 		GlobalTransform = inputGlobalTransform;
 
 		meshInstance = (MeshInstance3D)inputMeshInstance.Duplicate();
-
 		AddChild(meshInstance);
 
 		CollisionShape3D shape = new()
@@ -81,6 +85,15 @@ public partial class DestronoiNode : RigidBody3D
 
 		LinearDamp = LINEAR_DAMP;
 		AngularDamp = ANGULAR_DAMP;
+
+		// material stuff
+
+		fragmentMaterial = inputFragmentMaterial;
+		meshInstance.Mesh.SurfaceSetMaterial(0, fragmentMaterial);
+
+		// i cant work out how to actually count vertices or faces but this seems like some approximation of it lmao
+		var maybeVertCount = (meshInstance.Mesh as ArrayMesh).SurfaceGetArrayLen(0) / 3;
+		GD.Print($"maybeVertCount = {maybeVertCount}");
 	}
 	
 	// --- godot specific implementation --- //
@@ -369,10 +382,14 @@ public partial class DestronoiNode : RigidBody3D
 				}
 				if (verticesAbovePlane.Count == 3)
 				{
-					foreach (int vid in faceVertices)
-					{
-						surfaceTool.AddVertex(dataTool.GetVertex(vid));
-					}
+					// foreach (int vid in faceVertices)
+					// {
+					// 	AddVertexAndUV(surfaceTool, dataTool.GetVertex(vid));
+					// }
+					AddFaceWithProjectedUVs(surfaceTool,
+											dataTool.GetVertex(faceVertices[0]),
+											dataTool.GetVertex(faceVertices[1]),
+											dataTool.GetVertex(faceVertices[2]));
 					continue;
 				}
 
@@ -398,9 +415,10 @@ public partial class DestronoiNode : RigidBody3D
 					coplanar.Add(intersectionBefore);
 
 					// TRIANGLE CREATION
-					surfaceTool.AddVertex(dataTool.GetVertex(vid));
-					surfaceTool.AddVertex((Vector3)intersects[0]);
-					surfaceTool.AddVertex((Vector3)intersects[1]);
+					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(vid));
+					// AddVertexAndUV(surfaceTool, (Vector3)intersects[0]);
+					// AddVertexAndUV(surfaceTool, (Vector3)intersects[1]);
+					AddFaceWithProjectedUVs(surfaceTool, dataTool.GetVertex(vid), (Vector3)intersects[0], (Vector3)intersects[1]);
 					continue;
 				}
 
@@ -455,17 +473,16 @@ public partial class DestronoiNode : RigidBody3D
 					}
 
 					// TRIANGLE 1
-					surfaceTool.AddVertex(dataTool.GetVertex(verticesAbovePlane[0]));
-					surfaceTool.AddVertex(dataTool.GetVertex(verticesAbovePlane[1]));
-
-					surfaceTool.AddVertex((Vector3)intersects[indexShortest]);
+					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(verticesAbovePlane[0]));
+					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(verticesAbovePlane[1]));
+					// AddVertexAndUV(surfaceTool, (Vector3)intersects[indexShortest]);
+					AddFaceWithProjectedUVs(surfaceTool, dataTool.GetVertex(verticesAbovePlane[0]), dataTool.GetVertex(verticesAbovePlane[1]), (Vector3)intersects[indexShortest]);
 
 					// TRIANGLE 2
-
-					surfaceTool.AddVertex((Vector3)intersects[0]);
-					surfaceTool.AddVertex((Vector3)intersects[1]);
-
-					surfaceTool.AddVertex(dataTool.GetVertex(verticesAbovePlane[indexShortest]));
+					// AddVertexAndUV(surfaceTool, (Vector3)intersects[0]);
+					// AddVertexAndUV(surfaceTool, (Vector3)intersects[1]);
+					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(verticesAbovePlane[indexShortest]));
+					AddFaceWithProjectedUVs(surfaceTool, (Vector3)intersects[0], (Vector3)intersects[1], dataTool.GetVertex(verticesAbovePlane[indexShortest]));
 					continue;
 				}
 			}
@@ -480,9 +497,10 @@ public partial class DestronoiNode : RigidBody3D
 			center /= coplanar.Count;
 			for (int i = 0; i < coplanar.Count - 1; i += 2)
 			{
-				surfaceTool.AddVertex((Vector3)coplanar[i + 1]);
-				surfaceTool.AddVertex((Vector3)coplanar[i]);
-				surfaceTool.AddVertex(center);
+				// AddVertexAndUV(surfaceTool, (Vector3)coplanar[i + 1]);
+				// AddVertexAndUV(surfaceTool, (Vector3)coplanar[i]);
+				// AddVertexAndUV(surfaceTool, center);
+				AddFaceWithProjectedUVs(surfaceTool, (Vector3)coplanar[i + 1], (Vector3)coplanar[i], center);
 			}
 
 			if (side == 0)
@@ -515,6 +533,45 @@ public partial class DestronoiNode : RigidBody3D
 		return true;
 	}
 
+	public static void AddVertexAndUV(SurfaceTool surfaceTool, Vector3 vertex)
+	{
+		surfaceTool.SetUV(new Vector2(vertex.X, vertex.Z));
+		surfaceTool.AddVertex(vertex);
+	}
+
+	public static void AddFaceWithProjectedUVs(SurfaceTool surfaceTool, Vector3 a, Vector3 b, Vector3 c)
+	{
+		// Compute face normal
+		Vector3 normal = (b - a).Cross(c - a).Normalized();
+
+		// Create local basis (u, v) on triangle's plane
+		Vector3 tangent = (b - a).Normalized();
+		Vector3 bitangent = normal.Cross(tangent).Normalized();
+
+		// Origin for local UV space
+		Vector3 origin = a;
+
+		// Function to convert 3D point to 2D UV in triangle plane
+		Vector2 GetUV(Vector3 p)
+		{
+			Vector3 local = p - origin;
+			return new Vector2(local.Dot(tangent), local.Dot(bitangent)) * new Vector2(1/4.0f, 1/4.0f);
+		}
+
+		// Set data for each vertex
+		surfaceTool.SetNormal(normal);
+		surfaceTool.SetUV(GetUV(a));
+		surfaceTool.AddVertex(a);
+
+		surfaceTool.SetNormal(normal);
+		surfaceTool.SetUV(GetUV(b));
+		surfaceTool.AddVertex(b);
+
+		surfaceTool.SetNormal(normal);
+		surfaceTool.SetUV(GetUV(c));
+		surfaceTool.AddVertex(c);
+	}
+
 	/// <summary>
 	/// creates a Destronoi Node from the given meshInstance and vstnode
 	/// </summary>
@@ -537,7 +594,8 @@ public partial class DestronoiNode : RigidBody3D
 			inputVSTRoot: subVST,
 			inputDensity: baseObjectDensity,
 			inputNeedsInitialising: false,
-			inputBinaryTreeMapToActiveNodes: this.binaryTreeMapToActiveNodes
+			inputBinaryTreeMapToActiveNodes: this.binaryTreeMapToActiveNodes,
+			inputFragmentMaterial: this.fragmentMaterial
 		);
 
 		return destronoiNode;
@@ -562,88 +620,5 @@ public partial class DestronoiNode : RigidBody3D
 		binaryTreeMapToActiveNodes.RemoveFromActiveTree(this);
 
 		QueueFree();
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	// --- functions below here are deprecated --- //
-
-
-	public void Destroy(int depth, float combustVelocity = 0f)
-	{
-		List<VSTNode> leaves = [];
-		VSTNode.GetLeafNodes(vstRoot, leaves, depth);
-
-		int fragmentNumber = 0;
-
-		foreach (VSTNode leaf in leaves)
-		{
-			RigidBody3D body = CreateBody(leaf.meshInstance, $"Fragment_{fragmentNumber}");
-
-			// destruction velocity
-			if (!Mathf.IsZeroApprox(combustVelocity))
-			{
-				// simple outward velocity
-				Vector3 dir = meshInstance.Mesh.GetAabb().Position - Position;
-				// was .axisvelocity, i just replaced it with linearvelocity idk if thats correct
-				body.LinearVelocity = dir.Normalized() * combustVelocity;
-			}
-			// add to scene
-			fragmentContainer.AddChild(body);
-
-			fragmentNumber++;
-		}
-
-		QueueFree();
-	}
-	
-	// DEPRECATED
-	/// <summary>
-	/// creates a rigidbody from the given meshInstance
-	/// </summary>
-	public RigidBody3D CreateBody(MeshInstance3D leafMeshInstance, String name)
-	{
-			// initialise rigidbody
-			RigidBody3D body = new()
-			{
-				Name = name,
-				Position = GlobalPosition
-			};
-
-			// mesh instance
-			MeshInstance3D meshInstance = leafMeshInstance;
-			meshInstance.Name = "MeshInstance3D";
-			body.AddChild(meshInstance);
-
-			// collisionshape
-			CollisionShape3D shape = new()
-			{
-				Name = "CollisionShape3D",
-				Shape = meshInstance.Mesh.CreateConvexShape(false, false)
-			};
-			body.AddChild(shape);
-
-			body.Mass = baseObjectDensity * meshInstance.Mesh.GetAabb().Volume;
-
-			// needed (idk why lmao ?) for detecting explosions from RPGs
-			body.ContactMonitor = true;
-			body.MaxContactsReported = 5_000;
-
-			return body;
 	}
 }
