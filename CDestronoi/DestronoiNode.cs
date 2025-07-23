@@ -92,8 +92,8 @@ public partial class DestronoiNode : RigidBody3D
 		meshInstance.Mesh.SurfaceSetMaterial(0, fragmentMaterial);
 
 		// i cant work out how to actually count vertices or faces but this seems like some approximation of it lmao
-		var maybeVertCount = (meshInstance.Mesh as ArrayMesh).SurfaceGetArrayLen(0) / 3;
-		GD.Print($"maybeVertCount = {maybeVertCount}");
+		// var maybeVertCount = (meshInstance.Mesh as ArrayMesh).SurfaceGetArrayLen(0) / 3;
+		// GD.Print($"maybeVertCount = {maybeVertCount}");
 	}
 	
 	// --- godot specific implementation --- //
@@ -533,23 +533,26 @@ public partial class DestronoiNode : RigidBody3D
 		return true;
 	}
 
-	public static void AddVertexAndUV(SurfaceTool surfaceTool, Vector3 vertex)
-	{
-		surfaceTool.SetUV(new Vector2(vertex.X, vertex.Z));
-		surfaceTool.AddVertex(vertex);
-	}
+	// public static void AddVertexAndUV(SurfaceTool surfaceTool, Vector3 vertex)
+	// {
+	// 	surfaceTool.SetUV(new Vector2(vertex.X, vertex.Z));
+	// 	surfaceTool.AddVertex(vertex);
+	// }
 
-	public static void AddFaceWithProjectedUVs(SurfaceTool surfaceTool, Vector3 a, Vector3 b, Vector3 c)
+	/// <summary>
+	/// v1 is the 1st vertex (of the triangle), v2 is the 2nd vertex, v3 is the 3rd vertex
+	/// </summary>
+	public static void AddFaceWithProjectedUVs(SurfaceTool surfaceTool, Vector3 v1, Vector3 v2, Vector3 v3)
 	{
 		// Compute face normal
-		Vector3 normal = (b - a).Cross(c - a).Normalized();
+		Vector3 normal = (v2 - v1).Cross(v3 - v1).Normalized();
 
 		// Create local basis (u, v) on triangle's plane
-		Vector3 tangent = (b - a).Normalized();
+		Vector3 tangent = (v2 - v1).Normalized();
 		Vector3 bitangent = normal.Cross(tangent).Normalized();
 
 		// Origin for local UV space
-		Vector3 origin = a;
+		Vector3 origin = v1;
 
 		// Function to convert 3D point to 2D UV in triangle plane
 		Vector2 GetUV(Vector3 p)
@@ -560,16 +563,16 @@ public partial class DestronoiNode : RigidBody3D
 
 		// Set data for each vertex
 		surfaceTool.SetNormal(normal);
-		surfaceTool.SetUV(GetUV(a));
-		surfaceTool.AddVertex(a);
+		surfaceTool.SetUV(GetUV(v1));
+		surfaceTool.AddVertex(v1);
 
 		surfaceTool.SetNormal(normal);
-		surfaceTool.SetUV(GetUV(b));
-		surfaceTool.AddVertex(b);
+		surfaceTool.SetUV(GetUV(v2));
+		surfaceTool.AddVertex(v2);
 
 		surfaceTool.SetNormal(normal);
-		surfaceTool.SetUV(GetUV(c));
-		surfaceTool.AddVertex(c);
+		surfaceTool.SetUV(GetUV(v3));
+		surfaceTool.AddVertex(v3);
 	}
 
 	/// <summary>

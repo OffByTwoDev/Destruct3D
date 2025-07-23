@@ -291,7 +291,7 @@ public partial class VSTSplittingComponent : Area3D
 				GD.Print("created combined mesh for this fragment.");
 				List<MeshInstance3D> meshInstances = [];
 				GetDeepestMeshInstances(meshInstances, leaf);
-				meshToInstantate = CombineMeshes(meshInstances);
+				meshToInstantate = MeshPruning.CombineMeshesAndPrune(meshInstances);
 			}
 			else
 			{
@@ -402,8 +402,8 @@ public partial class VSTSplittingComponent : Area3D
 
 			GetDeepestMeshInstances(meshInstances, newVSTRoot);
 
-			MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
-
+			MeshInstance3D overlappingCombinedMeshesToKeep = MeshPruning.CombineMeshesAndPrune(meshInstances);
+			
 			overlappingCombinedMeshesToKeep.SetSurfaceOverrideMaterial(0, debugMaterial);
 
 			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(newVSTRoot,
@@ -673,4 +673,13 @@ public partial class VSTSplittingComponent : Area3D
 			Mesh = combinedArrayMesh
 		};
 	}
+
+	// prune in 2 steps:
+	// step 1:
+	// raycast in both d/r from centre of any given face
+	// if both raycasts intersect with one of the other faces in the mesh then that face is INSIDE
+	// and can be removed
+	// step 2:
+	// group faces by normals being (approx) equal
+	// in those groups remove vertices that are the same and reform the face
 }
