@@ -3,7 +3,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Inversion;
 
 namespace CDestronoi;
 
@@ -21,18 +20,7 @@ public partial class VSTUnsplittingComponent : Node
 	[Export] public int unexplosionLevelsToGoUp = 2;
 	[Export] public Node3D fragmentContainer;
 
-	public Player player;
-
 	public readonly float UnsplittingDurationSeconds = 1.5f;
-
-	public override void _Ready()
-	{
-		base._Ready();
-		
-		LevelSwitcher levelSwitcher = GetNode<LevelSwitcher>("/root/Main/LevelSwitcher");
-
-		player = levelSwitcher.player;
-	}
 
 	/// <summary>
 	/// calls unsplit on a given DestronoiNode fragment and a specified final transform
@@ -50,9 +38,10 @@ public partial class VSTUnsplittingComponent : Node
 		}
 		else
 		{
-			Vector3 halfwayBetweenPlayerAndObject = (player.GlobalPosition + fragmentToUnexplode.GlobalPosition) / 2.0f;
-			Transform3D transformBetweenPlayerAndObject = new(player.GlobalTransform.Basis, halfwayBetweenPlayerAndObject);
-			await Unsplit(fragmentToUnexplode, transformBetweenPlayerAndObject);
+			GD.PushWarning("[CDestronoi] unfragmentationTransform is null in VSTUnsplittingComponent; will instantiate parent fragment at the origin");
+			Vector3 defaultGlobalPosition = Vector3.Zero;
+			Transform3D defaultTransform = new(Basis.Identity, defaultGlobalPosition);
+			await Unsplit(fragmentToUnexplode, defaultTransform);
 		}
 	}
 	/// <summary>
