@@ -295,7 +295,8 @@ public partial class VSTSplittingComponent : Area3D
 			}
 			else
 			{
-				meshToInstantate = leaf.meshInstance;
+				meshToInstantate = MeshPruning.CombineMeshesAndPrune([leaf.meshInstance]);
+				// meshToInstantate = leaf.meshInstance;
 			}
 
 			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(leaf,
