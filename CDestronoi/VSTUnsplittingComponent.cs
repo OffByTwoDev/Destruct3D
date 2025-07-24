@@ -150,7 +150,7 @@ public partial class VSTUnsplittingComponent : Node
 		MeshInstance3D meshInstanceToSet = vstNode.meshInstance;
 		meshInstanceToSet.Name = $"{name}_MeshInstance3D";
 
-		meshInstanceToSet = MeshPruning.CombineMeshesAndPrune([meshInstanceToSet], anyChildDestronoiNode.hasTexturedMaterial);
+		meshInstanceToSet = MeshPruning.CombineMeshesAndPrune([meshInstanceToSet], anyChildDestronoiNode.hasTexturedMaterial, anyChildDestronoiNode.materialRegistry, anyChildDestronoiNode.fragmentMaterial);
 
 		DestronoiNode destronoiNode = new(
 			inputName: name,
@@ -161,7 +161,7 @@ public partial class VSTUnsplittingComponent : Node
 			inputDensity: anyChildDestronoiNode.baseObjectDensity,
 			inputNeedsInitialising: false,
 			inputBinaryTreeMapToActiveNodes: anyChildDestronoiNode.binaryTreeMapToActiveNodes,
-			inputFragmentMaterial: anyChildDestronoiNode.fragmentMaterial
+			inputShaderMaterial: anyChildDestronoiNode.shaderMaterial
 		);
 
 		return destronoiNode;

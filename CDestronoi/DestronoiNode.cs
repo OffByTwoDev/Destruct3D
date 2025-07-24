@@ -29,6 +29,8 @@ public partial class DestronoiNode : RigidBody3D
 	/// </summary>
 	/// <remarks>setting this to false saves a lot of computation</remarks>
 	[Export] public bool hasTexturedMaterial = true;
+	public MaterialRegistry materialRegistry;
+	public ShaderMaterial shaderMaterial;
 	
 	public BinaryTreeMapToActiveNodes binaryTreeMapToActiveNodes;
 
@@ -54,7 +56,7 @@ public partial class DestronoiNode : RigidBody3D
 							float inputDensity,
 							bool inputNeedsInitialising,
 							BinaryTreeMapToActiveNodes inputBinaryTreeMapToActiveNodes,
-							Material inputFragmentMaterial)
+							ShaderMaterial inputShaderMaterial)
 	{
 		Name = inputName;
 		GlobalTransform = inputGlobalTransform;
@@ -93,12 +95,8 @@ public partial class DestronoiNode : RigidBody3D
 
 		// material stuff
 
-		fragmentMaterial = inputFragmentMaterial;
-		meshInstance.Mesh.SurfaceSetMaterial(0, fragmentMaterial);
-
-		// i cant work out how to actually count vertices or faces but this seems like some approximation of it lmao
-		// var maybeVertCount = (meshInstance.Mesh as ArrayMesh).SurfaceGetArrayLen(0) / 3;
-		// GD.Print($"maybeVertCount = {maybeVertCount}");
+		shaderMaterial = inputShaderMaterial;
+		meshInstance.Mesh.SurfaceSetMaterial(0, inputShaderMaterial);
 	}
 	
 	// --- godot specific implementation --- //
@@ -165,6 +163,34 @@ public partial class DestronoiNode : RigidBody3D
 
 		LinearDamp = LINEAR_DAMP;
 		AngularDamp = ANGULAR_DAMP;
+
+		// --- material stuff --- //
+
+		/// new() VSTNode converts its mesh into an ArrayMesh already
+		materialRegistry = new(vstRoot.meshInstance.Mesh as ArrayMesh, meshInstance.GetActiveMaterial(0));
+
+		// create the shader material which will be used by all children of this destronoiNode
+		shaderMaterial = new()
+		{
+			Shader = GD.Load<Shader>("res://addons/CDestronoi-Submodule/CDestronoi/CustomMaterials.gdshader")
+		};
+
+		Vector3[] exteriorSurfaceNormals = new Vector3[100];
+		
+		int i = 0;
+		foreach ( var (normal, _) in materialRegistry.normalToUVMap)
+		{
+			exteriorSurfaceNormals[i] = normal;
+			i++;
+		}
+
+		shaderMaterial.SetShaderParameter("exteriorSurfaceNormals", exteriorSurfaceNormals);
+
+		Texture2D exteriorTexture = (meshInstance.GetActiveMaterial(0) as StandardMaterial3D).AlbedoTexture;
+		shaderMaterial.SetShaderParameter("exteriorSurfaceMaterial", exteriorTexture);
+		
+		Texture2D interiorTexture = (fragmentMaterial as StandardMaterial3D).AlbedoTexture;
+		shaderMaterial.SetShaderParameter("interiorSurfaceMaterial", interiorTexture);
 	}
 
 	/// <summary>
@@ -571,7 +597,7 @@ public partial class DestronoiNode : RigidBody3D
 			inputDensity: baseObjectDensity,
 			inputNeedsInitialising: false,
 			inputBinaryTreeMapToActiveNodes: this.binaryTreeMapToActiveNodes,
-			inputFragmentMaterial: this.fragmentMaterial
+			inputShaderMaterial: this.shaderMaterial
 		);
 
 		return destronoiNode;

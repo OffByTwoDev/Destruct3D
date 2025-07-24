@@ -25,7 +25,10 @@ public static class MeshPruning
 	/// <summary>
 	/// takes in a list of meshes and combines them into 1 mesh. if <paramref name="texturedMaterial"/> is true, then UVs are mapped correctly so a non uniform texture can be displayed.
 	/// </summary>
-    public static MeshInstance3D CombineMeshesAndPrune(List<MeshInstance3D> meshInstances, bool texturedMaterial)
+    public static MeshInstance3D CombineMeshesAndPrune( List<MeshInstance3D> meshInstances,
+														bool texturedMaterial,
+														MaterialRegistry materialRegistry,
+														Material fragmentMaterial)
 	{
 		ArrayMesh combinedMesh = CombineMeshes(meshInstances).Mesh as ArrayMesh;
 
@@ -34,7 +37,7 @@ public static class MeshPruning
 
 		if (texturedMaterial)
 		{
-			ArrayMesh UVGroupedMesh = CombineFaceGroupUVs(combinedMesh);
+			ArrayMesh UVGroupedMesh = CombineFaceGroupUVs(combinedMesh, materialRegistry, fragmentMaterial);
 
 			return new MeshInstance3D
 			{
@@ -50,14 +53,14 @@ public static class MeshPruning
 		}
 	}
 
-	private static ArrayMesh CombineFaceGroupUVs(ArrayMesh arrayMesh)
+	private static ArrayMesh CombineFaceGroupUVs(ArrayMesh arrayMesh, MaterialRegistry materialRegistry, Material fragmentMaterial)
 	{
 		MeshDataTool mdt = new();
 		mdt.CreateFromSurface(arrayMesh, 0);
 
 		List<List<int>> faceGroups = GroupParallelFaces(arrayMesh);
 
-		GD.Print($"faceGroups[0].Count = {faceGroups[0].Count}");
+		// GD.Print($"faceGroups[0].Count = {faceGroups[0].Count}");
 
 		SurfaceTool surfaceTool = new();
 		surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
@@ -104,7 +107,7 @@ public static class MeshPruning
 		List<Vector3> faceCenters = [];
 		List<Vector3> faceNormals = [];
 
-		GD.Print($"original face count: {mdt.GetFaceCount()}");
+		// GD.Print($"original face count: {mdt.GetFaceCount()}");
 
 		for (int faceIndex = 0; faceIndex < mdt.GetFaceCount(); faceIndex++)
 		{
@@ -312,7 +315,7 @@ public static class MeshPruning
 		List<Vector3> faceCenters = [];
 		List<Vector3> faceNormals = [];
 
-		GD.Print($"original face count: {mdt.GetFaceCount()}");
+		// GD.Print($"original face count: {mdt.GetFaceCount()}");
 
 		for (int faceIndex = 0; faceIndex < mdt.GetFaceCount(); faceIndex++)
 		{
