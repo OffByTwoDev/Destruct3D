@@ -24,11 +24,11 @@ public partial class DestronoiNode : RigidBody3D
 	/// <remarks> rn the implementation is not that ideal as faces seemingly on the original object will still be changed to this. this is public as its used in CreateFreshDestronoiNode, which references (a random child of the VST)'s fragmentMaterial</remarks>
 	[Export] public Material fragmentMaterial;
 	/// <summary>
-	/// <para>set this to true if you want the original mesh texture to be applied to the relevant fragments, and the fragmentMaterial to be applied to interior faces of the object</para>
+	/// <para>set this to true if you want the original mesh texture to be applied to the relevant fragments (not coded yet), and the fragmentMaterial to be applied to interior faces of the object (is coded)</para>
 	/// <para>set this to be false if you have an object which you want every face (interior, exterior, fragmented, etc) to be the same material</para>
 	/// </summary>
 	/// <remarks>setting this to false saves a lot of computation</remarks>
-	[Export] private bool complexMaterial = true;
+	[Export] public bool hasTexturedMaterial = true;
 	
 	/// <summary>only relevant for DestronoiNodes which are present on level startup</summary>
 	public BinaryTreeMapToActiveNodes binaryTreeMapToActiveNodes;

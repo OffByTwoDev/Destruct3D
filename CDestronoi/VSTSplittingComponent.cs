@@ -291,11 +291,11 @@ public partial class VSTSplittingComponent : Area3D
 				GD.Print("created combined mesh for this fragment.");
 				List<MeshInstance3D> meshInstances = [];
 				GetDeepestMeshInstances(meshInstances, leaf);
-				meshToInstantate = MeshPruning.CombineMeshesAndPrune(meshInstances);
+				meshToInstantate = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial);
 			}
 			else
 			{
-				meshToInstantate = MeshPruning.CombineMeshesAndPrune([leaf.meshInstance]);
+				meshToInstantate = MeshPruning.CombineMeshesAndPrune([leaf.meshInstance], destronoiNode.hasTexturedMaterial);
 				// meshToInstantate = leaf.meshInstance;
 			}
 
@@ -403,7 +403,7 @@ public partial class VSTSplittingComponent : Area3D
 
 			GetDeepestMeshInstances(meshInstances, newVSTRoot);
 
-			MeshInstance3D overlappingCombinedMeshesToKeep = MeshPruning.CombineMeshesAndPrune(meshInstances);
+			MeshInstance3D overlappingCombinedMeshesToKeep = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial);
 			
 			overlappingCombinedMeshesToKeep.SetSurfaceOverrideMaterial(0, debugMaterial);
 
@@ -644,35 +644,6 @@ public partial class VSTSplittingComponent : Area3D
 		bool intersects = aabb1.Intersects(aabb2);
 
 		return intersects;
-	}
-
-	public static MeshInstance3D CombineMeshes(List<MeshInstance3D> meshInstances)
-	{
-		var surfaceTool = new SurfaceTool();
-		surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
-
-		foreach (MeshInstance3D meshInstance in meshInstances)
-		{
-			Mesh mesh = meshInstance.Mesh;
-
-			if (mesh is null)
-			{
-				continue;
-			}
-
-			// Append all surfaces from this mesh with the MeshInstance's transform
-			for (int surfaceIndex = 0; surfaceIndex < mesh.GetSurfaceCount(); surfaceIndex++)
-			{
-				surfaceTool.AppendFrom(mesh, surfaceIndex, meshInstance.Transform);
-			}
-		}
-
-		ArrayMesh combinedArrayMesh = surfaceTool.Commit();
-
-		return new MeshInstance3D
-		{
-			Mesh = combinedArrayMesh
-		};
 	}
 }
 
