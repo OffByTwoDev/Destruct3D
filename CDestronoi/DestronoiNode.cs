@@ -24,11 +24,13 @@ public partial class DestronoiNode : RigidBody3D
 	/// <remarks> rn the implementation is not that ideal as faces seemingly on the original object will still be changed to this. this is public as its used in CreateFreshDestronoiNode, which references (a random child of the VST)'s fragmentMaterial</remarks>
 	[Export] public Material fragmentMaterial;
 	/// <summary>
-	/// <para>set this to true if you want the original mesh texture to be applied to the relevant fragments (not coded yet), and the fragmentMaterial to be applied to interior faces of the object (is coded)</para>
-	/// <para>set this to be false if you have an object which you want every face (interior, exterior, fragmented, etc) to be the same material</para>
+	/// <para>set this to true if you want the original mesh texture to be applied to the relevant fragments, and the fragmentMaterial to be applied to interior faces of the object</para>
+	/// <para>set this to be false if you have an object which you want every face (interior, exterior, fragmented, etc) to be the same uniform material (e.g. you just want a completely red object) or if your material is seamless</para>
 	/// </summary>
-	/// <remarks>setting this to false saves a lot of computation</remarks>
+	/// <remarks>setting this to false saves some computation, and you may get better performance when producing a lot of fragments</remarks>
 	[Export] public bool hasTexturedMaterial = true;
+	/// <summary>only used if hasTexturedMaterial is false</summary>
+	public Material originalUntexturedMaterial;
 	public MaterialRegistry materialRegistry;
 	public ShaderMaterial shaderMaterial;
 	[Export] private NodePath CUSTOM_MATERIAL_SHADER_PATH = "res://addons/CDestronoi-Submodule/CDestronoi/CustomMaterials.gdshader";
@@ -49,7 +51,7 @@ public partial class DestronoiNode : RigidBody3D
 	public readonly float LINEAR_DAMP = 1.0f;
 	public readonly float ANGULAR_DAMP = 1.0f;
 	private const float MIN_OBJECT_MASS_KILOGRAMS = 0.01f;
-	private const int MAX_CONTACTS_REPORTED = 5_000;
+	// private const int MAX_CONTACTS_REPORTED = 5_000;
 
 	// required for godot
 	public DestronoiNode() { }
@@ -62,7 +64,9 @@ public partial class DestronoiNode : RigidBody3D
 							float inputDensity,
 							bool inputNeedsInitialising,
 							BinaryTreeMapToActiveNodes inputBinaryTreeMapToActiveNodes,
-							ShaderMaterial inputShaderMaterial)
+							ShaderMaterial inputShaderMaterial,
+							Material inputOriginalUntexturedMaterial,
+							bool inputHasTexturedMaterial)
 	{
 		Name = inputName;
 		GlobalTransform = inputGlobalTransform;
@@ -101,8 +105,19 @@ public partial class DestronoiNode : RigidBody3D
 
 		// material stuff
 
-		shaderMaterial = inputShaderMaterial;
-		meshInstance.Mesh.SurfaceSetMaterial(0, inputShaderMaterial);
+		hasTexturedMaterial = inputHasTexturedMaterial;
+
+		if (hasTexturedMaterial)
+		{
+			shaderMaterial = inputShaderMaterial;
+			meshInstance.Mesh.SurfaceSetMaterial(0, inputShaderMaterial);
+		}
+		else
+		{
+			originalUntexturedMaterial = inputOriginalUntexturedMaterial;
+			meshInstance.Mesh.SurfaceSetMaterial(0, originalUntexturedMaterial);
+			GD.Print(meshInstance.GetActiveMaterial(0));
+		}
 	}
 	
 	// --- godot specific implementation --- //
@@ -172,6 +187,12 @@ public partial class DestronoiNode : RigidBody3D
 
 		// --- material stuff --- //
 
+		if (!hasTexturedMaterial)
+		{
+			originalUntexturedMaterial = meshInstance.GetActiveMaterial(0);
+			return;
+		}
+
 		/// new() VSTNode converts its mesh into an ArrayMesh already
 		materialRegistry = new(vstRoot.meshInstance.Mesh as ArrayMesh, meshInstance.GetActiveMaterial(0));
 
@@ -197,6 +218,8 @@ public partial class DestronoiNode : RigidBody3D
 		
 		Texture2D interiorTexture = (fragmentMaterial as StandardMaterial3D).AlbedoTexture;
 		shaderMaterial.SetShaderParameter("interiorSurfaceMaterial", interiorTexture);
+
+		meshInstance.Mesh.SurfaceSetMaterial(0, shaderMaterial);
 	}
 
 	/// <summary>
@@ -603,7 +626,9 @@ public partial class DestronoiNode : RigidBody3D
 			inputDensity: baseObjectDensity,
 			inputNeedsInitialising: false,
 			inputBinaryTreeMapToActiveNodes: this.binaryTreeMapToActiveNodes,
-			inputShaderMaterial: this.shaderMaterial
+			inputShaderMaterial: this.shaderMaterial,
+			inputOriginalUntexturedMaterial: this.originalUntexturedMaterial,
+			inputHasTexturedMaterial: this.hasTexturedMaterial
 		);
 
 		return destronoiNode;

@@ -21,10 +21,10 @@ public static class MeshPruning
 	// private const bool MaterialIsNormalMapped = false;
 
 	/// <summary>
-	/// takes in a list of meshes and combines them into 1 mesh. if <paramref name="texturedMaterial"/> is true, then UVs are mapped correctly so a non uniform texture can be displayed.
+	/// takes in a list of meshes and combines them into 1 mesh. if <paramref name="hasTexturedMaterial"/> is true, then UVs are mapped correctly so a non uniform texture can be displayed.
 	/// </summary>
     public static MeshInstance3D CombineMeshesAndPrune( List<MeshInstance3D> meshInstances,
-														bool texturedMaterial,
+														bool hasTexturedMaterial,
 														MaterialRegistry materialRegistry,
 														Material fragmentMaterial,
 														float TextureScale)
@@ -34,7 +34,7 @@ public static class MeshPruning
 		// remove interior surfaces from mesh (which doesn't actually seem necessary lmao)
 		// ArrayMesh prunedCombinedMesh = RemoveInteriorFaces(combinedMesh);
 
-		if (texturedMaterial)
+		if (hasTexturedMaterial)
 		{
 			ArrayMesh UVGroupedMesh = CombineFaceGroupUVs(combinedMesh, materialRegistry, fragmentMaterial, TextureScale);
 
