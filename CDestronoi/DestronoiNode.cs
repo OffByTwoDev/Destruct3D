@@ -30,7 +30,6 @@ public partial class DestronoiNode : RigidBody3D
 	/// <remarks>setting this to false saves a lot of computation</remarks>
 	[Export] public bool hasTexturedMaterial = true;
 	
-	/// <summary>only relevant for DestronoiNodes which are present on level startup</summary>
 	public BinaryTreeMapToActiveNodes binaryTreeMapToActiveNodes;
 
 	// --- internal variables --- //
@@ -159,6 +158,10 @@ public partial class DestronoiNode : RigidBody3D
 
 		// --- create a binarytreemap and set its root to be this node --- //
 		binaryTreeMapToActiveNodes = new(treeHeight, this);
+
+		// needed for detecting explosions from RPGs
+		ContactMonitor = true;
+		MaxContactsReported = 5_000;
 
 		LinearDamp = LINEAR_DAMP;
 		AngularDamp = ANGULAR_DAMP;

@@ -8,7 +8,8 @@ namespace CDestronoi;
 // find the (1) binarytreemap which represents the topmost ancestor of said created or destroyed destronoiNode
 // and tell it "hey, i have this ID, i exist / have been queuefreed() now"
 // so we are left with a map from any fragment to all instanced destronoiNodes which represent its children somehow
-public partial class BinaryTreeMapToActiveNodes : Node
+// and destronoiNodes present at startup will create one of these maps for their VSTs and pass a reference to this map to all destronoiNode children that VST creates
+public class BinaryTreeMapToActiveNodes
 {
 	public RepresentativeNode rootNode;
 	public int rootID = 1;
@@ -32,7 +33,6 @@ public partial class BinaryTreeMapToActiveNodes : Node
 		return node;
 	}
 
-	// legit no clue why treeHeight is needed here
 	public BinaryTreeMapToActiveNodes(int treeHeight, DestronoiNode rootDestronoiNode)
 	{
 		rootNode = BuildSubtree(null, Laterality.NONE, rootID, treeHeight);
