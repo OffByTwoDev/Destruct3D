@@ -11,10 +11,13 @@ namespace CDestronoi;
 // subfaces from old fragments are not kept
 // weird edge highlight thing on some fragments?
 // also organise
+// slow af
 
 public static class MeshPruning
 {
-	public static MeshInstance3D CombineMeshesAndPrune(List<MeshInstance3D> meshInstances)
+    private const float TextureScale = 40.0f;
+
+    public static MeshInstance3D CombineMeshesAndPrune(List<MeshInstance3D> meshInstances)
 	{
 		ArrayMesh combinedMesh = VSTSplittingComponent.CombineMeshes(meshInstances).Mesh as ArrayMesh;
 
@@ -104,6 +107,7 @@ public static class MeshPruning
 
 		SurfaceTool surfaceTool = new();
 		surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
+		surfaceTool.SetSmoothGroup(UInt32.MaxValue);
 
 		for (int faceIndex = 0; faceIndex < mdt.GetFaceCount(); faceIndex++)
 		{
@@ -113,13 +117,16 @@ public static class MeshPruning
 				Vector3 v2 = mdt.GetVertex(mdt.GetFaceVertex(faceIndex, 1));
 				Vector3 v3 = mdt.GetVertex(mdt.GetFaceVertex(faceIndex, 2));
 
-				DestronoiNode.AddFaceWithProjectedUVs(surfaceTool, v1, v2, v3);
+				AddFaceWithProjectedUVs(surfaceTool, v1, v2, v3);
 
 				numberOfFacesToKeep++;
 			}
 		}
 
 		GD.Print($"pruned face count: {numberOfFacesToKeep}");
+
+		surfaceTool.GenerateNormals();
+		surfaceTool.GenerateTangents();
 
 		ArrayMesh prunedCombinedMesh = surfaceTool.Commit();
 
@@ -137,6 +144,7 @@ public static class MeshPruning
 
 		SurfaceTool surfaceTool = new();
 		surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
+		surfaceTool.SetSmoothGroup(UInt32.MaxValue);
 
 		foreach (List<int> faceGroup in faceGroups)
 		{
@@ -162,9 +170,46 @@ public static class MeshPruning
 			}
 		}
 
+		surfaceTool.GenerateNormals();
+		surfaceTool.GenerateTangents();
+
 		ArrayMesh meshWithGroupedUVs = surfaceTool.Commit();
 
 		return meshWithGroupedUVs;
+	}
+
+	/// <summary>
+	/// v1 is the 1st vertex (of the triangle), v2 is the 2nd vertex, v3 is the 3rd vertex
+	/// </summary>
+	public static void AddFaceWithProjectedUVs(SurfaceTool surfaceTool, Vector3 v1, Vector3 v2, Vector3 v3)
+	{
+		// Compute face normal
+		Vector3 normal = (v2 - v1).Cross(v3 - v1).Normalized();
+
+		// Create local basis (u, v) on triangle's plane
+		Vector3 tangent = (v2 - v1).Normalized();
+		Vector3 bitangent = normal.Cross(tangent).Normalized();
+
+		// Origin for local UV space
+		Vector3 origin = v1;
+
+		// Function to convert 3D point to 2D UV in triangle plane
+		Vector2 GetUV(Vector3 p)
+		{
+			Vector3 local = p - origin;
+			return new Vector2(local.Dot(tangent), local.Dot(bitangent)) * new Vector2(1/4.0f, 1/4.0f);
+		}
+
+		// Set data for each vertex
+
+		surfaceTool.SetUV(GetUV(v1));
+		surfaceTool.AddVertex(v1);
+
+		surfaceTool.SetUV(GetUV(v2));
+		surfaceTool.AddVertex(v2);
+
+		surfaceTool.SetUV(GetUV(v3));
+		surfaceTool.AddVertex(v3);
 	}
 
 	public static void AddFaceWithProjectedUVsToSpecifiedUV(SurfaceTool surfaceTool,
@@ -180,19 +225,16 @@ public static class MeshPruning
         Vector2 GetUV(Vector3 p)
 		{
 			Vector3 local = p - origin;
-			return new Vector2(local.Dot(tangent), local.Dot(bitangent)) * new Vector2(1/40.0f, 1/40.0f);
+			return new Vector2(local.Dot(tangent), local.Dot(bitangent)) * new Vector2(1.0f/TextureScale, 1.0f/TextureScale);
 		}
 
 		// Set data for each vertex
-		surfaceTool.SetNormal(normal);
 		surfaceTool.SetUV(GetUV(v1));
 		surfaceTool.AddVertex(v1);
 
-		surfaceTool.SetNormal(normal);
 		surfaceTool.SetUV(GetUV(v2));
 		surfaceTool.AddVertex(v2);
 
-		surfaceTool.SetNormal(normal);
 		surfaceTool.SetUV(GetUV(v3));
 		surfaceTool.AddVertex(v3);
 	}

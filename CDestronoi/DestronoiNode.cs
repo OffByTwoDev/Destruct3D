@@ -23,6 +23,12 @@ public partial class DestronoiNode : RigidBody3D
 	/// <summary>for now, this is the material set on all faces of any fragments (parent or child) made from a destronoiNode</summary>
 	/// <remarks> rn the implementation is not that ideal as faces seemingly on the original object will still be changed to this. this is public as its used in CreateFreshDestronoiNode, which references (a random child of the VST)'s fragmentMaterial</remarks>
 	[Export] public Material fragmentMaterial;
+	/// <summary>
+	/// <para>set this to true if you want the original mesh texture to be applied to the relevant fragments, and the fragmentMaterial to be applied to interior faces of the object</para>
+	/// <para>set this to be false if you have an object which you want every face (interior, exterior, fragmented, etc) to be the same material</para>
+	/// </summary>
+	/// <remarks>setting this to false saves a lot of computation</remarks>
+	[Export] private bool complexMaterial = true;
 	
 	/// <summary>only relevant for DestronoiNodes which are present on level startup</summary>
 	public BinaryTreeMapToActiveNodes binaryTreeMapToActiveNodes;
@@ -386,7 +392,7 @@ public partial class DestronoiNode : RigidBody3D
 					// {
 					// 	AddVertexAndUV(surfaceTool, dataTool.GetVertex(vid));
 					// }
-					AddFaceWithProjectedUVs(surfaceTool,
+					MeshPruning.AddFaceWithProjectedUVs(surfaceTool,
 											dataTool.GetVertex(faceVertices[0]),
 											dataTool.GetVertex(faceVertices[1]),
 											dataTool.GetVertex(faceVertices[2]));
@@ -418,7 +424,7 @@ public partial class DestronoiNode : RigidBody3D
 					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(vid));
 					// AddVertexAndUV(surfaceTool, (Vector3)intersects[0]);
 					// AddVertexAndUV(surfaceTool, (Vector3)intersects[1]);
-					AddFaceWithProjectedUVs(surfaceTool, dataTool.GetVertex(vid), (Vector3)intersects[0], (Vector3)intersects[1]);
+					MeshPruning.AddFaceWithProjectedUVs(surfaceTool, dataTool.GetVertex(vid), (Vector3)intersects[0], (Vector3)intersects[1]);
 					continue;
 				}
 
@@ -476,13 +482,13 @@ public partial class DestronoiNode : RigidBody3D
 					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(verticesAbovePlane[0]));
 					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(verticesAbovePlane[1]));
 					// AddVertexAndUV(surfaceTool, (Vector3)intersects[indexShortest]);
-					AddFaceWithProjectedUVs(surfaceTool, dataTool.GetVertex(verticesAbovePlane[0]), dataTool.GetVertex(verticesAbovePlane[1]), (Vector3)intersects[indexShortest]);
+					MeshPruning.AddFaceWithProjectedUVs(surfaceTool, dataTool.GetVertex(verticesAbovePlane[0]), dataTool.GetVertex(verticesAbovePlane[1]), (Vector3)intersects[indexShortest]);
 
 					// TRIANGLE 2
 					// AddVertexAndUV(surfaceTool, (Vector3)intersects[0]);
 					// AddVertexAndUV(surfaceTool, (Vector3)intersects[1]);
 					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(verticesAbovePlane[indexShortest]));
-					AddFaceWithProjectedUVs(surfaceTool, (Vector3)intersects[0], (Vector3)intersects[1], dataTool.GetVertex(verticesAbovePlane[indexShortest]));
+					MeshPruning.AddFaceWithProjectedUVs(surfaceTool, (Vector3)intersects[0], (Vector3)intersects[1], dataTool.GetVertex(verticesAbovePlane[indexShortest]));
 					continue;
 				}
 			}
@@ -500,7 +506,7 @@ public partial class DestronoiNode : RigidBody3D
 				// AddVertexAndUV(surfaceTool, (Vector3)coplanar[i + 1]);
 				// AddVertexAndUV(surfaceTool, (Vector3)coplanar[i]);
 				// AddVertexAndUV(surfaceTool, center);
-				AddFaceWithProjectedUVs(surfaceTool, (Vector3)coplanar[i + 1], (Vector3)coplanar[i], center);
+				MeshPruning.AddFaceWithProjectedUVs(surfaceTool, (Vector3)coplanar[i + 1], (Vector3)coplanar[i], center);
 			}
 
 			if (side == 0)
@@ -538,42 +544,6 @@ public partial class DestronoiNode : RigidBody3D
 	// 	surfaceTool.SetUV(new Vector2(vertex.X, vertex.Z));
 	// 	surfaceTool.AddVertex(vertex);
 	// }
-
-	/// <summary>
-	/// v1 is the 1st vertex (of the triangle), v2 is the 2nd vertex, v3 is the 3rd vertex
-	/// </summary>
-	public static void AddFaceWithProjectedUVs(SurfaceTool surfaceTool, Vector3 v1, Vector3 v2, Vector3 v3)
-	{
-		// Compute face normal
-		Vector3 normal = (v2 - v1).Cross(v3 - v1).Normalized();
-
-		// Create local basis (u, v) on triangle's plane
-		Vector3 tangent = (v2 - v1).Normalized();
-		Vector3 bitangent = normal.Cross(tangent).Normalized();
-
-		// Origin for local UV space
-		Vector3 origin = v1;
-
-		// Function to convert 3D point to 2D UV in triangle plane
-		Vector2 GetUV(Vector3 p)
-		{
-			Vector3 local = p - origin;
-			return new Vector2(local.Dot(tangent), local.Dot(bitangent)) * new Vector2(1/4.0f, 1/4.0f);
-		}
-
-		// Set data for each vertex
-		surfaceTool.SetNormal(normal);
-		surfaceTool.SetUV(GetUV(v1));
-		surfaceTool.AddVertex(v1);
-
-		surfaceTool.SetNormal(normal);
-		surfaceTool.SetUV(GetUV(v2));
-		surfaceTool.AddVertex(v2);
-
-		surfaceTool.SetNormal(normal);
-		surfaceTool.SetUV(GetUV(v3));
-		surfaceTool.AddVertex(v3);
-	}
 
 	/// <summary>
 	/// creates a Destronoi Node from the given meshInstance and vstnode

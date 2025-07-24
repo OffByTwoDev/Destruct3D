@@ -674,6 +674,12 @@ public partial class VSTSplittingComponent : Area3D
 			Mesh = combinedArrayMesh
 		};
 	}
+}
+
+
+
+
+
 
 	// prune in 2 steps:
 	// step 1:
@@ -683,4 +689,3 @@ public partial class VSTSplittingComponent : Area3D
 	// step 2:
 	// group faces by normals being (approx) equal
 	// in those groups remove vertices that are the same and reform the face
-}
