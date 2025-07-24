@@ -297,7 +297,7 @@ public partial class VSTSplittingComponent : Area3D
 			{
 				meshInstances = [leaf.meshInstance];
 			}
-			meshToInstantate = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial, destronoiNode.materialRegistry, destronoiNode.fragmentMaterial);
+			meshToInstantate = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial, destronoiNode.materialRegistry, destronoiNode.fragmentMaterial, destronoiNode.TextureScale);
 
 			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(leaf,
 																meshToInstantate,
@@ -403,7 +403,7 @@ public partial class VSTSplittingComponent : Area3D
 
 			GetDeepestMeshInstances(meshInstances, newVSTRoot);
 
-			MeshInstance3D overlappingCombinedMeshesToKeep = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial, destronoiNode.materialRegistry, destronoiNode.fragmentMaterial);
+			MeshInstance3D overlappingCombinedMeshesToKeep = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial, destronoiNode.materialRegistry, destronoiNode.fragmentMaterial, destronoiNode.TextureScale);
 			
 			overlappingCombinedMeshesToKeep.SetSurfaceOverrideMaterial(0, debugMaterial);
 

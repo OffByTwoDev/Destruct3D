@@ -31,7 +31,11 @@ public partial class DestronoiNode : RigidBody3D
 	[Export] public bool hasTexturedMaterial = true;
 	public MaterialRegistry materialRegistry;
 	public ShaderMaterial shaderMaterial;
-	
+	[Export] private NodePath CUSTOM_MATERIAL_SHADER_PATH = "res://addons/CDestronoi-Submodule/CDestronoi/CustomMaterials.gdshader";
+	// this must agree with the shader, specifically "uniform vec3 exteriorSurfaceNormals[100];"
+	private const int MAX_NUMBER_OF_EXTERIOR_SURFACES = 100;
+	public readonly float TextureScale = 10.0f;
+
 	public BinaryTreeMapToActiveNodes binaryTreeMapToActiveNodes;
 
 	// --- internal variables --- //
@@ -44,6 +48,8 @@ public partial class DestronoiNode : RigidBody3D
 	public readonly int MAX_PLOTSITERANDOM_TRIES = 5_000;
 	public readonly float LINEAR_DAMP = 1.0f;
 	public readonly float ANGULAR_DAMP = 1.0f;
+	private const float MIN_OBJECT_MASS_KILOGRAMS = 0.01f;
+	private const int MAX_CONTACTS_REPORTED = 5_000;
 
 	// required for godot
 	public DestronoiNode() { }
@@ -79,16 +85,16 @@ public partial class DestronoiNode : RigidBody3D
 		// mass
 		baseObjectDensity = inputDensity;
 		float volume =  meshInstance.Mesh.GetAabb().Volume;
-		Mass = Math.Max(baseObjectDensity * volume, 0.01f);
+		Mass = Math.Max(baseObjectDensity * volume, MIN_OBJECT_MASS_KILOGRAMS);
 
 		// setting this to true will break everything. this flag must be false as the vstRoot is being reused and must not be regenerated for fragments. it should only be used when the scene is being loaded
 		needsInitialising = inputNeedsInitialising;
 
 		binaryTreeMapToActiveNodes = inputBinaryTreeMapToActiveNodes;
 
-		// needed for detecting explosions from RPGs
-		ContactMonitor = true;
-		MaxContactsReported = 5_000;
+		// needed for detecting explosions from moving objects - okay idk why this is here
+		// ContactMonitor = true;
+		// MaxContactsReported = MAX_CONTACTS_REPORTED;
 
 		LinearDamp = LINEAR_DAMP;
 		AngularDamp = ANGULAR_DAMP;
@@ -157,9 +163,9 @@ public partial class DestronoiNode : RigidBody3D
 		// --- create a binarytreemap and set its root to be this node --- //
 		binaryTreeMapToActiveNodes = new(treeHeight, this);
 
-		// needed for detecting explosions from RPGs
-		ContactMonitor = true;
-		MaxContactsReported = 5_000;
+		// needed for detecting explosions from RPGs - okay idk why this is here
+		// ContactMonitor = true;
+		// MaxContactsReported = 5_000;
 
 		LinearDamp = LINEAR_DAMP;
 		AngularDamp = ANGULAR_DAMP;
@@ -172,10 +178,10 @@ public partial class DestronoiNode : RigidBody3D
 		// create the shader material which will be used by all children of this destronoiNode
 		shaderMaterial = new()
 		{
-			Shader = GD.Load<Shader>("res://addons/CDestronoi-Submodule/CDestronoi/CustomMaterials.gdshader")
+			Shader = GD.Load<Shader>(CUSTOM_MATERIAL_SHADER_PATH)
 		};
 
-		Vector3[] exteriorSurfaceNormals = new Vector3[100];
+		Vector3[] exteriorSurfaceNormals = new Vector3[MAX_NUMBER_OF_EXTERIOR_SURFACES];
 		
 		int i = 0;
 		foreach ( var (normal, _) in materialRegistry.normalToUVMap)

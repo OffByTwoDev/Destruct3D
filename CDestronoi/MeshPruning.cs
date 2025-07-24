@@ -15,8 +15,6 @@ namespace CDestronoi;
 
 public static class MeshPruning
 {
-    private const float TextureScale = 40.0f;
-
 	/// <summary>
 	/// tangents need to be generated if the material is normal mapped. set this flag to true to enforce tangents to be set when calculating new fragments
 	/// </summary>
@@ -28,7 +26,8 @@ public static class MeshPruning
     public static MeshInstance3D CombineMeshesAndPrune( List<MeshInstance3D> meshInstances,
 														bool texturedMaterial,
 														MaterialRegistry materialRegistry,
-														Material fragmentMaterial)
+														Material fragmentMaterial,
+														float TextureScale)
 	{
 		ArrayMesh combinedMesh = CombineMeshes(meshInstances).Mesh as ArrayMesh;
 
@@ -37,7 +36,7 @@ public static class MeshPruning
 
 		if (texturedMaterial)
 		{
-			ArrayMesh UVGroupedMesh = CombineFaceGroupUVs(combinedMesh, materialRegistry, fragmentMaterial);
+			ArrayMesh UVGroupedMesh = CombineFaceGroupUVs(combinedMesh, materialRegistry, fragmentMaterial, TextureScale);
 
 			return new MeshInstance3D
 			{
@@ -53,7 +52,7 @@ public static class MeshPruning
 		}
 	}
 
-	private static ArrayMesh CombineFaceGroupUVs(ArrayMesh arrayMesh, MaterialRegistry materialRegistry, Material fragmentMaterial)
+	private static ArrayMesh CombineFaceGroupUVs(ArrayMesh arrayMesh, MaterialRegistry materialRegistry, Material fragmentMaterial, float TextureScale)
 	{
 		MeshDataTool mdt = new();
 		mdt.CreateFromSurface(arrayMesh, 0);
@@ -86,7 +85,7 @@ public static class MeshPruning
 				Vector3 v2 = mdt.GetVertex(mdt.GetFaceVertex(faceIndex, 1));
 				Vector3 v3 = mdt.GetVertex(mdt.GetFaceVertex(faceIndex, 2));
 
-				AddFaceWithProjectedUVsToSpecifiedUV(surfaceTool, v1, v2, v3, origin, normal, tangent, bitangent);
+				AddFaceWithProjectedUVsToSpecifiedUV(surfaceTool, v1, v2, v3, origin, normal, tangent, bitangent, TextureScale);
 			}
 		}
 
@@ -176,7 +175,8 @@ public static class MeshPruning
 															Vector3 origin,
 															Vector3 normal,
 															Vector3 tangent,
-															Vector3 bitangent)
+															Vector3 bitangent,
+															float TextureScale)
 	{
         // Function to convert 3D point to 2D UV in triangle plane
         Vector2 GetUV(Vector3 p)

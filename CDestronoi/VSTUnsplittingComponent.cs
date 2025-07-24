@@ -150,7 +150,7 @@ public partial class VSTUnsplittingComponent : Node
 		MeshInstance3D meshInstanceToSet = vstNode.meshInstance;
 		meshInstanceToSet.Name = $"{name}_MeshInstance3D";
 
-		meshInstanceToSet = MeshPruning.CombineMeshesAndPrune([meshInstanceToSet], anyChildDestronoiNode.hasTexturedMaterial, anyChildDestronoiNode.materialRegistry, anyChildDestronoiNode.fragmentMaterial);
+		meshInstanceToSet = MeshPruning.CombineMeshesAndPrune([meshInstanceToSet], anyChildDestronoiNode.hasTexturedMaterial, anyChildDestronoiNode.materialRegistry, anyChildDestronoiNode.fragmentMaterial, anyChildDestronoiNode.TextureScale);
 
 		DestronoiNode destronoiNode = new(
 			inputName: name,
