@@ -14,9 +14,6 @@ namespace CDestronoi;
 // smaller mesh instance corresponds to the deeper explosion
 public partial class VSTSplittingComponent : Area3D
 {
-	/// <summary>the layer of the VST that the fragments will be removed from, where the vstroot is the 0th layer</summary>
-	[Export(PropertyHint.Range, "1,8")] int explosionDepth = 2;
-
 	[Export] private MeshInstance3D explosionMeshSmall;
 	[Export] private MeshInstance3D explosionMeshLarge;
 
@@ -289,17 +286,18 @@ public partial class VSTSplittingComponent : Area3D
 
 			MeshInstance3D meshToInstantate = new();
 
+			List<MeshInstance3D> meshInstances = [];
 			if (leaf.childrenChanged)
 			{
 				GD.Print("created combined mesh for this fragment.");
-				List<MeshInstance3D> meshInstances = [];
 				GetDeepestMeshInstances(meshInstances, leaf);
-				meshToInstantate = CombineMeshes(meshInstances);
+				
 			}
 			else
 			{
-				meshToInstantate = leaf.meshInstance;
+				meshInstances = [leaf.meshInstance];
 			}
+			meshToInstantate = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial, destronoiNode.materialRegistry, destronoiNode.fragmentMaterial, destronoiNode.TextureScale);
 
 			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(leaf,
 																meshToInstantate,
@@ -405,8 +403,8 @@ public partial class VSTSplittingComponent : Area3D
 
 			GetDeepestMeshInstances(meshInstances, newVSTRoot);
 
-			MeshInstance3D overlappingCombinedMeshesToKeep = CombineMeshes(meshInstances);
-
+			MeshInstance3D overlappingCombinedMeshesToKeep = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial, destronoiNode.materialRegistry, destronoiNode.fragmentMaterial, destronoiNode.TextureScale);
+			
 			overlappingCombinedMeshesToKeep.SetSurfaceOverrideMaterial(0, debugMaterial);
 
 			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(newVSTRoot,
@@ -647,33 +645,18 @@ public partial class VSTSplittingComponent : Area3D
 
 		return intersects;
 	}
-
-	public static MeshInstance3D CombineMeshes(List<MeshInstance3D> meshInstances)
-	{
-		var surfaceTool = new SurfaceTool();
-		surfaceTool.Begin(Mesh.PrimitiveType.Triangles);
-
-		foreach (MeshInstance3D meshInstance in meshInstances)
-		{
-			Mesh mesh = meshInstance.Mesh;
-
-			if (mesh is null)
-			{
-				continue;
-			}
-
-			// Append all surfaces from this mesh with the MeshInstance's transform
-			for (int surfaceIndex = 0; surfaceIndex < mesh.GetSurfaceCount(); surfaceIndex++)
-			{
-				surfaceTool.AppendFrom(mesh, surfaceIndex, meshInstance.Transform);
-			}
-		}
-
-		ArrayMesh combinedArrayMesh = surfaceTool.Commit();
-
-		return new MeshInstance3D
-		{
-			Mesh = combinedArrayMesh
-		};
-	}
 }
+
+
+
+
+
+
+	// prune in 2 steps:
+	// step 1:
+	// raycast in both d/r from centre of any given face
+	// if both raycasts intersect with one of the other faces in the mesh then that face is INSIDE
+	// and can be removed
+	// step 2:
+	// group faces by normals being (approx) equal
+	// in those groups remove vertices that are the same and reform the face

@@ -19,8 +19,25 @@ public partial class DestronoiNode : RigidBody3D
 	[Export] public Node fragmentContainer;
 	/// <summary>Generates 2^n fragments, where n is treeHeight.</summary>
 	[Export] public int treeHeight = 2;
-	
-	/// <summary>only relevant for DestronoiNodes which are present on level startup</summary>
+
+	/// <summary>for now, this is the material set on all faces of any fragments (parent or child) made from a destronoiNode</summary>
+	/// <remarks> rn the implementation is not that ideal as faces seemingly on the original object will still be changed to this. this is public as its used in CreateFreshDestronoiNode, which references (a random child of the VST)'s fragmentMaterial</remarks>
+	[Export] public Material fragmentMaterial;
+	/// <summary>
+	/// <para>set this to true if you want the original mesh texture to be applied to the relevant fragments, and the fragmentMaterial to be applied to interior faces of the object</para>
+	/// <para>set this to be false if you have an object which you want every face (interior, exterior, fragmented, etc) to be the same uniform material (e.g. you just want a completely red object) or if your material is seamless</para>
+	/// </summary>
+	/// <remarks>setting this to false saves some computation, and you may get better performance when producing a lot of fragments</remarks>
+	[Export] public bool hasTexturedMaterial = true;
+	/// <summary>only used if hasTexturedMaterial is false</summary>
+	public Material originalUntexturedMaterial;
+	public MaterialRegistry materialRegistry;
+	public ShaderMaterial shaderMaterial;
+	[Export] private NodePath CUSTOM_MATERIAL_SHADER_PATH = "res://addons/CDestronoi-Submodule/CDestronoi/CustomMaterials.gdshader";
+	// this must agree with the shader, specifically "uniform vec3 exteriorSurfaceNormals[100];"
+	private const int MAX_NUMBER_OF_EXTERIOR_SURFACES = 100;
+	public readonly float TextureScale = 10.0f;
+
 	public BinaryTreeMapToActiveNodes binaryTreeMapToActiveNodes;
 
 	// --- internal variables --- //
@@ -33,6 +50,8 @@ public partial class DestronoiNode : RigidBody3D
 	public readonly int MAX_PLOTSITERANDOM_TRIES = 5_000;
 	public readonly float LINEAR_DAMP = 1.0f;
 	public readonly float ANGULAR_DAMP = 1.0f;
+	private const float MIN_OBJECT_MASS_KILOGRAMS = 0.01f;
+	// private const int MAX_CONTACTS_REPORTED = 5_000;
 
 	// required for godot
 	public DestronoiNode() { }
@@ -44,13 +63,15 @@ public partial class DestronoiNode : RigidBody3D
 							VSTNode inputVSTRoot,
 							float inputDensity,
 							bool inputNeedsInitialising,
-							BinaryTreeMapToActiveNodes inputBinaryTreeMapToActiveNodes)
+							BinaryTreeMapToActiveNodes inputBinaryTreeMapToActiveNodes,
+							ShaderMaterial inputShaderMaterial,
+							Material inputOriginalUntexturedMaterial,
+							bool inputHasTexturedMaterial)
 	{
 		Name = inputName;
 		GlobalTransform = inputGlobalTransform;
 
 		meshInstance = (MeshInstance3D)inputMeshInstance.Duplicate();
-
 		AddChild(meshInstance);
 
 		CollisionShape3D shape = new()
@@ -68,19 +89,35 @@ public partial class DestronoiNode : RigidBody3D
 		// mass
 		baseObjectDensity = inputDensity;
 		float volume =  meshInstance.Mesh.GetAabb().Volume;
-		Mass = Math.Max(baseObjectDensity * volume, 0.01f);
+		Mass = Math.Max(baseObjectDensity * volume, MIN_OBJECT_MASS_KILOGRAMS);
 
 		// setting this to true will break everything. this flag must be false as the vstRoot is being reused and must not be regenerated for fragments. it should only be used when the scene is being loaded
 		needsInitialising = inputNeedsInitialising;
 
 		binaryTreeMapToActiveNodes = inputBinaryTreeMapToActiveNodes;
 
-		// needed for detecting explosions from RPGs
-		ContactMonitor = true;
-		MaxContactsReported = 5_000;
+		// needed for detecting explosions from moving objects - okay idk why this is here
+		// ContactMonitor = true;
+		// MaxContactsReported = MAX_CONTACTS_REPORTED;
 
 		LinearDamp = LINEAR_DAMP;
 		AngularDamp = ANGULAR_DAMP;
+
+		// material stuff
+
+		hasTexturedMaterial = inputHasTexturedMaterial;
+
+		if (hasTexturedMaterial)
+		{
+			shaderMaterial = inputShaderMaterial;
+			meshInstance.Mesh.SurfaceSetMaterial(0, inputShaderMaterial);
+		}
+		else
+		{
+			originalUntexturedMaterial = inputOriginalUntexturedMaterial;
+			meshInstance.Mesh.SurfaceSetMaterial(0, originalUntexturedMaterial);
+			GD.Print(meshInstance.GetActiveMaterial(0));
+		}
 	}
 	
 	// --- godot specific implementation --- //
@@ -141,8 +178,48 @@ public partial class DestronoiNode : RigidBody3D
 		// --- create a binarytreemap and set its root to be this node --- //
 		binaryTreeMapToActiveNodes = new(treeHeight, this);
 
+		// needed for detecting explosions from RPGs - okay idk why this is here
+		// ContactMonitor = true;
+		// MaxContactsReported = 5_000;
+
 		LinearDamp = LINEAR_DAMP;
 		AngularDamp = ANGULAR_DAMP;
+
+		// --- material stuff --- //
+
+		if (!hasTexturedMaterial)
+		{
+			originalUntexturedMaterial = meshInstance.GetActiveMaterial(0);
+			return;
+		}
+
+		/// new() VSTNode converts its mesh into an ArrayMesh already
+		materialRegistry = new(vstRoot.meshInstance.Mesh as ArrayMesh, meshInstance.GetActiveMaterial(0));
+
+		// create the shader material which will be used by all children of this destronoiNode
+		shaderMaterial = new()
+		{
+			Shader = GD.Load<Shader>(CUSTOM_MATERIAL_SHADER_PATH)
+		};
+
+		Vector3[] exteriorSurfaceNormals = new Vector3[MAX_NUMBER_OF_EXTERIOR_SURFACES];
+		
+		int i = 0;
+		foreach ( var (normal, _) in materialRegistry.normalToUVMap)
+		{
+			exteriorSurfaceNormals[i] = normal;
+			i++;
+		}
+
+		shaderMaterial.SetShaderParameter("exteriorSurfaceNormals", exteriorSurfaceNormals);
+
+		Texture2D exteriorTexture = (meshInstance.GetActiveMaterial(0) as StandardMaterial3D).AlbedoTexture;
+		shaderMaterial.SetShaderParameter("exteriorSurfaceMaterial", exteriorTexture);
+		
+		Texture2D interiorTexture = (fragmentMaterial as StandardMaterial3D).AlbedoTexture;
+		shaderMaterial.SetShaderParameter("interiorSurfaceMaterial", interiorTexture);
+
+		meshInstance.Mesh.SurfaceSetMaterial(0, shaderMaterial);
 	}
 
 	/// <summary>
@@ -369,10 +446,14 @@ public partial class DestronoiNode : RigidBody3D
 				}
 				if (verticesAbovePlane.Count == 3)
 				{
-					foreach (int vid in faceVertices)
-					{
-						surfaceTool.AddVertex(dataTool.GetVertex(vid));
-					}
+					// foreach (int vid in faceVertices)
+					// {
+					// 	AddVertexAndUV(surfaceTool, dataTool.GetVertex(vid));
+					// }
+					MeshPruning.AddFaceWithProjectedUVs(surfaceTool,
+											dataTool.GetVertex(faceVertices[0]),
+											dataTool.GetVertex(faceVertices[1]),
+											dataTool.GetVertex(faceVertices[2]));
 					continue;
 				}
 
@@ -398,9 +479,10 @@ public partial class DestronoiNode : RigidBody3D
 					coplanar.Add(intersectionBefore);
 
 					// TRIANGLE CREATION
-					surfaceTool.AddVertex(dataTool.GetVertex(vid));
-					surfaceTool.AddVertex((Vector3)intersects[0]);
-					surfaceTool.AddVertex((Vector3)intersects[1]);
+					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(vid));
+					// AddVertexAndUV(surfaceTool, (Vector3)intersects[0]);
+					// AddVertexAndUV(surfaceTool, (Vector3)intersects[1]);
+					MeshPruning.AddFaceWithProjectedUVs(surfaceTool, dataTool.GetVertex(vid), (Vector3)intersects[0], (Vector3)intersects[1]);
 					continue;
 				}
 
@@ -455,17 +537,16 @@ public partial class DestronoiNode : RigidBody3D
 					}
 
 					// TRIANGLE 1
-					surfaceTool.AddVertex(dataTool.GetVertex(verticesAbovePlane[0]));
-					surfaceTool.AddVertex(dataTool.GetVertex(verticesAbovePlane[1]));
-
-					surfaceTool.AddVertex((Vector3)intersects[indexShortest]);
+					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(verticesAbovePlane[0]));
+					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(verticesAbovePlane[1]));
+					// AddVertexAndUV(surfaceTool, (Vector3)intersects[indexShortest]);
+					MeshPruning.AddFaceWithProjectedUVs(surfaceTool, dataTool.GetVertex(verticesAbovePlane[0]), dataTool.GetVertex(verticesAbovePlane[1]), (Vector3)intersects[indexShortest]);
 
 					// TRIANGLE 2
-
-					surfaceTool.AddVertex((Vector3)intersects[0]);
-					surfaceTool.AddVertex((Vector3)intersects[1]);
-
-					surfaceTool.AddVertex(dataTool.GetVertex(verticesAbovePlane[indexShortest]));
+					// AddVertexAndUV(surfaceTool, (Vector3)intersects[0]);
+					// AddVertexAndUV(surfaceTool, (Vector3)intersects[1]);
+					// AddVertexAndUV(surfaceTool, dataTool.GetVertex(verticesAbovePlane[indexShortest]));
+					MeshPruning.AddFaceWithProjectedUVs(surfaceTool, (Vector3)intersects[0], (Vector3)intersects[1], dataTool.GetVertex(verticesAbovePlane[indexShortest]));
 					continue;
 				}
 			}
@@ -480,9 +561,10 @@ public partial class DestronoiNode : RigidBody3D
 			center /= coplanar.Count;
 			for (int i = 0; i < coplanar.Count - 1; i += 2)
 			{
-				surfaceTool.AddVertex((Vector3)coplanar[i + 1]);
-				surfaceTool.AddVertex((Vector3)coplanar[i]);
-				surfaceTool.AddVertex(center);
+				// AddVertexAndUV(surfaceTool, (Vector3)coplanar[i + 1]);
+				// AddVertexAndUV(surfaceTool, (Vector3)coplanar[i]);
+				// AddVertexAndUV(surfaceTool, center);
+				MeshPruning.AddFaceWithProjectedUVs(surfaceTool, (Vector3)coplanar[i + 1], (Vector3)coplanar[i], center);
 			}
 
 			if (side == 0)
@@ -515,6 +597,12 @@ public partial class DestronoiNode : RigidBody3D
 		return true;
 	}
 
+	// public static void AddVertexAndUV(SurfaceTool surfaceTool, Vector3 vertex)
+	// {
+	// 	surfaceTool.SetUV(new Vector2(vertex.X, vertex.Z));
+	// 	surfaceTool.AddVertex(vertex);
+	// }
+
 	/// <summary>
 	/// creates a Destronoi Node from the given meshInstance and vstnode
 	/// </summary>
@@ -537,7 +625,10 @@ public partial class DestronoiNode : RigidBody3D
 			inputVSTRoot: subVST,
 			inputDensity: baseObjectDensity,
 			inputNeedsInitialising: false,
-			inputBinaryTreeMapToActiveNodes: this.binaryTreeMapToActiveNodes
+			inputBinaryTreeMapToActiveNodes: this.binaryTreeMapToActiveNodes,
+			inputShaderMaterial: this.shaderMaterial,
+			inputOriginalUntexturedMaterial: this.originalUntexturedMaterial,
+			inputHasTexturedMaterial: this.hasTexturedMaterial
 		);
 
 		return destronoiNode;
@@ -562,88 +653,5 @@ public partial class DestronoiNode : RigidBody3D
 		binaryTreeMapToActiveNodes.RemoveFromActiveTree(this);
 
 		QueueFree();
-	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	// --- functions below here are deprecated --- //
-
-
-	public void Destroy(int depth, float combustVelocity = 0f)
-	{
-		List<VSTNode> leaves = [];
-		VSTNode.GetLeafNodes(vstRoot, leaves, depth);
-
-		int fragmentNumber = 0;
-
-		foreach (VSTNode leaf in leaves)
-		{
-			RigidBody3D body = CreateBody(leaf.meshInstance, $"Fragment_{fragmentNumber}");
-
-			// destruction velocity
-			if (!Mathf.IsZeroApprox(combustVelocity))
-			{
-				// simple outward velocity
-				Vector3 dir = meshInstance.Mesh.GetAabb().Position - Position;
-				// was .axisvelocity, i just replaced it with linearvelocity idk if thats correct
-				body.LinearVelocity = dir.Normalized() * combustVelocity;
-			}
-			// add to scene
-			fragmentContainer.AddChild(body);
-
-			fragmentNumber++;
-		}
-
-		QueueFree();
-	}
-	
-	// DEPRECATED
-	/// <summary>
-	/// creates a rigidbody from the given meshInstance
-	/// </summary>
-	public RigidBody3D CreateBody(MeshInstance3D leafMeshInstance, String name)
-	{
-			// initialise rigidbody
-			RigidBody3D body = new()
-			{
-				Name = name,
-				Position = GlobalPosition
-			};
-
-			// mesh instance
-			MeshInstance3D meshInstance = leafMeshInstance;
-			meshInstance.Name = "MeshInstance3D";
-			body.AddChild(meshInstance);
-
-			// collisionshape
-			CollisionShape3D shape = new()
-			{
-				Name = "CollisionShape3D",
-				Shape = meshInstance.Mesh.CreateConvexShape(false, false)
-			};
-			body.AddChild(shape);
-
-			body.Mass = baseObjectDensity * meshInstance.Mesh.GetAabb().Volume;
-
-			// needed (idk why lmao ?) for detecting explosions from RPGs
-			body.ContactMonitor = true;
-			body.MaxContactsReported = 5_000;
-
-			return body;
 	}
 }
