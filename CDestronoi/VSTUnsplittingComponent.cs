@@ -163,7 +163,8 @@ public partial class VSTUnsplittingComponent : Node
 			inputBinaryTreeMapToActiveNodes: anyChildDestronoiNode.binaryTreeMapToActiveNodes,
 			inputShaderMaterial: anyChildDestronoiNode.shaderMaterial,
 			inputOriginalUntexturedMaterial: anyChildDestronoiNode.originalUntexturedMaterial,
-			inputHasTexturedMaterial: anyChildDestronoiNode.hasTexturedMaterial
+			inputHasTexturedMaterial: anyChildDestronoiNode.hasTexturedMaterial,
+			inputTreatTopMostLevelAsStatic: anyChildDestronoiNode.treatTopMostLevelAsStatic
 		);
 
 		return destronoiNode;

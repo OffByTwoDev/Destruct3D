@@ -9,6 +9,7 @@ namespace CDestronoi;
 /// <summary>
 /// Subdivides a convex ArrayMesh belonging to a RigidBody3D by generating a Voronoi Subdivision Tree (VST).
 /// </summary>
+[GlobalClass]
 public partial class DestronoiNode : RigidBody3D
 {
 	// --- Exports --- //
@@ -53,6 +54,8 @@ public partial class DestronoiNode : RigidBody3D
 	private const float MIN_OBJECT_MASS_KILOGRAMS = 0.01f;
 	// private const int MAX_CONTACTS_REPORTED = 5_000;
 
+	[Export] public bool treatTopMostLevelAsStatic = false;
+
 	// required for godot
 	public DestronoiNode() { }
 
@@ -66,7 +69,8 @@ public partial class DestronoiNode : RigidBody3D
 							BinaryTreeMapToActiveNodes inputBinaryTreeMapToActiveNodes,
 							ShaderMaterial inputShaderMaterial,
 							Material inputOriginalUntexturedMaterial,
-							bool inputHasTexturedMaterial)
+							bool inputHasTexturedMaterial,
+							bool inputTreatTopMostLevelAsStatic)
 	{
 		Name = inputName;
 		GlobalTransform = inputGlobalTransform;
@@ -116,7 +120,12 @@ public partial class DestronoiNode : RigidBody3D
 		{
 			originalUntexturedMaterial = inputOriginalUntexturedMaterial;
 			meshInstance.Mesh.SurfaceSetMaterial(0, originalUntexturedMaterial);
-			GD.Print(meshInstance.GetActiveMaterial(0));
+		}
+
+		if (vstRoot.level == 0 && treatTopMostLevelAsStatic)
+		{
+			Freeze = true;
+			FreezeMode = FreezeModeEnum.Kinematic;
 		}
 	}
 	
@@ -184,6 +193,12 @@ public partial class DestronoiNode : RigidBody3D
 
 		LinearDamp = LINEAR_DAMP;
 		AngularDamp = ANGULAR_DAMP;
+
+		if (treatTopMostLevelAsStatic)
+		{
+			Freeze = true;
+			FreezeMode = FreezeModeEnum.Kinematic;
+		}
 
 		// --- material stuff --- //
 
@@ -628,7 +643,8 @@ public partial class DestronoiNode : RigidBody3D
 			inputBinaryTreeMapToActiveNodes: this.binaryTreeMapToActiveNodes,
 			inputShaderMaterial: this.shaderMaterial,
 			inputOriginalUntexturedMaterial: this.originalUntexturedMaterial,
-			inputHasTexturedMaterial: this.hasTexturedMaterial
+			inputHasTexturedMaterial: this.hasTexturedMaterial,
+			inputTreatTopMostLevelAsStatic: this.treatTopMostLevelAsStatic
 		);
 
 		return destronoiNode;
