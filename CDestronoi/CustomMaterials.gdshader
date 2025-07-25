@@ -1,10 +1,15 @@
 shader_type spatial;
 
+const float ThresholdAngleRadians = 0.01f;
+const float cosThresholdAngleRadians = cos(ThresholdAngleRadians);
+
 uniform sampler2D exteriorSurfaceMaterial;
 uniform sampler2D interiorSurfaceMaterial;
 
 uniform vec3 exteriorSurfaceNormals[100];
 
+// vertex() normal is in model space, fragment() normal is in view space
+// so we use this variable to pass the model space normal to the fragment function
 varying vec3 model_normal;
 
 void vertex()
@@ -14,9 +19,6 @@ void vertex()
 
 bool IsApproxSameDirection(vec3 firstVector, vec3 secondVector)
 {
-	float ThresholdAngleRadians = 0.01f;
-	float cosThresholdAngleRadians = cos(ThresholdAngleRadians);
-
 	vec3 normalisedFirstVector = normalize(firstVector);
 	vec3 normalisedSecondVector = normalize(secondVector);
 
@@ -36,7 +38,7 @@ bool IsApproxSameDirection(vec3 firstVector, vec3 secondVector)
 void fragment()
 {
 	bool matched = false;
-	
+
 	for (int i = 0; i < exteriorSurfaceNormals.length(); i++)
 	{
 		if (IsApproxSameDirection(model_normal, exteriorSurfaceNormals[i]) || IsApproxSameDirection(-model_normal, exteriorSurfaceNormals[i]))
@@ -45,12 +47,12 @@ void fragment()
 			matched = true;
 			break;
 		}
-		
+
 		// draw from interior material
 	}
-	
+
 	vec4 exterior_color = texture(exteriorSurfaceMaterial, UV);
 	vec4 interior_color = texture(interiorSurfaceMaterial, UV);
-	
+
 	ALBEDO = matched ? exterior_color.xyz : interior_color.xyz;
 }
