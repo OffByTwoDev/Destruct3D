@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://c8ubty4lkq3x"]
 
-[ext_resource type="Material" uid="uid://uq2o7jxh5pyg" path="res://addons/CDestronoi-Submodule/particle_effects/ParticleProcessMaterial.tres" id="1_4xw5v"]
-[ext_resource type="QuadMesh" uid="uid://bpsb4k1dwosgn" path="res://addons/CDestronoi-Submodule/particle_effects/RayTracedSphereMaterial.tres" id="2_5m1if"]
+[ext_resource type="Material" uid="uid://uq2o7jxh5pyg" path="res://addons/CDestronoi-Submodule/CDestronoi/particle_effects/ParticleProcessMaterial.tres" id="1_4xw5v"]
+[ext_resource type="QuadMesh" uid="uid://bpsb4k1dwosgn" path="res://addons/CDestronoi-Submodule/CDestronoi/particle_effects/RayTracedSphereMaterial.tres" id="2_5m1if"]
 
 [node name="DisintegrationParticleEffects" type="Node3D"]
 
