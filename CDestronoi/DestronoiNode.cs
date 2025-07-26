@@ -56,6 +56,9 @@ public partial class DestronoiNode : RigidBody3D
 
 	[Export] public bool treatTopMostLevelAsStatic = false;
 
+	// particle effects
+	public NodePath CUSTOM_PARTICLE_EFFECTS_SCENE_PATH = "res://addons/CDestronoi-Submodule/particle_effects/DisintegrationParticleEffects.tscn";
+
 	// required for godot
 	public DestronoiNode() { }
 

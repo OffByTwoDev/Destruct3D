@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3 uid="uid://c8ubty4lkq3x"]
+
+[ext_resource type="Material" uid="uid://uq2o7jxh5pyg" path="res://addons/CDestronoi-Submodule/particle_effects/ParticleProcessMaterial.tres" id="1_4xw5v"]
+[ext_resource type="QuadMesh" uid="uid://bpsb4k1dwosgn" path="res://addons/CDestronoi-Submodule/particle_effects/RayTracedSphereMaterial.tres" id="2_5m1if"]
+
+[node name="DisintegrationParticleEffects" type="Node3D"]
+
+[node name="GPUParticles3D" type="GPUParticles3D" parent="."]
+emitting = false
+amount = 2000
+lifetime = 1.8
+one_shot = true
+explosiveness = 0.89
+randomness = 0.72
+fixed_fps = 60
+trail_enabled = true
+trail_lifetime = 3.3
+process_material = ExtResource("1_4xw5v")
+draw_pass_1 = ExtResource("2_5m1if")
+
+[node name="GPUParticlesAttractorSphere3D" type="GPUParticlesAttractorSphere3D" parent="."]
+strength = 0.0

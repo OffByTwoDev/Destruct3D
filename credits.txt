@@ -1,0 +1,3 @@
+https://github.com/seadaemon/Destronoi
+
+https://godotshaders.com/shader/ray-traced-sphere-for-particle-effects/

@@ -1,0 +1,21 @@
+[gd_resource type="QuadMesh" load_steps=3 format=3 uid="uid://bpsb4k1dwosgn"]
+
+[ext_resource type="Shader" uid="uid://dm5htc28htoh4" path="res://addons/CDestronoi-Submodule/particle_effects/RayTracedSphere.gdshader" id="1_xison"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xison"]
+render_priority = 0
+shader = ExtResource("1_xison")
+shader_parameter/use_occlusion = false
+shader_parameter/fix_perspective = false
+shader_parameter/use_light_color = true
+shader_parameter/object_color = Color(0.288518, 0.288518, 0.288518, 1)
+shader_parameter/base_light_color = Color(0.463983, 0.21779, 0.217367, 1)
+shader_parameter/shade_color = Color(0.05, 0.05, 0.05, 1)
+shader_parameter/cel_shading = true
+shader_parameter/cel_shade_threshold = 0.1
+shader_parameter/cel_shade_softness = 0.02
+shader_parameter/sphere_size = 0.379
+
+[resource]
+material = SubResource("ShaderMaterial_xison")
+size = Vector2(0.2, 0.2)

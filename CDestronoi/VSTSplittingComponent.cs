@@ -17,8 +17,10 @@ public partial class VSTSplittingComponent : Area3D
 	[Export] private MeshInstance3D explosionMeshSmall;
 	[Export] private MeshInstance3D explosionMeshLarge;
 
-	[Export] private int explosionTreeDepthDeep = 2;
-	[Export] private int explosionTreeDepthShallow = 2;
+	// these are relative to the level of the fragment that is being split
+	// e.g. a relative depth of 2 applied to a fragment of level 6 will produce fragments of level 8  
+	[Export] private int relativeExplosionTreeDepthDeep = 2;
+	[Export] private int relativeExplosionTreeDepthShallow = 2;
 
 	[Export] private bool ApplyImpulseOnSplit = false;
 	[Export] private float ImpulseStrength = 1.0f;
@@ -47,7 +49,7 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		base._Ready();
 	
-		if ((explosionTreeDepthDeep <= 0) || (explosionTreeDepthShallow <= 0))
+		if ((relativeExplosionTreeDepthDeep <= 0) || (relativeExplosionTreeDepthShallow <= 0))
 		{
 			GD.PushError("explosionDepths have to be strictly greater than 0");
 			return;
@@ -89,7 +91,7 @@ public partial class VSTSplittingComponent : Area3D
 			GD.Print("primary explosion");
 		}
 
-		Explosion(explosionDistancesLarge, explosionTreeDepthShallow, new StandardMaterial3D());
+		Explosion(explosionDistancesLarge, relativeExplosionTreeDepthShallow, new StandardMaterial3D());
 
 		// await so there's enough time for fragments to be instantiated
 		await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
@@ -99,13 +101,13 @@ public partial class VSTSplittingComponent : Area3D
 			GD.Print("secondary explosion");
 		}
 
-		Explosion(explosionDistancesSmall, explosionTreeDepthDeep, new StandardMaterial3D());
+		Explosion(explosionDistancesSmall, relativeExplosionTreeDepthDeep, new StandardMaterial3D());
 
 		await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
 	}
 
 	/// <summary>carry out the explosion that goes to a tree depth of explosionTreeDepth and covers a radius explosionDistance</summary>
-	private void Explosion(float explosionDistance, int explosionTreeDepth, StandardMaterial3D material)
+	private void Explosion(float explosionDistance, int relativeExplosionTreeDepth, StandardMaterial3D material)
 	{
 		foreach (Node3D node in GetOverlappingBodies())
 		{
@@ -124,8 +126,52 @@ public partial class VSTSplittingComponent : Area3D
 				continue;
 			}
 
-			SplitExplode(destronoiNode, explosionDistance, explosionTreeDepth, material);
+			SplitExplode(destronoiNode, explosionDistance, relativeExplosionTreeDepth, material);
 		}
+	}
+
+	/// <returns>the level of the deepest vstNode that can be navigated to from an input vstRoot<br></br>(i.e. the level of the deepest fragment still physically connected to the initially input vstRoot)</returns>
+	public static int GetDeepestAccessibleLevel(VSTNode vstNode, int levelToReturn)
+	{
+		if (vstNode.left is not null)
+		{
+			levelToReturn = GetDeepestAccessibleLevel(vstNode.left, levelToReturn);
+		}
+		else if (vstNode.level > levelToReturn)
+		{
+			levelToReturn = vstNode.level;
+		}
+
+		if (vstNode.right is not null)
+		{
+			levelToReturn = GetDeepestAccessibleLevel(vstNode.right, levelToReturn);
+		}
+		else if (vstNode.level > levelToReturn)
+		{
+			levelToReturn = vstNode.level;
+		}
+
+		return levelToReturn;
+	}
+
+	private async void Disintegrate(DestronoiNode destronoiNode)
+	{
+		PackedScene scene = GD.Load<PackedScene>(destronoiNode.CUSTOM_PARTICLE_EFFECTS_SCENE_PATH);
+		Node instantiatedScene = scene.Instantiate();
+		destronoiNode.fragmentContainer.AddChild(instantiatedScene);
+		GpuParticles3D emitter = instantiatedScene.GetChild(0) as GpuParticles3D;
+		emitter.OneShot = true;
+		destronoiNode.meshInstance.Visible = false;
+		destronoiNode.LinearDamp = 1000f;
+
+		emitter.GlobalPosition = destronoiNode.GlobalPosition;
+
+		destronoiNode.Deactivate();
+
+		emitter.Restart();
+		await Task.Delay(2_000);
+		emitter.QueueFree();
+
 	}
 
 	/// <summary>
@@ -133,20 +179,24 @@ public partial class VSTSplittingComponent : Area3D
 	/// </summary>
 	public void SplitExplode(DestronoiNode destronoiNode,
 							float explosionDistanceMax,
-							int explosionTreeDepth,
+							int relativeExplosionTreeDepth,
 							StandardMaterial3D fragmentMaterial)
 	{
 		VSTNode originalVSTRoot = destronoiNode.vstRoot;
 
 		// desired explosionTreeDepth is relative to a body's root node, hence we add the depth of the root node
-		explosionTreeDepth += originalVSTRoot.level;
+		int absoluteExplosionTreeDepth = relativeExplosionTreeDepth + originalVSTRoot.level;
 
-		// if (explosionTreeDepth > deepestNode)
-		// {
+		if (absoluteExplosionTreeDepth > GetDeepestAccessibleLevel(originalVSTRoot, originalVSTRoot.level))
+		{
+			// GD.Print($"absoluteExplosionTreeDepth = {absoluteExplosionTreeDepth}, deepestLevel = {GetDeepestAccessibleLevel(originalVSTRoot, originalVSTRoot.level)}");
+			Disintegrate(destronoiNode);
+			return;
 			// set explosionTreeDepth to deepestNode i.e. just remove the smallest thing we have
 			// OR create a particle effect for the fragments to remove
 			// or could remove the smallest thing possible, unless this is an endpoint, in which case then create some particle effects (like do the particle effects thing but only when there is no other splitting that could be done)
-		// }
+
+		}
 
 		// might also want to queuefree fragments and instantiate some temporary explosion looking particle effects
 		// if all sides of the aabb of the fragment are less than some value (or maybe the volume of the aabb is less than some value)
@@ -161,7 +211,7 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		List<VSTNode> fragmentsToRemove = GetFragmentsToRemove(destronoiNode, originalVSTRoot, explosionTreeDepth, explosionDistanceMax);
+		List<VSTNode> fragmentsToRemove = GetFragmentsToRemove(destronoiNode, originalVSTRoot, absoluteExplosionTreeDepth, explosionDistanceMax);
 
 		// if we are removing no fragments, then the rest of this code is just gonna create a duplicate of the current node
 		// ie in this case, nothing would be changed. nothing about the vst either i believe (hence no need to clean the VST)
@@ -210,13 +260,13 @@ public partial class VSTSplittingComponent : Area3D
 	/// <summary>
 	/// finds all VSTNodes of a specified depth within a given VST root Node, that are within explosionDistanceMax from this VSTSplittingComponent
 	/// </summary>
-	public List<VSTNode> GetFragmentsToRemove(DestronoiNode destronoiNode, VSTNode originalVSTRoot, int explosionTreeDepth, float explosionDistanceMax)
+	public List<VSTNode> GetFragmentsToRemove(DestronoiNode destronoiNode, VSTNode originalVSTRoot, int absoluteExplosionTreeDepth, float explosionDistanceMax)
 	{
 		List<VSTNode> fragmentsAtGivenDepth = [];
 
-		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, originalVSTRoot, explosionTreeDepth);
+		InitialiseFragmentsAtGivenLevel(fragmentsAtGivenDepth, originalVSTRoot, absoluteExplosionTreeDepth);
 
-		if (explosionTreeDepth == originalVSTRoot.level)
+		if (absoluteExplosionTreeDepth == originalVSTRoot.level)
 		{
 			GD.PushError("explosionTreeDepth = originalVSTRoot.level. this might lead to issues idk, i can't work it out lmao");
 		}
@@ -521,9 +571,9 @@ public partial class VSTSplittingComponent : Area3D
 		
 	}
 
-	public static void InitialiseFragmentsAtGivenDepth(List<VSTNode> fragmentsAtGivenDepth,
+	public static void InitialiseFragmentsAtGivenLevel(List<VSTNode> fragmentsAtGivenLevel,
 												VSTNode currentVSTNode,
-												int depth)
+												int desiredLevel)
 	{
 		// represents a node not in the tree
 		if (currentVSTNode is null)
@@ -531,14 +581,14 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		if (currentVSTNode.level == depth)
+		if (currentVSTNode.level == desiredLevel)
 		{
-			fragmentsAtGivenDepth.Add(currentVSTNode);
+			fragmentsAtGivenLevel.Add(currentVSTNode);
 			return;
 		}
 
-		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.left, depth);
-		InitialiseFragmentsAtGivenDepth(fragmentsAtGivenDepth, currentVSTNode.right, depth);
+		InitialiseFragmentsAtGivenLevel(fragmentsAtGivenLevel, currentVSTNode.left, desiredLevel);
+		InitialiseFragmentsAtGivenLevel(fragmentsAtGivenLevel, currentVSTNode.right, desiredLevel);
 	}
 
 	// --- mesh combining schenanigans --- //
