@@ -42,6 +42,7 @@ I would recommend using a binary tree depth of 8 (so $2^8 = 256$ fragments) as a
 I would recommend setting treeHeight to e.g. 3 whilst you are making parts of your game that don't depend on detailed destruction. That way you won't waste time waiting for levels to load, but the destruction will still occur (so you'll see if something's broken etc as soon as possible).
 
 I would consider making a manager to set the appropriate debug vs testing vs release treeHeight. e.g. you could add some code to DestronoiNode.cs to get the current game state (debug, full destruction, etc) on ready and set the treeHeight appropriately. Or simply just remove the `[Export]` tag on the treeHeight variable and treat it as a constant - that way you only have 1 line of code to change.
+[okay i actually made this: its called DestronoiDepthManager rn]
 
 Making a very large mesh into a destronoiNode will not work very well, as you would need a very deep tree in order to see medium to small scale destruction. It's much better to work modularly and add destruction to smaller parts of your scene like boxes, walls, etc.
 
