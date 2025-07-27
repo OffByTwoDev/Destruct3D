@@ -22,7 +22,7 @@ public partial class VSTSplittingComponent : Area3D
 	[Export] private int relativeExplosionTreeDepthDeep = 2;
 	[Export] private int relativeExplosionTreeDepthShallow = 2;
 
-	[Export] private bool ApplyImpulseOnSplit = false;
+	[Export] private bool ApplyImpulseOnSplit = true;
 	[Export] private float ImpulseStrength = 1.0f;
 
 	// these are to be set to be the radius of the sphere
@@ -154,8 +154,9 @@ public partial class VSTSplittingComponent : Area3D
 		return levelToReturn;
 	}
 
-	private async void Disintegrate(DestronoiNode destronoiNode)
+	private static async void Disintegrate(DestronoiNode destronoiNode)
 	{
+		// GD.Print("disintegrating");
 		PackedScene scene = GD.Load<PackedScene>(destronoiNode.CUSTOM_PARTICLE_EFFECTS_SCENE_PATH);
 		Node instantiatedScene = scene.Instantiate();
 		destronoiNode.fragmentContainer.AddChild(instantiatedScene);
@@ -169,9 +170,8 @@ public partial class VSTSplittingComponent : Area3D
 		destronoiNode.Deactivate();
 
 		emitter.Restart();
-		await Task.Delay(2_000);
+		await Task.Delay(5_000);
 		emitter.QueueFree();
-
 	}
 
 	/// <summary>

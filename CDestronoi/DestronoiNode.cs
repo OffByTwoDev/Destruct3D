@@ -34,7 +34,7 @@ public partial class DestronoiNode : RigidBody3D
 	public Material originalUntexturedMaterial;
 	public MaterialRegistry materialRegistry;
 	public ShaderMaterial shaderMaterial;
-	[Export] private NodePath CUSTOM_MATERIAL_SHADER_PATH = "res://addons/CDestronoi-Submodule/CDestronoi/CustomMaterials.gdshader";
+	[Export] private NodePath CUSTOM_MATERIAL_SHADER_PATH = "res://addons/CDestronoi-Submodule/CDestronoi/materials/CustomMaterials.gdshader";
 	// this must agree with the shader, specifically "uniform vec3 exteriorSurfaceNormals[100];"
 	private const int MAX_NUMBER_OF_EXTERIOR_SURFACES = 100;
 	public readonly float TextureScale = 10.0f;
@@ -57,7 +57,7 @@ public partial class DestronoiNode : RigidBody3D
 	[Export] public bool treatTopMostLevelAsStatic = false;
 
 	// particle effects
-	public NodePath CUSTOM_PARTICLE_EFFECTS_SCENE_PATH = "res://addons/CDestronoi-Submodule/particle_effects/DisintegrationParticleEffects.tscn";
+	public NodePath CUSTOM_PARTICLE_EFFECTS_SCENE_PATH = "res://addons/CDestronoi-Submodule/CDestronoi/particle_effects/DisintegrationParticleEffects.tscn";
 
 	// required for godot
 	public DestronoiNode() { }
@@ -236,6 +236,9 @@ public partial class DestronoiNode : RigidBody3D
 		
 		Texture2D interiorTexture = (fragmentMaterial as StandardMaterial3D).AlbedoTexture;
 		shaderMaterial.SetShaderParameter("interiorSurfaceMaterial", interiorTexture);
+
+		Color albedoColor = (meshInstance.GetActiveMaterial(0) as StandardMaterial3D).AlbedoColor;
+		shaderMaterial.SetShaderParameter("albedo_multiplier", albedoColor);
 
 		meshInstance.Mesh.SurfaceSetMaterial(0, shaderMaterial);
 	}

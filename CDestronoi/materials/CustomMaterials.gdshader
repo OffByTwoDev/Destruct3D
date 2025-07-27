@@ -8,6 +8,8 @@ uniform sampler2D interiorSurfaceMaterial;
 
 uniform vec3 exteriorSurfaceNormals[100];
 
+uniform vec3 albedo_multiplier;
+
 // vertex() normal is in model space, fragment() normal is in view space
 // so we use this variable to pass the model space normal to the fragment function
 varying vec3 model_normal;
@@ -47,7 +49,6 @@ void fragment()
 			matched = true;
 			break;
 		}
-
 		// draw from interior material
 	}
 
@@ -55,4 +56,7 @@ void fragment()
 	vec4 interior_color = texture(interiorSurfaceMaterial, UV);
 
 	ALBEDO = matched ? exterior_color.xyz : interior_color.xyz;
+
+	// add back in any colour the original material's albedo setting had
+	ALBEDO *= albedo_multiplier;
 }
