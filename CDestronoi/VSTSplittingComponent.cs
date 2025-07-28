@@ -360,6 +360,7 @@ public partial class VSTSplittingComponent : Area3D
 
 			if (ApplyImpulseOnSplit)
 			{
+				// GD.Print("applying impulse on split");
 				newDestronoiNode.ApplyCentralImpulse(new Vector3(
 													GD.Randf()-0.5f,
 													GD.Randf()-0.5f,

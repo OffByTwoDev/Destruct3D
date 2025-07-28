@@ -74,6 +74,8 @@ A destronoi node with depth 14 (so $2^{14} = 16,384$ fragments) uses ~400mb of R
 - It's written in C# which not everyone knows
 -> make a gdscript port
 
+- Only supports RigidBodies with 1 meshInstance & 1 collisionShape
+
 # Conventions
 
 ## Commit Types
