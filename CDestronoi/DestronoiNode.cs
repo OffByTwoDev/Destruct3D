@@ -19,7 +19,7 @@ public partial class DestronoiNode : RigidBody3D
 	/// <summary>node under which fragments will be instanced</summary>
 	[Export] public Node fragmentContainer;
 	/// <summary>Generates 2^n fragments, where n is treeHeight.</summary>
-	[Export] public int treeHeight = 2;
+	[Export] public int treeHeight = 8;
 
 	/// <summary>for now, this is the material set on all faces of any fragments (parent or child) made from a destronoiNode</summary>
 	/// <remarks> rn the implementation is not that ideal as faces seemingly on the original object will still be changed to this. this is public as its used in CreateFreshDestronoiNode, which references (a random child of the VST)'s fragmentMaterial</remarks>
@@ -143,6 +143,9 @@ public partial class DestronoiNode : RigidBody3D
 			return;
 		}
 
+		meshInstance.Mesh.SetLocalToScene(true);
+		meshInstance.Mesh.SurfaceGetMaterial(0).SetLocalToScene(true);
+
 		// --- do some error checks, but only after children have been added to scene i.e. we wait one frame --- //
 
 		CallDeferred(nameof(ErrorChecks));
@@ -203,7 +206,7 @@ public partial class DestronoiNode : RigidBody3D
 			FreezeMode = FreezeModeEnum.Kinematic;
 		}
 
-		// --- material stuff --- //
+		// --- material stuff only --- //
 
 		if (!hasTexturedMaterial)
 		{

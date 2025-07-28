@@ -4,6 +4,16 @@ A Godot addon written in C# that generates fragments on startup, and removes the
 
 No knowledge of C# is needed to use the plugin or customise the basic behaviour.
 
+# Instructions
+
+- cntrl+shift+a -> destronoiNode
+- add a meshInstance & collisionshape like you would for any body
+- set the binary tree depth (recommend 8 for most cases)
+
+optional:
+- if you need your level to be reloadable, then set your meshInstance's Mesh -> LocalToScene = true (textures will appear black after reloading the scene if not)
+- if you want to use textures, set hasTexturedMaterial to true, and add a fragmentMaterial (to be applied to the fresh interior faces) and add a material to your meshInstance (to be used for the exterior faces)
+
 # Credits
 
 I am extremely thankful to seadaemon for the [Destronoi plugin](https://github.com/seadaemon/Destronoi), which this plugin was built off of. If Destronoi didn't exist this project would've taken significantly longer and I may never have made it.
@@ -41,8 +51,7 @@ I would recommend using a binary tree depth of 8 (so $2^8 = 256$ fragments) as a
 
 I would recommend setting treeHeight to e.g. 3 whilst you are making parts of your game that don't depend on detailed destruction. That way you won't waste time waiting for levels to load, but the destruction will still occur (so you'll see if something's broken etc as soon as possible).
 
-I would consider making a manager to set the appropriate debug vs testing vs release treeHeight. e.g. you could add some code to DestronoiNode.cs to get the current game state (debug, full destruction, etc) on ready and set the treeHeight appropriately. Or simply just remove the `[Export]` tag on the treeHeight variable and treat it as a constant - that way you only have 1 line of code to change.
-[okay i actually made this: its called DestronoiDepthManager rn]
+I created a manager node [called DestronoiDepthManager rn] which can set the treeHeight of any direct children to a specified node on ready. This means you can quickly change between fast startup time with basic destruction (for debugging, creating scenes, etc) & slower startup time with longer destruction (for testing, release etc) without having to manually change lots of exported variables.
 
 Making a very large mesh into a destronoiNode will not work very well, as you would need a very deep tree in order to see medium to small scale destruction. It's much better to work modularly and add destruction to smaller parts of your scene like boxes, walls, etc.
 
