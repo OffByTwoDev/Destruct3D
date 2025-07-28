@@ -6,13 +6,24 @@ No knowledge of C# is needed to use the plugin or customise the basic behaviour.
 
 # Instructions
 
-- cntrl+shift+a -> destronoiNode
-- add a meshInstance & collisionshape like you would for any body
+### Instructions to create a destructible object
+
+- cntrl+shift+a -> add destronoiNode
+- add a meshInstance & collisionshape like you would for any rigidbody
 - set the binary tree depth (recommend 8 for most cases)
+- set the fragmentContainer to be the node where you want fragments to be instantiated under (e.g. an "Environment" or "Objects" node is appropriate)
+
 
 optional:
-- if you need your level to be reloadable, then set your meshInstance's Mesh -> LocalToScene = true (textures will appear black after reloading the scene if not)
 - if you want to use textures, set hasTexturedMaterial to true, and add a fragmentMaterial (to be applied to the fresh interior faces) and add a material to your meshInstance (to be used for the exterior faces)
+- if you want the largest fragments to be kept stationary (e.g. if you want to remove rigidbody fragments from an object which acts like a staticbody3D) then set treatTopMostLevelAsStatic to true
+
+requirements:
+- if you need your level to be reloadable, then set your meshInstance's Mesh -> LocalToScene = true (textures will appear black after reloading the scene if not)
+
+### Instructions to destroy a destructible object
+
+To actually destroy an object, you need to call Activate() on a VSTSplittingComponent (which inherits from Area3D) that overlaps with a destronoiNode. The Example scene has an example of this, where Activate() is called upon pressing a keybind. In a videogame you'll more than likely want to call Activate() when your object collides with something (e.g. for an RPG), or after a timer is up (e.g. for a grenade)
 
 # Credits
 
@@ -50,6 +61,8 @@ For comparison, my system is:
 I would recommend using a binary tree depth of 8 (so $2^8 = 256$ fragments) as a starting point. This seems to give good looking destruction (if your object is like 5m ish) and has reasonable startup time for ~10 objects (~5 seconds for me).
 
 I would recommend setting treeHeight to e.g. 3 whilst you are making parts of your game that don't depend on detailed destruction. That way you won't waste time waiting for levels to load, but the destruction will still occur (so you'll see if something's broken etc as soon as possible).
+
+Objects with many faces (e.g. spheres, cylinders) will perform significantly worse than cubes. (The textures code loops through faces, so more faces leads to more computation.)
 
 I created a manager node [called DestronoiDepthManager rn] which can set the treeHeight of any direct children to a specified node on ready. This means you can quickly change between fast startup time with basic destruction (for debugging, creating scenes, etc) & slower startup time with longer destruction (for testing, release etc) without having to manually change lots of exported variables.
 

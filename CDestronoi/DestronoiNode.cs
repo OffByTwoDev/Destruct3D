@@ -242,6 +242,10 @@ public partial class DestronoiNode : RigidBody3D
 
 		Color albedoColor = (meshInstance.GetActiveMaterial(0) as StandardMaterial3D).AlbedoColor;
 		shaderMaterial.SetShaderParameter("albedo_multiplier", albedoColor);
+		
+		// this is a bodge that means that meshInstance.Mesh does NOT have to be made unique between objects
+		// if we didn't duplicate this, then if you've accidentally shared a mesh between objects, it would set the material to be the shader material for both objects, then fail on the _Ready() of the 2nd object
+		meshInstance.Mesh = (Mesh)meshInstance.Mesh.Duplicate();
 
 		meshInstance.Mesh.SurfaceSetMaterial(0, shaderMaterial);
 	}
