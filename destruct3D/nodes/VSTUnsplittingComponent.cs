@@ -15,6 +15,7 @@ namespace Destruct3D;
 /// and then reinstantiate that node (with its whole original mesh intact).
 /// This component takes an input destructibleBody3D and does exactly that
 /// </remarks>
+[GlobalClass]
 public partial class VSTUnsplittingComponent : Node
 {
 	[Export] public int unexplosionLevelsToGoUp = 2;

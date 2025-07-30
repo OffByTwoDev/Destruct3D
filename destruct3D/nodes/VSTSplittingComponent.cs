@@ -12,6 +12,7 @@ namespace Destruct3D;
 // so make sure the collisionshape3d and meshinstance3d child of this area3d represent the same thing
 
 // smaller mesh instance corresponds to the deeper explosion
+[GlobalClass]
 public partial class VSTSplittingComponent : Area3D
 {
 	[Export] private MeshInstance3D explosionMeshSmall;
