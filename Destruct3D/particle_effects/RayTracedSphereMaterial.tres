@@ -1,6 +1,6 @@
 [gd_resource type="QuadMesh" load_steps=3 format=3 uid="uid://bpsb4k1dwosgn"]
 
-[ext_resource type="Shader" uid="uid://dm5htc28htoh4" path="res://addons/CDestronoi-Submodule/CDestronoi/particle_effects/RayTracedSphere.gdshader" id="1_xison"]
+[ext_resource type="Shader" uid="uid://dm5htc28htoh4" path="res://addons/CDestronoi-Submodule/Destruct3D/particle_effects/RayTracedSphere.gdshader" id="1_xison"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_xison"]
 render_priority = 0

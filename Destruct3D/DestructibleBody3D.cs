@@ -2,15 +2,14 @@ using Godot;
 using System.Collections.Generic;
 using System;
 using System.Linq;
-using System.Diagnostics;
 
-namespace CDestronoi;
+namespace Destruct3D;
 
 /// <summary>
 /// Subdivides a convex ArrayMesh belonging to a RigidBody3D by generating a Voronoi Subdivision Tree (VST).
 /// </summary>
 [GlobalClass]
-public partial class DestronoiNode : RigidBody3D
+public partial class DestructibleBody3D : RigidBody3D
 {
 	// --- Exports --- //
 
@@ -21,7 +20,7 @@ public partial class DestronoiNode : RigidBody3D
 	/// <summary>Generates 2^n fragments, where n is treeHeight.</summary>
 	[Export] public int treeHeight = 8;
 
-	/// <summary>for now, this is the material set on all faces of any fragments (parent or child) made from a destronoiNode</summary>
+	/// <summary>for now, this is the material set on all faces of any fragments (parent or child) made from a destructibleBody3D</summary>
 	/// <remarks> rn the implementation is not that ideal as faces seemingly on the original object will still be changed to this. this is public as its used in CreateFreshDestronoiNode, which references (a random child of the VST)'s fragmentMaterial</remarks>
 	[Export] public Material fragmentMaterial;
 	/// <summary>
@@ -34,7 +33,8 @@ public partial class DestronoiNode : RigidBody3D
 	public Material originalUntexturedMaterial;
 	public MaterialRegistry materialRegistry;
 	public ShaderMaterial shaderMaterial;
-	[Export] private NodePath CUSTOM_MATERIAL_SHADER_PATH = "res://addons/CDestronoi-Submodule/CDestronoi/materials/CustomMaterials.gdshader";
+	[Export] private NodePath CUSTOM_MATERIAL_SHADER_PATH = "res://addons/CDestronoi-Submodule/Destruct3D/materials/CustomMaterials.gdshader";
+	private NodePath  CUSTOM_MATERIAL_SHADER_RELATIVE_PATH = "/../materials/CustomMaterials.gdshader";
 	// this must agree with the shader, specifically "uniform vec3 exteriorSurfaceNormals[100];"
 	private const int MAX_NUMBER_OF_EXTERIOR_SURFACES = 100;
 	public readonly float TextureScale = 10.0f;
@@ -62,9 +62,9 @@ public partial class DestronoiNode : RigidBody3D
 	public NodePath CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH = "/../particle_effects/DisintegrationParticleEffects.tscn";
 
 	// required for godot
-	public DestronoiNode() { }
+	public DestructibleBody3D() { }
 
-	public DestronoiNode(	string inputName,
+	public DestructibleBody3D(	string inputName,
 							Transform3D inputGlobalTransform,
 							MeshInstance3D inputMeshInstance,
 							Node inputFragmentContainer,
@@ -132,6 +132,8 @@ public partial class DestronoiNode : RigidBody3D
 			Freeze = true;
 			FreezeMode = FreezeModeEnum.Kinematic;
 		}
+
+		treatTopMostLevelAsStatic = inputTreatTopMostLevelAsStatic;
 	}
 	
 	// --- godot specific implementation --- //
@@ -219,10 +221,10 @@ public partial class DestronoiNode : RigidBody3D
 		/// new() VSTNode converts its mesh into an ArrayMesh already
 		materialRegistry = new(vstRoot.meshInstance.Mesh as ArrayMesh, meshInstance.GetActiveMaterial(0));
 
-		// create the shader material which will be used by all children of this destronoiNode
+		// create the shader material which will be used by all children of this destructibleBody3D
 		shaderMaterial = new()
 		{
-			Shader = GD.Load<Shader>(CUSTOM_MATERIAL_SHADER_PATH)
+			Shader = ResourceLoader.Load<Shader>(((Resource)GetScript()).ResourcePath + CUSTOM_MATERIAL_SHADER_RELATIVE_PATH)
 		};
 
 		Vector3[] exteriorSurfaceNormals = new Vector3[MAX_NUMBER_OF_EXTERIOR_SURFACES];
@@ -616,7 +618,7 @@ public partial class DestronoiNode : RigidBody3D
 	/// <summary>
 	/// creates a Destronoi Node from the given meshInstance and vstnode
 	/// </summary>
-	public DestronoiNode CreateDestronoiNode(VSTNode subVST,
+	public DestructibleBody3D CreateDestructibleBody3D(VSTNode subVST,
 											MeshInstance3D subVSTmeshInstance,
 											String name,
 											StandardMaterial3D material)
@@ -627,7 +629,7 @@ public partial class DestronoiNode : RigidBody3D
 		MeshInstance3D meshInstanceToSet = subVSTmeshInstance;
 		meshInstanceToSet.Name = $"{name}_MeshInstance3D";
 
-		DestronoiNode destronoiNode = new(
+		DestructibleBody3D destructibleBody3D = new(
 			inputName: name,
 			inputGlobalTransform: this.GlobalTransform,
 			inputMeshInstance: meshInstanceToSet,
@@ -642,14 +644,14 @@ public partial class DestronoiNode : RigidBody3D
 			inputTreatTopMostLevelAsStatic: this.treatTopMostLevelAsStatic
 		);
 
-		return destronoiNode;
+		return destructibleBody3D;
 	}
 
 	/// <summary>
-	/// removes a destronoiNode from the scene safely
+	/// removes a destructibleBody3D from the scene safely
 	/// </summary>
 	/// <remarks>
-	/// this function queuefrees() the meshInstance child of the destronoiNode, but that is a duplicate of the meshInstance from the VST (see paramaterised constructor above), so we aren't removing information from the VST.
+	/// this function queuefrees() the meshInstance child of the destructibleBody3D, but that is a duplicate of the meshInstance from the VST (see paramaterised constructor above), so we aren't removing information from the VST.
 	/// </remarks>
 	public void Deactivate()
 	{

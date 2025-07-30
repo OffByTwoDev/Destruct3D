@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using System;
 
-namespace CDestronoi;
+namespace Destruct3D;
 
 // notes: currently meshes arent consistently oriented
 // and ofc like the original outside material isnt kept at all 

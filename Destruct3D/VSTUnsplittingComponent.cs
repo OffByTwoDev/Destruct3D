@@ -4,16 +4,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CDestronoi;
+namespace Destruct3D;
 
 /// <summary>
-/// used for reverse fragmentation (i.e. combining a group of destronoiNodes back into one of their parent nodes)
+/// used for reverse fragmentation (i.e. combining a group of destructibleBody3Ds back into one of their parent nodes)
 /// </summary>
 /// <remarks>
 /// for whatever reason, you might want to unfragment a node.
 /// That is, find all the instantiated children of a node, queufree them
 /// and then reinstantiate that node (with its whole original mesh intact).
-/// This component takes an input destronoiNode and does exactly that
+/// This component takes an input destructibleBody3D and does exactly that
 /// </remarks>
 public partial class VSTUnsplittingComponent : Node
 {
@@ -23,11 +23,11 @@ public partial class VSTUnsplittingComponent : Node
 	public readonly float UnsplittingDurationSeconds = 1.5f;
 
 	/// <summary>
-	/// calls unsplit on a given DestronoiNode fragment and a specified final transform
+	/// calls unsplit on a given destructibleBody3D fragment and a specified final transform
 	/// </summary>
-	public async Task Activate(Transform3D? unfragmentationTransform, DestronoiNode fragmentToUnexplode)
+	public async Task Activate(Transform3D? unfragmentationTransform, DestructibleBody3D fragmentToUnexplode)
 	{
-		// if (player.unfragmentationHighlighting.GetCollider() is not DestronoiNode fragment)
+		// if (player.unfragmentationHighlighting.GetCollider() is not destructibleBody3D fragment)
 		// {
 		// 	return;
 		// }
@@ -44,29 +44,30 @@ public partial class VSTUnsplittingComponent : Node
 			await Unsplit(fragmentToUnexplode, defaultTransform);
 		}
 	}
+	
 	/// <summary>
-	/// interpolates all children of a parent node to <paramref name="destronoiNode"/> towards reversedExplosionCentre
+	/// interpolates all children of a parent node to <paramref name="destructibleBody3D"/> towards reversedExplosionCentre
 	/// </summary>
 	/// <remarks>
-	/// returns a Task which completes once all nodes have been interpolated, and the new combined fragment added to the scene and activated safely. The "parent node" is specified as being unexplosionLevelsToGoUp levels above the input destronoiNode
+	/// returns a Task which completes once all nodes have been interpolated, and the new combined fragment added to the scene and activated safely. The "parent node" is specified as being unexplosionLevelsToGoUp levels above the input destructibleBody3D
 	/// </remarks>
 	/// <param name="reversedExplosionCentre">in global coordinates</param>
-	public async Task Unsplit(DestronoiNode destronoiNode, Transform3D reversedExplosionCentre)
+	public async Task Unsplit(DestructibleBody3D destructibleBody3D, Transform3D reversedExplosionCentre)
 	{
 		VSTNode topmostParent;
-		List<DestronoiNode> instantiatedChildren;
+		List<DestructibleBody3D> instantiatedChildren;
 
 		// if there is no parent (i.e. this fragment itself is the topmost fragment), then just use the original vstNode
-		if (destronoiNode.vstRoot.permanentParent is null)
+		if (destructibleBody3D.vstRoot.permanentParent is null)
 		{
-			topmostParent = destronoiNode.vstRoot;
+			topmostParent = destructibleBody3D.vstRoot;
 		}
 		else
 		{
-			topmostParent = GetParentAGivenNumberOfLevelsUp(destronoiNode.vstRoot.permanentParent, unexplosionLevelsToGoUp);
+			topmostParent = GetParentAGivenNumberOfLevelsUp(destructibleBody3D.vstRoot.permanentParent, unexplosionLevelsToGoUp);
 		}
 
-		instantiatedChildren = destronoiNode.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
+		instantiatedChildren = destructibleBody3D.binaryTreeMapToActiveNodes.GetFragmentsInstantiatedChildren(topmostParent.ID);
 
 		// now we need to interpolate all instantiated children towards the reverse explosion
 		// and then queuefree them alls
@@ -74,14 +75,14 @@ public partial class VSTUnsplittingComponent : Node
 
 		// reversedExplosionCentre = new(reversedExplosionCentre.Basis, reversedExplosionCentre.Origin - topmostParent.meshInstance.GetAabb().GetCenter());
 
-		await InterpolateDestronoiNodesThenDeactivate(instantiatedChildren, reversedExplosionCentre);
+		await InterpolateDestructibleBody3DsThenDeactivate(instantiatedChildren, reversedExplosionCentre);
 
 		topmostParent.Reset();
 
-		// create fresh parent destronoiNode and add to scene
-		DestronoiNode freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
-		freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
-		freshDestronoiNodeFragment.binaryTreeMapToActiveNodes.AddToActiveTree(freshDestronoiNodeFragment);
+		// create fresh parent destructibleBody3D and add to scene
+		DestructibleBody3D freshDestructibleBody3DFragment = CreateFreshDestructibleBody3D(topmostParent, reversedExplosionCentre, destructibleBody3D);
+		freshDestructibleBody3DFragment.fragmentContainer.AddChild(freshDestructibleBody3DFragment);
+		freshDestructibleBody3DFragment.binaryTreeMapToActiveNodes.AddToActiveTree(freshDestructibleBody3DFragment);
 
 		// DebugPrintValidDepth(topmostParent);
 	}
@@ -105,14 +106,14 @@ public partial class VSTUnsplittingComponent : Node
 	}
 
 	/// <summary>
-	/// takes a list of destronoinodes and interpolates their position and rotation towards reversedExplosionCentre
+	/// takes a list of destructibleBody3Ds and interpolates their position and rotation towards reversedExplosionCentre
 	/// </summary>
-	/// <returns>a Task which completes when all destronoiNodes have finished their interpolation</returns>
-	public async Task InterpolateDestronoiNodesThenDeactivate(List<DestronoiNode> instantiatedChildren, Transform3D reversedExplosionCentre)
+	/// <returns>a Task which completes when all destructibleBody3Ds have finished their interpolation</returns>
+	public async Task InterpolateDestructibleBody3DsThenDeactivate(List<DestructibleBody3D> instantiatedChildren, Transform3D reversedExplosionCentre)
 	{
 		var completionSources = new List<TaskCompletionSource<bool>>();
 
-		foreach (DestronoiNode destronoiNode in instantiatedChildren)
+		foreach (DestructibleBody3D destructibleBody3D in instantiatedChildren)
 		{
 			var taskCompletionSource = new TaskCompletionSource<bool>();
 			completionSources.Add(taskCompletionSource);
@@ -122,14 +123,14 @@ public partial class VSTUnsplittingComponent : Node
 			tween.SetEase(Tween.EaseType.In);
 			tween.SetTrans(Tween.TransitionType.Expo);
 
-			if (!destronoiNode.IsInsideTree())
+			if (!destructibleBody3D.IsInsideTree())
 			{
-				GD.PushError($"{destronoiNode.Name} not inside tree, returning early in unsplitting component");
+				GD.PushError($"{destructibleBody3D.Name} not inside tree, returning early in unsplitting component");
 				return;
 			}
 			
-			tween.TweenProperty(destronoiNode, "global_transform", reversedExplosionCentre, UnsplittingDurationSeconds);
-			tween.TweenCallback(Callable.From(() => destronoiNode.Deactivate()));
+			tween.TweenProperty(destructibleBody3D, "global_transform", reversedExplosionCentre, UnsplittingDurationSeconds);
+			tween.TweenCallback(Callable.From(() => destructibleBody3D.Deactivate()));
 			tween.TweenCallback(Callable.From(() => taskCompletionSource.SetResult(true)));
 		}
 
@@ -139,35 +140,35 @@ public partial class VSTUnsplittingComponent : Node
 	/// <summary>
 	/// creates a Destronoi Node from the given meshInstance and vstnode
 	/// </summary>
-	/// <param name="anyChildDestronoiNode">
+	/// <param name="anyChildDestructibleBody3D">
 	/// used for density, binarytreemap reference, and fragment container reference<br></br>
 	/// i.e. stuff that any child would agree on; it doesnt have to be some specific parent or anything
 	/// </param>
-	public static DestronoiNode CreateFreshDestronoiNode(VSTNode vstNode, Transform3D globalTransform, DestronoiNode anyChildDestronoiNode)
+	public static DestructibleBody3D CreateFreshDestructibleBody3D(VSTNode vstNode, Transform3D globalTransform, DestructibleBody3D anyChildDestructibleBody3D)
 	{
 		string name = "unfragmented_with_ID_" + vstNode.ID.ToString();
 
 		MeshInstance3D meshInstanceToSet = vstNode.meshInstance;
 		meshInstanceToSet.Name = $"{name}_MeshInstance3D";
 
-		meshInstanceToSet = MeshPruning.CombineMeshesAndPrune([meshInstanceToSet], anyChildDestronoiNode.hasTexturedMaterial, anyChildDestronoiNode.materialRegistry, anyChildDestronoiNode.fragmentMaterial, anyChildDestronoiNode.TextureScale);
+		meshInstanceToSet = MeshPruning.CombineMeshesAndPrune([meshInstanceToSet], anyChildDestructibleBody3D.hasTexturedMaterial, anyChildDestructibleBody3D.materialRegistry, anyChildDestructibleBody3D.fragmentMaterial, anyChildDestructibleBody3D.TextureScale);
 
-		DestronoiNode destronoiNode = new(
+		DestructibleBody3D destructibleBody3D = new(
 			inputName: name,
 			inputGlobalTransform: globalTransform,
 			inputMeshInstance: meshInstanceToSet,
-			inputFragmentContainer: anyChildDestronoiNode.fragmentContainer,
+			inputFragmentContainer: anyChildDestructibleBody3D.fragmentContainer,
 			inputVSTRoot: vstNode,
-			inputDensity: anyChildDestronoiNode.baseObjectDensity,
+			inputDensity: anyChildDestructibleBody3D.baseObjectDensity,
 			inputNeedsInitialising: false,
-			inputBinaryTreeMapToActiveNodes: anyChildDestronoiNode.binaryTreeMapToActiveNodes,
-			inputShaderMaterial: anyChildDestronoiNode.shaderMaterial,
-			inputOriginalUntexturedMaterial: anyChildDestronoiNode.originalUntexturedMaterial,
-			inputHasTexturedMaterial: anyChildDestronoiNode.hasTexturedMaterial,
-			inputTreatTopMostLevelAsStatic: anyChildDestronoiNode.treatTopMostLevelAsStatic
+			inputBinaryTreeMapToActiveNodes: anyChildDestructibleBody3D.binaryTreeMapToActiveNodes,
+			inputShaderMaterial: anyChildDestructibleBody3D.shaderMaterial,
+			inputOriginalUntexturedMaterial: anyChildDestructibleBody3D.originalUntexturedMaterial,
+			inputHasTexturedMaterial: anyChildDestructibleBody3D.hasTexturedMaterial,
+			inputTreatTopMostLevelAsStatic: anyChildDestructibleBody3D.treatTopMostLevelAsStatic
 		);
 
-		return destronoiNode;
+		return destructibleBody3D;
 	}
 
 	public static void DebugPrintValidDepth(VSTNode vstNode)

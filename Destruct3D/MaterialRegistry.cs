@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
-namespace CDestronoi;
+namespace Destruct3D;
 
 public struct UVwithSurface
 {
