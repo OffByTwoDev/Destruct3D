@@ -1,6 +1,6 @@
 using Godot;
 
-namespace CDestronoi;
+namespace Fractonoi;
 
 public class WriteOnce<T>
 {

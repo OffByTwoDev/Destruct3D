@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using System;
 
-namespace CDestronoi;
+namespace Fractonoi;
 
 // anytime you create or destroy a destronoi node
 // find the (1) binarytreemap which represents the topmost ancestor of said created or destroyed destronoiNode
@@ -33,7 +33,7 @@ public class BinaryTreeMapToActiveNodes
 		return node;
 	}
 
-	public BinaryTreeMapToActiveNodes(int treeHeight, DestronoiNode rootDestronoiNode)
+	public BinaryTreeMapToActiveNodes(int treeHeight, DestructibleBody3D rootDestronoiNode)
 	{
 		rootNode = BuildSubtree(null, Laterality.NONE, rootID, treeHeight);
 
@@ -44,7 +44,7 @@ public class BinaryTreeMapToActiveNodes
 	/// get the relevant representativeNode for this destronoiNode
 	/// and then adds the input destronoiNode to the activeNodeList for that RN / ID
 	/// </summary>
-	public void AddToActiveTree(DestronoiNode destronoiNode)
+	public void AddToActiveTree(DestructibleBody3D destronoiNode)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
 		representativeNode.activeNodesWhichRepresentThisLeafID.Add(destronoiNode);
@@ -58,7 +58,7 @@ public class BinaryTreeMapToActiveNodes
 	/// <summary>
 	/// removes a destronoiNode from the activeNodeList for a representative node
 	/// </summary>
-	public void RemoveFromActiveTree(DestronoiNode destronoiNode)
+	public void RemoveFromActiveTree(DestructibleBody3D destronoiNode)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[destronoiNode.vstRoot.ID];
 		representativeNode.activeNodesWhichRepresentThisLeafID.Remove(destronoiNode);
@@ -67,11 +67,11 @@ public class BinaryTreeMapToActiveNodes
 	/// <summary>
 	/// includes the node which is passed into the function initially
 	/// </summary>
-	public List<DestronoiNode> GetFragmentsInstantiatedChildren(int vstRootID)
+	public List<DestructibleBody3D> GetFragmentsInstantiatedChildren(int vstRootID)
 	{
 		RepresentativeNode representativeNode = IDToRepresentativeNodeMap[vstRootID];
 
-		List<DestronoiNode> instantiatedChildren = [];
+		List<DestructibleBody3D> instantiatedChildren = [];
 
 		if (representativeNode is not null)
 		{
@@ -83,7 +83,7 @@ public class BinaryTreeMapToActiveNodes
 
 	// maybe can stop this recursion on last node which doesnt have childrenChanged flag == true or smthn
 	// tbh prolly makes like 0 difference to runtime
-	public static void RecursivelyAddActiveNodes(RepresentativeNode representativeNode, List<DestronoiNode> instantiatedChildren)
+	public static void RecursivelyAddActiveNodes(RepresentativeNode representativeNode, List<DestructibleBody3D> instantiatedChildren)
 	{
 		if (representativeNode.activeNodesWhichRepresentThisLeafID is not null)
 		{
@@ -114,7 +114,7 @@ public class RepresentativeNode(RepresentativeNode inputParent,
 	public WriteOnce<RepresentativeNode> right = new();
 
 	// this should be always editable
-	public List<DestronoiNode> activeNodesWhichRepresentThisLeafID = [];
+	public List<DestructibleBody3D> activeNodesWhichRepresentThisLeafID = [];
 }
 
 

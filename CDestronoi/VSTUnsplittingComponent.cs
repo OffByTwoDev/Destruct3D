@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace CDestronoi;
+namespace Fractonoi;
 
 /// <summary>
 /// used for reverse fragmentation (i.e. combining a group of destronoiNodes back into one of their parent nodes)
@@ -25,7 +25,7 @@ public partial class VSTUnsplittingComponent : Node
 	/// <summary>
 	/// calls unsplit on a given DestronoiNode fragment and a specified final transform
 	/// </summary>
-	public async Task Activate(Transform3D? unfragmentationTransform, DestronoiNode fragmentToUnexplode)
+	public async Task Activate(Transform3D? unfragmentationTransform, DestructibleBody3D fragmentToUnexplode)
 	{
 		// if (player.unfragmentationHighlighting.GetCollider() is not DestronoiNode fragment)
 		// {
@@ -51,10 +51,10 @@ public partial class VSTUnsplittingComponent : Node
 	/// returns a Task which completes once all nodes have been interpolated, and the new combined fragment added to the scene and activated safely. The "parent node" is specified as being unexplosionLevelsToGoUp levels above the input destronoiNode
 	/// </remarks>
 	/// <param name="reversedExplosionCentre">in global coordinates</param>
-	public async Task Unsplit(DestronoiNode destronoiNode, Transform3D reversedExplosionCentre)
+	public async Task Unsplit(DestructibleBody3D destronoiNode, Transform3D reversedExplosionCentre)
 	{
 		VSTNode topmostParent;
-		List<DestronoiNode> instantiatedChildren;
+		List<DestructibleBody3D> instantiatedChildren;
 
 		// if there is no parent (i.e. this fragment itself is the topmost fragment), then just use the original vstNode
 		if (destronoiNode.vstRoot.permanentParent is null)
@@ -79,7 +79,7 @@ public partial class VSTUnsplittingComponent : Node
 		topmostParent.Reset();
 
 		// create fresh parent destronoiNode and add to scene
-		DestronoiNode freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
+		DestructibleBody3D freshDestronoiNodeFragment = CreateFreshDestronoiNode(topmostParent, reversedExplosionCentre, destronoiNode);
 		freshDestronoiNodeFragment.fragmentContainer.AddChild(freshDestronoiNodeFragment);
 		freshDestronoiNodeFragment.binaryTreeMapToActiveNodes.AddToActiveTree(freshDestronoiNodeFragment);
 
@@ -108,11 +108,11 @@ public partial class VSTUnsplittingComponent : Node
 	/// takes a list of destronoinodes and interpolates their position and rotation towards reversedExplosionCentre
 	/// </summary>
 	/// <returns>a Task which completes when all destronoiNodes have finished their interpolation</returns>
-	public async Task InterpolateDestronoiNodesThenDeactivate(List<DestronoiNode> instantiatedChildren, Transform3D reversedExplosionCentre)
+	public async Task InterpolateDestronoiNodesThenDeactivate(List<DestructibleBody3D> instantiatedChildren, Transform3D reversedExplosionCentre)
 	{
 		var completionSources = new List<TaskCompletionSource<bool>>();
 
-		foreach (DestronoiNode destronoiNode in instantiatedChildren)
+		foreach (DestructibleBody3D destronoiNode in instantiatedChildren)
 		{
 			var taskCompletionSource = new TaskCompletionSource<bool>();
 			completionSources.Add(taskCompletionSource);
@@ -143,7 +143,7 @@ public partial class VSTUnsplittingComponent : Node
 	/// used for density, binarytreemap reference, and fragment container reference<br></br>
 	/// i.e. stuff that any child would agree on; it doesnt have to be some specific parent or anything
 	/// </param>
-	public static DestronoiNode CreateFreshDestronoiNode(VSTNode vstNode, Transform3D globalTransform, DestronoiNode anyChildDestronoiNode)
+	public static DestructibleBody3D CreateFreshDestronoiNode(VSTNode vstNode, Transform3D globalTransform, DestructibleBody3D anyChildDestronoiNode)
 	{
 		string name = "unfragmented_with_ID_" + vstNode.ID.ToString();
 
@@ -152,7 +152,7 @@ public partial class VSTUnsplittingComponent : Node
 
 		meshInstanceToSet = MeshPruning.CombineMeshesAndPrune([meshInstanceToSet], anyChildDestronoiNode.hasTexturedMaterial, anyChildDestronoiNode.materialRegistry, anyChildDestronoiNode.fragmentMaterial, anyChildDestronoiNode.TextureScale);
 
-		DestronoiNode destronoiNode = new(
+		DestructibleBody3D destronoiNode = new(
 			inputName: name,
 			inputGlobalTransform: globalTransform,
 			inputMeshInstance: meshInstanceToSet,

@@ -2,15 +2,14 @@ using Godot;
 using System.Collections.Generic;
 using System;
 using System.Linq;
-using System.Diagnostics;
 
-namespace CDestronoi;
+namespace Fractonoi;
 
 /// <summary>
 /// Subdivides a convex ArrayMesh belonging to a RigidBody3D by generating a Voronoi Subdivision Tree (VST).
 /// </summary>
 [GlobalClass]
-public partial class DestronoiNode : RigidBody3D
+public partial class DestructibleBody3D : RigidBody3D
 {
 	// --- Exports --- //
 
@@ -62,9 +61,9 @@ public partial class DestronoiNode : RigidBody3D
 	public NodePath CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH = "/../particle_effects/DisintegrationParticleEffects.tscn";
 
 	// required for godot
-	public DestronoiNode() { }
+	public DestructibleBody3D() { }
 
-	public DestronoiNode(	string inputName,
+	public DestructibleBody3D(	string inputName,
 							Transform3D inputGlobalTransform,
 							MeshInstance3D inputMeshInstance,
 							Node inputFragmentContainer,
@@ -616,7 +615,7 @@ public partial class DestronoiNode : RigidBody3D
 	/// <summary>
 	/// creates a Destronoi Node from the given meshInstance and vstnode
 	/// </summary>
-	public DestronoiNode CreateDestronoiNode(VSTNode subVST,
+	public DestructibleBody3D CreateDestronoiNode(VSTNode subVST,
 											MeshInstance3D subVSTmeshInstance,
 											String name,
 											StandardMaterial3D material)
@@ -627,7 +626,7 @@ public partial class DestronoiNode : RigidBody3D
 		MeshInstance3D meshInstanceToSet = subVSTmeshInstance;
 		meshInstanceToSet.Name = $"{name}_MeshInstance3D";
 
-		DestronoiNode destronoiNode = new(
+		DestructibleBody3D destronoiNode = new(
 			inputName: name,
 			inputGlobalTransform: this.GlobalTransform,
 			inputMeshInstance: meshInstanceToSet,

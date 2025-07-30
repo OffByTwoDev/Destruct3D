@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace CDestronoi;
+namespace Fractonoi;
 
 /// <summary>
 /// if you make all your destronoiNodes a child of a node, then this manager can forcibly change destronoiNode treeDepths.
@@ -13,7 +13,7 @@ namespace CDestronoi;
 /// </remarks>
 
 [GlobalClass]
-public partial class DestronoiDepthManager : Node
+public partial class FractonoiDepthManager : Node
 {
 	[Export] Node destronoiNodesParent;
 
@@ -38,7 +38,7 @@ public partial class DestronoiDepthManager : Node
 
 		foreach (Node child in destronoiNodesParent.GetChildren())
 		{
-			if (child is not DestronoiNode destronoiNode)
+			if (child is not DestructibleBody3D destronoiNode)
 			{
 				GD.PushWarning("non destronoiNode found as child of destronoiNodesParent by DestronoiDepthManager");
 				continue;

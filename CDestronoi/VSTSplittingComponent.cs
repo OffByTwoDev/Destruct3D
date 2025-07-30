@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace CDestronoi;
+namespace Fractonoi;
 
 // the area3d uses the collisionshape3d
 // this script uses values from the meshinstance3d
@@ -107,7 +107,7 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		foreach (Node3D node in GetOverlappingBodies())
 		{
-			if (node is not DestronoiNode destronoiNode)
+			if (node is not DestructibleBody3D destronoiNode)
 			{
 				continue;
 			}
@@ -145,7 +145,7 @@ public partial class VSTSplittingComponent : Area3D
 		}
 	}
 
-	private static async void Disintegrate(DestronoiNode destronoiNode)
+	private static async void Disintegrate(DestructibleBody3D destronoiNode)
 	{
 		PackedScene scene = ResourceLoader.Load<PackedScene>(((Resource)destronoiNode.GetScript()).ResourcePath + destronoiNode.CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH);
 		Node instantiatedScene = scene.Instantiate();
@@ -167,7 +167,7 @@ public partial class VSTSplittingComponent : Area3D
 	/// <summary>
 	/// carries out an explosion on the body destronoiNode by removing & instantiating fragments from its VST
 	/// </summary>
-	public void SplitExplode(DestronoiNode destronoiNode,
+	public void SplitExplode(DestructibleBody3D destronoiNode,
 							float explosionDistanceMax,
 							int relativeExplosionTreeDepth,
 							StandardMaterial3D fragmentMaterial)
@@ -248,7 +248,7 @@ public partial class VSTSplittingComponent : Area3D
 	/// <summary>
 	/// finds all VSTNodes of a specified depth within a given VST root Node, that are within explosionDistanceMax from this VSTSplittingComponent
 	/// </summary>
-	public List<VSTNode> GetFragmentsToRemove(DestronoiNode destronoiNode, VSTNode originalVSTRoot, int absoluteExplosionTreeDepth, float explosionDistanceMax)
+	public List<VSTNode> GetFragmentsToRemove(DestructibleBody3D destronoiNode, VSTNode originalVSTRoot, int absoluteExplosionTreeDepth, float explosionDistanceMax)
 	{
 		List<VSTNode> fragmentsAtGivenDepth = [];
 
@@ -311,7 +311,7 @@ public partial class VSTSplittingComponent : Area3D
 	/// <summary>
 	/// this is the main function which creates fragments. it creates destronoi nodes for each VSTNode in fragmentsToRemove.
 	/// </summary>
-	public void CreateSmallFragments(List<VSTNode> fragmentsToRemove, DestronoiNode destronoiNode)
+	public void CreateSmallFragments(List<VSTNode> fragmentsToRemove, DestructibleBody3D destronoiNode)
 	{
 		int currentFragmentNumber = 0;
 
@@ -337,7 +337,7 @@ public partial class VSTSplittingComponent : Area3D
 			}
 			meshToInstantate = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial, destronoiNode.materialRegistry, destronoiNode.fragmentMaterial, destronoiNode.TextureScale);
 
-			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(leaf,
+			DestructibleBody3D newDestronoiNode = destronoiNode.CreateDestronoiNode(leaf,
 																meshToInstantate,
 																leafName,
 																fragmentMaterial);
@@ -366,7 +366,7 @@ public partial class VSTSplittingComponent : Area3D
 	/// fragmentation can (theoretically) split the original root destronoiNode in arbitrarily many "parent sections". If we did not test for adjacency, then if an explosion e.g. splits a long bar in half, our code would still see both those sections as the same body. Hence we must group the originalVSTRoot into collections of fragments which are adjacent, and then instantiate each group as a new destronoiNode.
 	/// </para>
 	/// </summary>
-	public void CreateParentFragments(VSTNode originalVSTRoot, DestronoiNode destronoiNode)
+	public void CreateParentFragments(VSTNode originalVSTRoot, DestructibleBody3D destronoiNode)
 	{
 		if (DebugPrints)
 		{
@@ -446,7 +446,7 @@ public partial class VSTSplittingComponent : Area3D
 			
 			overlappingCombinedMeshesToKeep.SetSurfaceOverrideMaterial(0, debugMaterial);
 
-			DestronoiNode newDestronoiNode = destronoiNode.CreateDestronoiNode(newVSTRoot,
+			DestructibleBody3D newDestronoiNode = destronoiNode.CreateDestronoiNode(newVSTRoot,
 																overlappingCombinedMeshesToKeep,
 																leafName,
 																fragmentMaterial);
