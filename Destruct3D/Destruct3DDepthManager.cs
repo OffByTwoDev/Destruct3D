@@ -5,23 +5,23 @@ using System.Collections.Generic;
 namespace Destruct3D;
 
 /// <summary>
-/// if you make all your destronoiNodes a child of a node, then this manager can forcibly change destronoiNode treeDepths.
+/// if you make all your destructibleBody3Ds a child of a node, then this manager can forcibly change destructibleBody3D treeDepths.
 /// </summary>
 /// <remarks>
-/// this is useful for forcing all destronoiNodes to have small treeDepths (to speed up startup times during testing etc) without having to change them all individually.<br></br>
-/// make sure to place this manager physically before the destronoiNodes' parent in the editor scene tree, so that the _Ready is called before any destronoiNodes are initialized
+/// this is useful for forcing all destructibleBody3Ds to have small treeDepths (to speed up startup times during testing etc) without having to change them all individually.<br></br>
+/// make sure to place this manager physically before the destructibleBody3Ds' parent in the editor scene tree, so that the _Ready is called before any destructibleBody3Ds are initialized
 /// </remarks>
 
 [GlobalClass]
 public partial class Destruct3DDepthManager : Node
 {
-	[Export] Node destronoiNodesParent;
+	[Export] Node destructibleBody3DsParent;
 
     /// <summary>
-    /// if debugMode is true, then this node will force all destronoiNodes that are a direct child of <paramref name="destronoiNodesParent"/> to have a treeHeight of <paramref name="forceTreeDepth"/>.
+    /// if debugMode is true, then this node will force all destructibleBody3Ds that are a direct child of <paramref name="destructibleBody3DsParent"/> to have a treeHeight of <paramref name="forceTreeDepth"/>.
     /// </summary>
     /// <remarks>
-    /// this does not affect any editor settings, i.e. it doesnt overwrite the treeDepth stored in your .tscns. (it writes to stuff after the level is loaded in, so its not destructive. This way you can just turn debugMode off and your level will load will all your destronoiNode heights set to whatever they are.)
+    /// this does not affect any editor settings, i.e. it doesnt overwrite the treeDepth stored in your .tscns. (it writes to stuff after the level is loaded in, so its not destructive. This way you can just turn debugMode off and your level will load will all your destructibleBody3Ds heights set to whatever they are.)
     /// </remarks>
 	[Export] private bool debugMode;
 
@@ -36,15 +36,15 @@ public partial class Destruct3DDepthManager : Node
             return;
         }
 
-		foreach (Node child in destronoiNodesParent.GetChildren())
+		foreach (Node child in destructibleBody3DsParent.GetChildren())
 		{
-			if (child is not DestructibleBody3D destronoiNode)
+			if (child is not DestructibleBody3D destructibleBody3D)
 			{
-				GD.PushWarning("non destronoiNode found as child of destronoiNodesParent by DestronoiDepthManager");
+				GD.PushWarning("non destructibleBody3D found as child of destructibleBody3DsParent by Destruct3DDepthManager");
 				continue;
 			}
 
-			destronoiNode.treeHeight = forceTreeDepth;
+			destructibleBody3D.treeHeight = forceTreeDepth;
 		}
 	}
 }

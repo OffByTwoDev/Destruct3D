@@ -20,7 +20,7 @@ public partial class DestructibleBody3D : RigidBody3D
 	/// <summary>Generates 2^n fragments, where n is treeHeight.</summary>
 	[Export] public int treeHeight = 8;
 
-	/// <summary>for now, this is the material set on all faces of any fragments (parent or child) made from a destronoiNode</summary>
+	/// <summary>for now, this is the material set on all faces of any fragments (parent or child) made from a destructibleBody3D</summary>
 	/// <remarks> rn the implementation is not that ideal as faces seemingly on the original object will still be changed to this. this is public as its used in CreateFreshDestronoiNode, which references (a random child of the VST)'s fragmentMaterial</remarks>
 	[Export] public Material fragmentMaterial;
 	/// <summary>
@@ -219,7 +219,7 @@ public partial class DestructibleBody3D : RigidBody3D
 		/// new() VSTNode converts its mesh into an ArrayMesh already
 		materialRegistry = new(vstRoot.meshInstance.Mesh as ArrayMesh, meshInstance.GetActiveMaterial(0));
 
-		// create the shader material which will be used by all children of this destronoiNode
+		// create the shader material which will be used by all children of this destructibleBody3D
 		shaderMaterial = new()
 		{
 			Shader = ResourceLoader.Load<Shader>(((Resource)GetScript()).ResourcePath + CUSTOM_MATERIAL_SHADER_RELATIVE_PATH)
@@ -616,7 +616,7 @@ public partial class DestructibleBody3D : RigidBody3D
 	/// <summary>
 	/// creates a Destronoi Node from the given meshInstance and vstnode
 	/// </summary>
-	public DestructibleBody3D CreateDestronoiNode(VSTNode subVST,
+	public DestructibleBody3D CreateDestructibleBody3D(VSTNode subVST,
 											MeshInstance3D subVSTmeshInstance,
 											String name,
 											StandardMaterial3D material)
@@ -627,7 +627,7 @@ public partial class DestructibleBody3D : RigidBody3D
 		MeshInstance3D meshInstanceToSet = subVSTmeshInstance;
 		meshInstanceToSet.Name = $"{name}_MeshInstance3D";
 
-		DestructibleBody3D destronoiNode = new(
+		DestructibleBody3D destructibleBody3D = new(
 			inputName: name,
 			inputGlobalTransform: this.GlobalTransform,
 			inputMeshInstance: meshInstanceToSet,
@@ -642,14 +642,14 @@ public partial class DestructibleBody3D : RigidBody3D
 			inputTreatTopMostLevelAsStatic: this.treatTopMostLevelAsStatic
 		);
 
-		return destronoiNode;
+		return destructibleBody3D;
 	}
 
 	/// <summary>
-	/// removes a destronoiNode from the scene safely
+	/// removes a destructibleBody3D from the scene safely
 	/// </summary>
 	/// <remarks>
-	/// this function queuefrees() the meshInstance child of the destronoiNode, but that is a duplicate of the meshInstance from the VST (see paramaterised constructor above), so we aren't removing information from the VST.
+	/// this function queuefrees() the meshInstance child of the destructibleBody3D, but that is a duplicate of the meshInstance from the VST (see paramaterised constructor above), so we aren't removing information from the VST.
 	/// </remarks>
 	public void Deactivate()
 	{

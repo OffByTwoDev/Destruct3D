@@ -107,22 +107,22 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		foreach (Node3D node in GetOverlappingBodies())
 		{
-			if (node is not DestructibleBody3D destronoiNode)
+			if (node is not DestructibleBody3D destructibleBody3D)
 			{
 				continue;
 			}
 
-			if (!destronoiNode.IsInsideTree())
+			if (!destructibleBody3D.IsInsideTree())
 			{
-				// this corresponds to a destronoiNode which was part of GetOverlappingBodies() but is now not in the scene tree? kinda weird lmao. i think it might be if you spam Activate(), then destronoinodes are still being de-parented (by Deactivate()) (and hence removed from the scene tree) during another call to Activate().
+				// this corresponds to a destructibleBody3D which was part of GetOverlappingBodies() but is now not in the scene tree? kinda weird lmao. i think it might be if you spam Activate(), then destructibleBody3Ds are still being de-parented (by Deactivate()) (and hence removed from the scene tree) during another call to Activate().
 				if (!suppressCDestronoiWarnings)
 				{
-					GD.PushWarning("destronoi node not in tree, skipping splitexplode for this fragment.");
+					GD.PushWarning("destructibleBody3D node not in tree, skipping splitexplode for this fragment.");
 				}
 				continue;
 			}
 
-			SplitExplode(destronoiNode, explosionDistance, relativeExplosionTreeDepth, material);
+			SplitExplode(destructibleBody3D, explosionDistance, relativeExplosionTreeDepth, material);
 		}
 	}
 
@@ -145,19 +145,19 @@ public partial class VSTSplittingComponent : Area3D
 		}
 	}
 
-	private static async void Disintegrate(DestructibleBody3D destronoiNode)
+	private static async void Disintegrate(DestructibleBody3D destructibleBody3D)
 	{
-		PackedScene scene = ResourceLoader.Load<PackedScene>(((Resource)destronoiNode.GetScript()).ResourcePath + destronoiNode.CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH);
+		PackedScene scene = ResourceLoader.Load<PackedScene>(((Resource)destructibleBody3D.GetScript()).ResourcePath + destructibleBody3D.CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH);
 		Node instantiatedScene = scene.Instantiate();
-		destronoiNode.fragmentContainer.AddChild(instantiatedScene);
+		destructibleBody3D.fragmentContainer.AddChild(instantiatedScene);
 		GpuParticles3D emitter = instantiatedScene.GetChild(0) as GpuParticles3D;
 		emitter.OneShot = true;
-		destronoiNode.meshInstance.Visible = false;
-		destronoiNode.LinearDamp = 1000f;
+		destructibleBody3D.meshInstance.Visible = false;
+		destructibleBody3D.LinearDamp = 1000f;
 
-		emitter.GlobalPosition = destronoiNode.GlobalPosition;
+		emitter.GlobalPosition = destructibleBody3D.GlobalPosition;
 
-		destronoiNode.Deactivate();
+		destructibleBody3D.Deactivate();
 
 		emitter.Restart();
 		await Task.Delay(5_000);
@@ -165,26 +165,26 @@ public partial class VSTSplittingComponent : Area3D
 	}
 
 	/// <summary>
-	/// carries out an explosion on the body destronoiNode by removing & instantiating fragments from its VST
+	/// carries out an explosion on the DestructibleBody3D by removing & instantiating fragments from its VST
 	/// </summary>
-	public void SplitExplode(DestructibleBody3D destronoiNode,
+	public void SplitExplode(DestructibleBody3D destructibleBody3D,
 							float explosionDistanceMax,
 							int relativeExplosionTreeDepth,
 							StandardMaterial3D fragmentMaterial)
 	{
-		VSTNode originalVSTRoot = destronoiNode.vstRoot;
+		VSTNode originalVSTRoot = destructibleBody3D.vstRoot;
 
 		// desired explosionTreeDepth is relative to a body's root node, hence we add the depth of the root node
 		int absoluteExplosionTreeDepth = relativeExplosionTreeDepth + originalVSTRoot.level;
 
-		List<VSTNode> deepestDestronoiNodes = [];
-		GetDeepestVSTNodes(deepestDestronoiNodes, originalVSTRoot);
-		var deepestAccessibleLevel = deepestDestronoiNodes.Max(vstNode => vstNode.level);
+		List<VSTNode> deepestDestructibleBody3Ds = [];
+		GetDeepestVSTNodes(deepestDestructibleBody3Ds, originalVSTRoot);
+		var deepestAccessibleLevel = deepestDestructibleBody3Ds.Max(vstNode => vstNode.level);
 
 		if (absoluteExplosionTreeDepth > deepestAccessibleLevel)
 		{
 			// GD.Print($"absoluteExplosionTreeDepth = {absoluteExplosionTreeDepth}, deepestLevel = {deepestAccessibleLevel}");
-			Disintegrate(destronoiNode);
+			Disintegrate(destructibleBody3D);
 			return;
 		}
 
@@ -192,14 +192,14 @@ public partial class VSTSplittingComponent : Area3D
 		// add early return condition for if originalVSTRoot depth is 0?
 
 		// the node has to be in the tree in order to check for inclusion in the explosion areas
-		if (!destronoiNode.IsInsideTree())
+		if (!destructibleBody3D.IsInsideTree())
 		{
-			// this corresponds to a destronoiNode which was part of GetOvelappingBodies() but is now not in the scene tree? kinda weird lmao
-			GD.PushWarning("[CDestronoi] destronoi node not in tree, returning early from splitexplode (this is the later IsInsideTree check)");
+			// this corresponds to a destructibleBody3D which was part of GetOvelappingBodies() but is now not in the scene tree? kinda weird lmao
+			GD.PushWarning("[Destruct3D] destructibleBody3D node not in tree, returning early from splitexplode (this is the later IsInsideTree check)");
 			return;
 		}
 
-		List<VSTNode> fragmentsToRemove = GetFragmentsToRemove(destronoiNode, originalVSTRoot, absoluteExplosionTreeDepth, explosionDistanceMax);
+		List<VSTNode> fragmentsToRemove = GetFragmentsToRemove(destructibleBody3D, originalVSTRoot, absoluteExplosionTreeDepth, explosionDistanceMax);
 
 		// if we are removing no fragments, then the rest of this code is just gonna create a duplicate of the current node
 		// ie in this case, nothing would be changed. nothing about the vst either i believe (hence no need to clean the VST)
@@ -215,16 +215,16 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		// --- create small fragments --- //
-		CreateSmallFragments(fragmentsToRemove, destronoiNode);
+		CreateSmallFragments(fragmentsToRemove, destructibleBody3D);
 
 		// if this node now has no children, all its mass has been removed and it doesn't represent anything physical anymore
 		if (originalVSTRoot.left is null &&
 			originalVSTRoot.right is null)
 		{
-			Orphan(destronoiNode.vstRoot);
-			TellParentThatChildChanged(destronoiNode.vstRoot);
+			Orphan(destructibleBody3D.vstRoot);
+			TellParentThatChildChanged(destructibleBody3D.vstRoot);
 
-			destronoiNode.Deactivate();
+			destructibleBody3D.Deactivate();
 
 			return;
 		}
@@ -238,17 +238,17 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		// --- create parent fragments --- //
-		// update single body by redrawing originalVSTroot // this destronoinode, (given that now lots of the children are null)
+		// update single body by redrawing originalVSTroot // this destructibleBody3D, (given that now lots of the children are null)
 		// (assumes originalVSTRoot.childrenChanged is true, and hence we combine the relevant meshes)
-		CreateParentFragments(originalVSTRoot, destronoiNode);
+		CreateParentFragments(originalVSTRoot, destructibleBody3D);
 
-		destronoiNode.Deactivate();
+		destructibleBody3D.Deactivate();
 	}
 
 	/// <summary>
 	/// finds all VSTNodes of a specified depth within a given VST root Node, that are within explosionDistanceMax from this VSTSplittingComponent
 	/// </summary>
-	public List<VSTNode> GetFragmentsToRemove(DestructibleBody3D destronoiNode, VSTNode originalVSTRoot, int absoluteExplosionTreeDepth, float explosionDistanceMax)
+	public List<VSTNode> GetFragmentsToRemove(DestructibleBody3D destructibleBody3D, VSTNode originalVSTRoot, int absoluteExplosionTreeDepth, float explosionDistanceMax)
 	{
 		List<VSTNode> fragmentsAtGivenDepth = [];
 
@@ -297,7 +297,7 @@ public partial class VSTSplittingComponent : Area3D
 			}
 			
 			// test for fragment centre's inclusion in explosion region
-			Vector3 globalLeafPosition = destronoiNode.GlobalTransform * vstNode.meshInstance.GetAabb().GetCenter();
+			Vector3 globalLeafPosition = destructibleBody3D.GlobalTransform * vstNode.meshInstance.GetAabb().GetCenter();
 
 			if ((globalLeafPosition - GlobalPosition).Length() < explosionDistanceMax)
 			{
@@ -309,9 +309,9 @@ public partial class VSTSplittingComponent : Area3D
 	}
 
 	/// <summary>
-	/// this is the main function which creates fragments. it creates destronoi nodes for each VSTNode in fragmentsToRemove.
+	/// this is the main function which creates fragments. it creates destructibleBody3D nodes for each VSTNode in fragmentsToRemove.
 	/// </summary>
-	public void CreateSmallFragments(List<VSTNode> fragmentsToRemove, DestructibleBody3D destronoiNode)
+	public void CreateSmallFragments(List<VSTNode> fragmentsToRemove, DestructibleBody3D destructibleBody3D)
 	{
 		int currentFragmentNumber = 0;
 
@@ -320,7 +320,7 @@ public partial class VSTSplittingComponent : Area3D
 			Orphan(leaf);
 			TellParentThatChildChanged(leaf);
 
-			string leafName = destronoiNode.Name + $"_child_fragment_{currentFragmentNumber}";
+			string leafName = destructibleBody3D.Name + $"_child_fragment_{currentFragmentNumber}";
 
 			MeshInstance3D meshToInstantate = new();
 
@@ -335,21 +335,21 @@ public partial class VSTSplittingComponent : Area3D
 			{
 				meshInstances = [leaf.meshInstance];
 			}
-			meshToInstantate = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial, destronoiNode.materialRegistry, destronoiNode.fragmentMaterial, destronoiNode.TextureScale);
+			meshToInstantate = MeshPruning.CombineMeshesAndPrune(meshInstances, destructibleBody3D.hasTexturedMaterial, destructibleBody3D.materialRegistry, destructibleBody3D.fragmentMaterial, destructibleBody3D.TextureScale);
 
-			DestructibleBody3D newDestronoiNode = destronoiNode.CreateDestronoiNode(leaf,
+			DestructibleBody3D newDestructibleBody3D = destructibleBody3D.CreateDestructibleBody3D(leaf,
 																meshToInstantate,
 																leafName,
 																fragmentMaterial);
 			
-			destronoiNode.fragmentContainer.AddChild(newDestronoiNode);
-			destronoiNode.binaryTreeMapToActiveNodes.AddToActiveTree(newDestronoiNode);
+			destructibleBody3D.fragmentContainer.AddChild(newDestructibleBody3D);
+			destructibleBody3D.binaryTreeMapToActiveNodes.AddToActiveTree(newDestructibleBody3D);
 
 
 			if (ApplyImpulseOnSplit)
 			{
 				// GD.Print("applying impulse on split");
-				newDestronoiNode.ApplyCentralImpulse(new Vector3(
+				newDestructibleBody3D.ApplyCentralImpulse(new Vector3(
 													GD.Randf()-0.5f,
 													GD.Randf()-0.5f,
 													GD.Randf()-0.5f
@@ -363,10 +363,10 @@ public partial class VSTSplittingComponent : Area3D
 	/// <summary>
 	/// recalculates the meshes of the originalVSTRoot (i.e. the thing that fragments have been removed from by CreateSmallFramgents())
 	/// <para>
-	/// fragmentation can (theoretically) split the original root destronoiNode in arbitrarily many "parent sections". If we did not test for adjacency, then if an explosion e.g. splits a long bar in half, our code would still see both those sections as the same body. Hence we must group the originalVSTRoot into collections of fragments which are adjacent, and then instantiate each group as a new destronoiNode.
+	/// fragmentation can (theoretically) split the original root DestructibleBody3D in arbitrarily many "parent sections". If we did not test for adjacency, then if an explosion e.g. splits a long bar in half, our code would still see both those sections as the same body. Hence we must group the originalVSTRoot into collections of fragments which are adjacent, and then instantiate each group as a new DestructibleBody3D.
 	/// </para>
 	/// </summary>
-	public void CreateParentFragments(VSTNode originalVSTRoot, DestructibleBody3D destronoiNode)
+	public void CreateParentFragments(VSTNode originalVSTRoot, DestructibleBody3D destructibleBody3D)
 	{
 		if (DebugPrints)
 		{
@@ -398,10 +398,10 @@ public partial class VSTSplittingComponent : Area3D
 			}
 		}
 		
-		// could save 1 destronoinode creation
+		// could save 1 DestructibleBody3D creation
 		// by having this node become groupedMeshes[0], orphan non adjacent vstNodes
-		// and for the rest, we create a new destronoiNode with a copy of the vstNode, orphan non adjacent vstNodes
-		// i.e. create n-1 new destronoi nodes rather than n
+		// and for the rest, we create a new DestructibleBody3D with a copy of the vstNode, orphan non adjacent vstNodes
+		// i.e. create n-1 new destructibleBody3D nodes rather than n
 		
 		if (DebugPrints)
 		{
@@ -436,23 +436,23 @@ public partial class VSTSplittingComponent : Area3D
 
 			OrphanDeepestNonAdjacentNodesByID(newVSTRoot, nonAdjacentNodeIDs);
 
-			string leafName = destronoiNode.Name + $"_parent_fragment_{currentFragmentNumber}";
+			string leafName = destructibleBody3D.Name + $"_parent_fragment_{currentFragmentNumber}";
 
 			List<MeshInstance3D> meshInstances = [];
 
 			GetDeepestMeshInstances(meshInstances, newVSTRoot);
 
-			MeshInstance3D overlappingCombinedMeshesToKeep = MeshPruning.CombineMeshesAndPrune(meshInstances, destronoiNode.hasTexturedMaterial, destronoiNode.materialRegistry, destronoiNode.fragmentMaterial, destronoiNode.TextureScale);
+			MeshInstance3D overlappingCombinedMeshesToKeep = MeshPruning.CombineMeshesAndPrune(meshInstances, destructibleBody3D.hasTexturedMaterial, destructibleBody3D.materialRegistry, destructibleBody3D.fragmentMaterial, destructibleBody3D.TextureScale);
 			
 			overlappingCombinedMeshesToKeep.SetSurfaceOverrideMaterial(0, debugMaterial);
 
-			DestructibleBody3D newDestronoiNode = destronoiNode.CreateDestronoiNode(newVSTRoot,
+			DestructibleBody3D newDestructibleBody3D = destructibleBody3D.CreateDestructibleBody3D(newVSTRoot,
 																overlappingCombinedMeshesToKeep,
 																leafName,
 																fragmentMaterial);
 
-			destronoiNode.fragmentContainer.AddChild(newDestronoiNode);
-			destronoiNode.binaryTreeMapToActiveNodes.AddToActiveTree(newDestronoiNode);
+			destructibleBody3D.fragmentContainer.AddChild(newDestructibleBody3D);
+			destructibleBody3D.binaryTreeMapToActiveNodes.AddToActiveTree(newDestructibleBody3D);
 
 			currentFragmentNumber++;
 		}
@@ -527,7 +527,7 @@ public partial class VSTSplittingComponent : Area3D
 	public static void Orphan(VSTNode vstNode)
 	{
 		// represents root node of body having no children and no parent
-		// in this sitch we check later in main function and queuefree the destronoiNode
+		// in this sitch we check later in main function and queuefree the DestructibleBody3D
 		if (vstNode.parent is null)
 		{
 			return;

@@ -32,7 +32,7 @@ public class VSTNode
 	/// <summary>just used for unfragmentation</summary>
 	public readonly VSTNode permanentParent;
 
-	// cant just be readonly as these are set in _ready() of a destronoinode
+	// cant just be readonly as these are set in _ready() of a destructibleBody3D
 	public WriteOnce<VSTNode> PermanentLeft = new();
 	public WriteOnce<VSTNode> PermanentRight = new();
 
