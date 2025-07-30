@@ -1,11 +1,11 @@
 [gd_scene load_steps=22 format=3 uid="uid://c7oqy8jsemyg1"]
 
 [ext_resource type="Script" uid="uid://k0jup8gwalph" path="res://ExampleScene.cs" id="1_1j5xn"]
-[ext_resource type="Script" uid="uid://d56qd6nlqld7" path="res://Destruct3D/Destruct3DDepthManager.cs" id="2_fooy4"]
+[ext_resource type="Script" uid="uid://d56qd6nlqld7" path="res://addons/destruct3D/nodes/Destruct3DDepthManager.cs" id="2_fooy4"]
 [ext_resource type="Script" uid="uid://bvae885dfsom2" path="res://FreeCam.cs" id="3_naekk"]
-[ext_resource type="Script" uid="uid://3cokpfv85kw4" path="res://Destruct3D/DestructibleBody3D.cs" id="4_pvp32"]
+[ext_resource type="Script" uid="uid://3cokpfv85kw4" path="res://addons/destruct3D/nodes/DestructibleBody3D.cs" id="4_pvp32"]
 [ext_resource type="Script" uid="uid://sa4fejusavgb" path="res://ExampleExplosion.cs" id="5_o7w7a"]
-[ext_resource type="Script" uid="uid://beevd6g3rmhxp" path="res://Destruct3D/VSTSplittingComponent.cs" id="6_18qfd"]
+[ext_resource type="Script" uid="uid://beevd6g3rmhxp" path="res://addons/destruct3D/nodes/VSTSplittingComponent.cs" id="6_18qfd"]
 [ext_resource type="Material" uid="uid://vccoqm71k406" path="res://TransparentMeshMaterial.tres" id="7_2smx1"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
@@ -142,7 +142,6 @@ visible = false
 script = ExtResource("6_18qfd")
 explosionMeshSmall = NodePath("SmallMesh")
 explosionMeshLarge = NodePath("LargeMesh")
-ImpulseStrength = 10.0
 
 [node name="SmallMesh" type="MeshInstance3D" parent="Explosion/VSTSplittingComponent"]
 mesh = SubResource("SphereMesh_n7n8g")
