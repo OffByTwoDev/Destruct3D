@@ -60,11 +60,11 @@ points = PackedVector3Array(-3.99547, -0.191073, 0, -3.9767, -0.191073, 0.391099
 [node name="ExampleScene" type="Node3D"]
 script = ExtResource("1_n7n8g")
 
-[node name="Node" type="Node" parent="." node_paths=PackedStringArray("destronoiNodesParent")]
+[node name="DestronoiDepthManager" type="Node" parent="." node_paths=PackedStringArray("destronoiNodesParent")]
 script = ExtResource("2_p3r26")
 destronoiNodesParent = NodePath("../FragmentEnvironment")
 debugMode = true
-forceTreeDepth = 2
+forceTreeDepth = 8
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)

@@ -70,12 +70,10 @@ public partial class VSTSplittingComponent : Area3D
 	{
 		base._UnhandledInput(@event);
 		
-		if (!Input.IsActionJustPressed("splitting_explosion"))
+		if (Input.IsActionJustPressed("splitting_explosion"))
 		{
-			return;
+			_ = Activate();
 		}
-
-		_ = Activate();
 	}
 
 	/// <summary>
@@ -102,8 +100,6 @@ public partial class VSTSplittingComponent : Area3D
 		}
 
 		Explosion(explosionDistancesSmall, relativeExplosionTreeDepthDeep, new StandardMaterial3D());
-
-		await ToSignal(GetTree(), SceneTree.SignalName.PhysicsFrame);
 	}
 
 	/// <summary>carry out the explosion that goes to a tree depth of explosionTreeDepth and covers a radius explosionDistance</summary>
@@ -130,34 +126,27 @@ public partial class VSTSplittingComponent : Area3D
 		}
 	}
 
-	/// <returns>the level of the deepest vstNode that can be navigated to from an input vstRoot<br></br>(i.e. the level of the deepest fragment still physically connected to the initially input vstRoot)</returns>
-	public static int GetDeepestAccessibleLevel(VSTNode vstNode, int levelToReturn)
+	// probably can change for some cleverer way that doesn't involve lists of nodes and LINQ but i tried for like 2 hours and it kept going wrong so I'm just gonna use this
+	public static void GetDeepestVSTNodes(List<VSTNode> vstNodeList, VSTNode vstNode)
 	{
+		if (vstNode.endPoint)
+		{
+			vstNodeList.Add(vstNode);
+			return;
+		}
+
 		if (vstNode.left is not null)
 		{
-			levelToReturn = GetDeepestAccessibleLevel(vstNode.left, levelToReturn);
+			GetDeepestVSTNodes(vstNodeList, vstNode.left);
 		}
-		else if (vstNode.level > levelToReturn)
-		{
-			levelToReturn = vstNode.level;
-		}
-
 		if (vstNode.right is not null)
 		{
-			levelToReturn = GetDeepestAccessibleLevel(vstNode.right, levelToReturn);
+			GetDeepestVSTNodes(vstNodeList, vstNode.right);
 		}
-		else if (vstNode.level > levelToReturn)
-		{
-			levelToReturn = vstNode.level;
-		}
-
-		return levelToReturn;
 	}
 
 	private static async void Disintegrate(DestronoiNode destronoiNode)
 	{
-		// PackedScene scene = GD.Load<PackedScene>(destronoiNode.CUSTOM_PARTICLE_EFFECTS_SCENE_PATH);
-		
 		PackedScene scene = ResourceLoader.Load<PackedScene>(((Resource)destronoiNode.GetScript()).ResourcePath + destronoiNode.CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH);
 		Node instantiatedScene = scene.Instantiate();
 		destronoiNode.fragmentContainer.AddChild(instantiatedScene);
@@ -188,20 +177,18 @@ public partial class VSTSplittingComponent : Area3D
 		// desired explosionTreeDepth is relative to a body's root node, hence we add the depth of the root node
 		int absoluteExplosionTreeDepth = relativeExplosionTreeDepth + originalVSTRoot.level;
 
-		if (absoluteExplosionTreeDepth > GetDeepestAccessibleLevel(originalVSTRoot, originalVSTRoot.level))
+		List<VSTNode> deepestDestronoiNodes = [];
+		GetDeepestVSTNodes(deepestDestronoiNodes, originalVSTRoot);
+		var deepestAccessibleLevel = deepestDestronoiNodes.Max(vstNode => vstNode.level);
+
+		if (absoluteExplosionTreeDepth > deepestAccessibleLevel)
 		{
-			// GD.Print($"absoluteExplosionTreeDepth = {absoluteExplosionTreeDepth}, deepestLevel = {GetDeepestAccessibleLevel(originalVSTRoot, originalVSTRoot.level)}");
+			// GD.Print($"absoluteExplosionTreeDepth = {absoluteExplosionTreeDepth}, deepestLevel = {deepestAccessibleLevel}");
 			Disintegrate(destronoiNode);
 			return;
-			// set explosionTreeDepth to deepestNode i.e. just remove the smallest thing we have
-			// OR create a particle effect for the fragments to remove
-			// or could remove the smallest thing possible, unless this is an endpoint, in which case then create some particle effects (like do the particle effects thing but only when there is no other splitting that could be done)
-
 		}
 
-		// might also want to queuefree fragments and instantiate some temporary explosion looking particle effects
-		// if all sides of the aabb of the fragment are less than some value (or maybe the volume of the aabb is less than some value)
-
+		// might also want to queuefree fragments and instantiate some temporary explosion looking particle effects if all sides of the aabb of the fragment are less than some value (or maybe the volume of the aabb is less than some value)
 		// add early return condition for if originalVSTRoot depth is 0?
 
 		// the node has to be in the tree in order to check for inclusion in the explosion areas
