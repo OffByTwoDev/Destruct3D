@@ -17,12 +17,12 @@ public partial class Destruct3DDepthManager : Node
 {
 	[Export] Node destructibleBody3DsParent;
 
-    /// <summary>
-    /// if debugMode is true, then this node will force all destructibleBody3Ds that are a direct child of <paramref name="destructibleBody3DsParent"/> to have a treeHeight of <paramref name="forceTreeDepth"/>.
-    /// </summary>
-    /// <remarks>
-    /// this does not affect any editor settings, i.e. it doesnt overwrite the treeDepth stored in your .tscns. (it writes to stuff after the level is loaded in, so its not destructive. This way you can just turn debugMode off and your level will load will all your destructibleBody3Ds heights set to whatever they are.)
-    /// </remarks>
+	/// <summary>
+	/// if debugMode is true, then this node will force all destructibleBody3Ds that are a direct child of <paramref name="destructibleBody3DsParent"/> to have a treeHeight of <paramref name="forceTreeDepth"/>.
+	/// </summary>
+	/// <remarks>
+	/// this does not affect any editor settings, i.e. it doesnt overwrite the treeDepth stored in your .tscns. (it writes to stuff after the level is loaded in, so its not destructive. This way you can just turn debugMode off and your level will load will all your destructibleBody3Ds heights set to whatever they are.)
+	/// </remarks>
 	[Export] private bool debugMode;
 
 	[Export] private int forceTreeDepth = 3;
@@ -31,10 +31,10 @@ public partial class Destruct3DDepthManager : Node
 	{
 		base._Ready();
 		
-        if (!debugMode)
-        {
-            return;
-        }
+		if (!debugMode)
+		{
+			return;
+		}
 
 		foreach (Node child in destructibleBody3DsParent.GetChildren())
 		{
