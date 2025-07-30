@@ -30,14 +30,14 @@ public partial class VSTSplittingComponent : Area3D
 	private float explosionDistancesSmall;
 	private float explosionDistancesLarge;
 
-	[Export] private bool DebugPrints = false;
+	private bool DebugPrints = false;
 	/// <summary>if true, the secondary explosion has a randomly coloured material (random for each explosion, i.e. one colour per explosion not per fragment)</summary>
-	[Export] private bool DebugMaterialsOnSecondaryExplosion = false;
+	private bool DebugMaterialsOnSecondaryExplosion = false;
 
 	// material to set for fragments
 	private StandardMaterial3D fragmentMaterial = new();
 
-	[Export] public StandardMaterial3D debugMaterial;
+	public StandardMaterial3D debugMaterial;
 
 	/// <summary>
 	/// used by IsAdjacentEstimatorOverlap. determines how much each aabb grows before testing for intersection.
