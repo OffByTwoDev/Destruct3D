@@ -45,6 +45,8 @@ public partial class VSTSplittingComponent : Area3D
 
 	private bool suppressCDestronoiWarnings = false;
 
+	[Export] private bool useParticleEffectsUponDisintegration = false;
+
 	public override void _Ready()
 	{
 		base._Ready();
@@ -146,23 +148,30 @@ public partial class VSTSplittingComponent : Area3D
 		}
 	}
 
-	private static async void Disintegrate(DestructibleBody3D destructibleBody3D)
+	private async void Disintegrate(DestructibleBody3D destructibleBody3D)
 	{
-		PackedScene scene = ResourceLoader.Load<PackedScene>(((Resource)destructibleBody3D.GetScript()).ResourcePath + destructibleBody3D.CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH);
-		Node instantiatedScene = scene.Instantiate();
-		destructibleBody3D.fragmentContainer.AddChild(instantiatedScene);
-		GpuParticles3D emitter = instantiatedScene.GetChild(0) as GpuParticles3D;
-		emitter.OneShot = true;
-		destructibleBody3D.meshInstance.Visible = false;
-		destructibleBody3D.LinearDamp = 1000f;
+		if (useParticleEffectsUponDisintegration)
+		{
+			PackedScene scene = ResourceLoader.Load<PackedScene>(((Resource)destructibleBody3D.GetScript()).ResourcePath + destructibleBody3D.CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH);
+			Node instantiatedScene = scene.Instantiate();
+			destructibleBody3D.fragmentContainer.AddChild(instantiatedScene);
+			GpuParticles3D emitter = instantiatedScene.GetChild(0) as GpuParticles3D;
+			emitter.OneShot = true;
+			destructibleBody3D.meshInstance.Visible = false;
+			destructibleBody3D.LinearDamp = 1000f;
 
-		emitter.GlobalPosition = destructibleBody3D.GlobalPosition;
+			emitter.GlobalPosition = destructibleBody3D.GlobalPosition;
 
-		destructibleBody3D.Deactivate();
+			destructibleBody3D.Deactivate();
 
-		emitter.Restart();
-		await Task.Delay(5_000);
-		emitter.QueueFree();
+			emitter.Restart();
+			await Task.Delay(5_000);
+			emitter.QueueFree();
+		}
+		else
+		{
+			destructibleBody3D.Deactivate();
+		}
 	}
 
 	/// <summary>
@@ -232,7 +241,7 @@ public partial class VSTSplittingComponent : Area3D
 
 		if (!originalVSTRoot.childrenChanged)
 		{
-			GD.PushWarning($"i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.\n. I'm just gonna set children changed to true and hope it fixes it lmao... (it seems to for now at least)\n fragmentsToRemove = {fragmentsToRemove.Count}");
+			GD.PushWarning($"I didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.\n. I'm just gonna set children changed to true and hope it fixes it lmao... (it seems to for now at least)\n fragmentsToRemove = {fragmentsToRemove.Count}");
 
 			originalVSTRoot.childrenChanged = true;
 			// return;
