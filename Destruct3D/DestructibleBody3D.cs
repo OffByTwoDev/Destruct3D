@@ -34,6 +34,7 @@ public partial class DestructibleBody3D : RigidBody3D
 	public MaterialRegistry materialRegistry;
 	public ShaderMaterial shaderMaterial;
 	[Export] private NodePath CUSTOM_MATERIAL_SHADER_PATH = "res://addons/CDestronoi-Submodule/Destruct3D/materials/CustomMaterials.gdshader";
+	private NodePath  CUSTOM_MATERIAL_SHADER_RELATIVE_PATH = "/../materials/CustomMaterials.gdshader";
 	// this must agree with the shader, specifically "uniform vec3 exteriorSurfaceNormals[100];"
 	private const int MAX_NUMBER_OF_EXTERIOR_SURFACES = 100;
 	public readonly float TextureScale = 10.0f;
@@ -221,7 +222,7 @@ public partial class DestructibleBody3D : RigidBody3D
 		// create the shader material which will be used by all children of this destronoiNode
 		shaderMaterial = new()
 		{
-			Shader = GD.Load<Shader>(CUSTOM_MATERIAL_SHADER_PATH)
+			Shader = ResourceLoader.Load<Shader>(((Resource)GetScript()).ResourcePath + CUSTOM_MATERIAL_SHADER_RELATIVE_PATH)
 		};
 
 		Vector3[] exteriorSurfaceNormals = new Vector3[MAX_NUMBER_OF_EXTERIOR_SURFACES];
