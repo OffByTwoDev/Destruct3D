@@ -17,6 +17,9 @@ export_credentials.cfg
 data_*/
 mono_crash.*.json
 
+# vscode
+.vscode/
+
 # i believe these to be unnecessary
 # *.user
 # *.pidb
