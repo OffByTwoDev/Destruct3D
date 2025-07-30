@@ -1,7 +1,8 @@
-[gd_scene load_steps=21 format=3 uid="uid://c7oqy8jsemyg1"]
+[gd_scene load_steps=22 format=3 uid="uid://c7oqy8jsemyg1"]
 
 [ext_resource type="Script" uid="uid://k0jup8gwalph" path="res://ExampleScene.cs" id="1_n7n8g"]
 [ext_resource type="Script" uid="uid://co7g407u2vd1x" path="res://CDestronoi/DestronoiNode.cs" id="2_epgrm"]
+[ext_resource type="Script" uid="uid://bhr3l2bffc32x" path="res://CDestronoi/DestronoiDepthManager.cs" id="2_p3r26"]
 [ext_resource type="Script" uid="uid://bvae885dfsom2" path="res://FreeCam.cs" id="2_xpmf3"]
 [ext_resource type="Script" uid="uid://beevd6g3rmhxp" path="res://CDestronoi/VSTSplittingComponent.cs" id="4_fgqed"]
 [ext_resource type="Script" uid="uid://sa4fejusavgb" path="res://ExampleExplosion.cs" id="4_xpmf3"]
@@ -58,6 +59,12 @@ points = PackedVector3Array(-3.99547, -0.191073, 0, -3.9767, -0.191073, 0.391099
 
 [node name="ExampleScene" type="Node3D"]
 script = ExtResource("1_n7n8g")
+
+[node name="Node" type="Node" parent="." node_paths=PackedStringArray("destronoiNodesParent")]
+script = ExtResource("2_p3r26")
+destronoiNodesParent = NodePath("../FragmentEnvironment")
+debugMode = true
+forceTreeDepth = 2
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
