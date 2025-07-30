@@ -1,9 +1,10 @@
-[gd_scene load_steps=20 format=3 uid="uid://c7oqy8jsemyg1"]
+[gd_scene load_steps=21 format=3 uid="uid://c7oqy8jsemyg1"]
 
 [ext_resource type="Script" uid="uid://k0jup8gwalph" path="res://ExampleScene.cs" id="1_n7n8g"]
 [ext_resource type="Script" uid="uid://co7g407u2vd1x" path="res://CDestronoi/DestronoiNode.cs" id="2_epgrm"]
 [ext_resource type="Script" uid="uid://bvae885dfsom2" path="res://FreeCam.cs" id="2_xpmf3"]
 [ext_resource type="Script" uid="uid://beevd6g3rmhxp" path="res://CDestronoi/VSTSplittingComponent.cs" id="4_fgqed"]
+[ext_resource type="Script" uid="uid://sa4fejusavgb" path="res://ExampleExplosion.cs" id="4_xpmf3"]
 [ext_resource type="Material" uid="uid://vccoqm71k406" path="res://TransparentMeshMaterial.tres" id="7_p3r26"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_rxg2q"]
@@ -88,6 +89,7 @@ script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
 treeHeight = 6
+hasTexturedMaterial = false
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="FragmentEnvironment/LargeObject"]
 mesh = SubResource("BoxMesh_r0du0")
@@ -101,6 +103,7 @@ script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
 treeHeight = 6
+hasTexturedMaterial = false
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="FragmentEnvironment/SmallObject"]
 mesh = SubResource("BoxMesh_xpmf3")
@@ -114,6 +117,7 @@ script = ExtResource("2_epgrm")
 meshInstance = NodePath("MeshInstance3D")
 fragmentContainer = NodePath("..")
 treeHeight = 7
+hasTexturedMaterial = false
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="FragmentEnvironment/Slab"]
 mesh = SubResource("BoxMesh_5h8pk")
@@ -121,20 +125,23 @@ mesh = SubResource("BoxMesh_5h8pk")
 [node name="CollisionShape3D" type="CollisionShape3D" parent="FragmentEnvironment/Slab"]
 shape = SubResource("ConvexPolygonShape3D_i82ug")
 
-[node name="Explosion" type="Area3D" parent="." node_paths=PackedStringArray("explosionMeshSmall", "explosionMeshLarge")]
-transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, -0.728977, 0.995488, 2.0804)
+[node name="Explosion" type="Node3D" parent="." node_paths=PackedStringArray("vstSplittingComponent")]
+script = ExtResource("4_xpmf3")
+vstSplittingComponent = NodePath("VSTSplittingComponent")
+
+[node name="VSTSplittingComponent" type="Area3D" parent="Explosion" node_paths=PackedStringArray("explosionMeshSmall", "explosionMeshLarge")]
+transform = Transform3D(0.831033, 0, 0.556223, 0, 1, 0, -0.556223, 0, 0.831033, -11.5519, 0.995488, 2.0804)
 visible = false
 script = ExtResource("4_fgqed")
 explosionMeshSmall = NodePath("SmallMesh")
 explosionMeshLarge = NodePath("LargeMesh")
-ApplyImpulseOnSplit = true
-PHYSICS_FRAMES_BEFORE_SECONDARY_EXPLOSION = 1
+ImpulseStrength = 10.0
 
-[node name="SmallMesh" type="MeshInstance3D" parent="Explosion"]
+[node name="SmallMesh" type="MeshInstance3D" parent="Explosion/VSTSplittingComponent"]
 mesh = SubResource("SphereMesh_n7n8g")
 
-[node name="LargeMesh" type="MeshInstance3D" parent="Explosion"]
+[node name="LargeMesh" type="MeshInstance3D" parent="Explosion/VSTSplittingComponent"]
 mesh = SubResource("SphereMesh_p3r26")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="Explosion"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Explosion/VSTSplittingComponent"]
 shape = SubResource("ConvexPolygonShape3D_nnq3s")

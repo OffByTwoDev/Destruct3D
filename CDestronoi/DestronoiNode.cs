@@ -143,8 +143,8 @@ public partial class DestronoiNode : RigidBody3D
 			return;
 		}
 
-		meshInstance.Mesh.SetLocalToScene(true);
-		meshInstance.Mesh.SurfaceGetMaterial(0).SetLocalToScene(true);
+		// meshInstance.Mesh.SetLocalToScene(true);
+		// meshInstance.Mesh.SurfaceGetMaterial(0).SetLocalToScene(true);
 
 		// --- do some error checks, but only after children have been added to scene i.e. we wait one frame --- //
 
@@ -251,7 +251,7 @@ public partial class DestronoiNode : RigidBody3D
 	}
 
 	/// <summary>
-	/// error checks for the ready function
+	/// error checks for the ready function. probably should just be enforced in the editor but idk how to do that
 	/// </summary>
 	public void ErrorChecks()
 	{
@@ -281,21 +281,6 @@ public partial class DestronoiNode : RigidBody3D
 		}
 	}
 
-	public override void _UnhandledInput(InputEvent @event)
-	{
-		base._UnhandledInput(@event);
-		
-		if (Input.IsActionJustPressed("debug_print_vst"))
-		{
-			DebugPrintVST(vstRoot);
-		}
-
-		if (Input.IsActionJustPressed("debug_print_thing"))
-		{
-			GD.Print(vstRoot.childrenChanged);
-		}
-	}
-
 	public static void DebugPrintVST(VSTNode vstNode)
 	{
 		if (vstNode is null)
@@ -314,11 +299,6 @@ public partial class DestronoiNode : RigidBody3D
 		DebugPrintVST(vstNode.left);
 		DebugPrintVST(vstNode.right);
 	}
-
-	// public static void PlotSites(VSTNode node, Vector3 site1, Vector3 site2)
-	// {
-	// 	node.sites = [node.meshInstance.Position + site1, node.meshInstance.Position + site2];
-	// }
 
 	/// <summary>
 	/// adds 2 vector3's to the <paramref name="node"/>'s .sites list, where both points are within the <paramref name="node"/>'s meshInstance
