@@ -57,7 +57,9 @@ public partial class DestronoiNode : RigidBody3D
 	[Export] public bool treatTopMostLevelAsStatic = false;
 
 	// particle effects
-	public NodePath CUSTOM_PARTICLE_EFFECTS_SCENE_PATH = "res://addons/CDestronoi-Submodule/CDestronoi/particle_effects/DisintegrationParticleEffects.tscn";
+	// the path of the particle_effects .tscn relative to the path of this script.
+	// this is probably fragile. The reason I'm doing this is so I can still use a submodule of this repo, without breaking PackedScene loadings. (if there's a better method feel free to make a github issue)
+	public NodePath CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH = "/../particle_effects/DisintegrationParticleEffects.tscn";
 
 	// required for godot
 	public DestronoiNode() { }

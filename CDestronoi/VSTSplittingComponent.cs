@@ -156,8 +156,9 @@ public partial class VSTSplittingComponent : Area3D
 
 	private static async void Disintegrate(DestronoiNode destronoiNode)
 	{
-		// GD.Print("disintegrating");
-		PackedScene scene = GD.Load<PackedScene>(destronoiNode.CUSTOM_PARTICLE_EFFECTS_SCENE_PATH);
+		// PackedScene scene = GD.Load<PackedScene>(destronoiNode.CUSTOM_PARTICLE_EFFECTS_SCENE_PATH);
+		
+		PackedScene scene = ResourceLoader.Load<PackedScene>(((Resource)destronoiNode.GetScript()).ResourcePath + destronoiNode.CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH);
 		Node instantiatedScene = scene.Instantiate();
 		destronoiNode.fragmentContainer.AddChild(instantiatedScene);
 		GpuParticles3D emitter = instantiatedScene.GetChild(0) as GpuParticles3D;
