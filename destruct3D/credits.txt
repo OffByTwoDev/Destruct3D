@@ -1,3 +1,6 @@
+
+original Destronoi plugin by seadaemon:
 https://github.com/seadaemon/Destronoi
 
+sphere's from quadmeshes (used in particle effects):
 https://godotshaders.com/shader/ray-traced-sphere-for-particle-effects/

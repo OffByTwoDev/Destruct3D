@@ -4,6 +4,8 @@ using System;
 
 namespace Destruct3D;
 
+// there is no need to add this script to a node in the scene tree, its used for internal stuff
+
 // anytime you create or destroy a destructibleBody3D node
 // find the (1) binarytreemap which represents the topmost ancestor of said created or destroyed destructibleBody3D
 // and tell it "hey, i have this ID, i exist / have been queuefreed() now"
