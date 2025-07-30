@@ -103,6 +103,7 @@ public partial class VSTSplittingComponent : Area3D
 	}
 
 	/// <summary>carry out the explosion that goes to a tree depth of explosionTreeDepth and covers a radius explosionDistance</summary>
+	///<remarks> calls SplitExplode, which fragments a DestructibleBody3D into its relevant fragments</remarks>
 	private void Explosion(float explosionDistance, int relativeExplosionTreeDepth, StandardMaterial3D material)
 	{
 		foreach (Node3D node in GetOverlappingBodies())
@@ -335,6 +336,7 @@ public partial class VSTSplittingComponent : Area3D
 			{
 				meshInstances = [leaf.meshInstance];
 			}
+
 			meshToInstantate = MeshPruning.CombineMeshesAndPrune(meshInstances, destructibleBody3D.hasTexturedMaterial, destructibleBody3D.materialRegistry, destructibleBody3D.fragmentMaterial, destructibleBody3D.TextureScale);
 
 			DestructibleBody3D newDestructibleBody3D = destructibleBody3D.CreateDestructibleBody3D(leaf,
@@ -383,7 +385,7 @@ public partial class VSTSplittingComponent : Area3D
 			return;
 		}
 
-		List<List<VSTNode>> groupedVSTNodes = GetGroupedVSTNodes(vstNodes);
+		List<List<VSTNode>> groupedVSTNodes = GetSpatiallyGroupedVSTNodes(vstNodes);
 
 		if (DebugPrints)
 		{
@@ -586,7 +588,7 @@ public partial class VSTSplittingComponent : Area3D
 	// repeat for all groups
 	// if that group doesn't exist, create a new group and add the node to it
 	// finds groups of VSTNodes who are adjacent
-	public static List<List<VSTNode>> GetGroupedVSTNodes(List<VSTNode> ungroupedVSTNodes)
+	public static List<List<VSTNode>> GetSpatiallyGroupedVSTNodes(List<VSTNode> ungroupedVSTNodes)
 	{
 		if (ungroupedVSTNodes.Count == 0)
 		{

@@ -132,6 +132,8 @@ public partial class DestructibleBody3D : RigidBody3D
 			Freeze = true;
 			FreezeMode = FreezeModeEnum.Kinematic;
 		}
+
+		treatTopMostLevelAsStatic = inputTreatTopMostLevelAsStatic;
 	}
 	
 	// --- godot specific implementation --- //

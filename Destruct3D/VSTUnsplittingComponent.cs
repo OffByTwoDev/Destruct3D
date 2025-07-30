@@ -44,6 +44,7 @@ public partial class VSTUnsplittingComponent : Node
 			await Unsplit(fragmentToUnexplode, defaultTransform);
 		}
 	}
+	
 	/// <summary>
 	/// interpolates all children of a parent node to <paramref name="destructibleBody3D"/> towards reversedExplosionCentre
 	/// </summary>
