@@ -4,6 +4,12 @@ A Godot addon written in C# that generates fragments on startup, and removes the
 
 No knowledge of C# is needed to use the plugin or customise the basic behaviour.
 
+# Dependencies
+
+- Godot 4.4.1+ - .NET version
+
+Note: Jolt is highly recommended when using this plugin. Using the default engine leads to fragments oscillating unphysically (might be something to do with Centre of Mass calculations).
+
 # Instructions
 
 ### Instructions to create a destructible object
@@ -30,12 +36,6 @@ To actually destroy an object, you need to call Activate() on a VSTSplittingComp
 I am extremely thankful to seadaemon for the [Destronoi plugin](https://github.com/seadaemon/Destronoi), which this plugin was built off of. If Destronoi didn't exist this project would've taken significantly longer and I may never have made it.
 
 For clarity: my C# code "VSTNode.cs" and "DestronoiNode.cs" were initially a direct port of seadaemon's gdscript code. I then added some functions and different components to each to create this project.
-
-# Dependencies
-
-- Godot 4.4.1+ - .NET version
-
-Note: Jolt is highly recommended when using this plugin. Using the default engine leads to fragments oscillating unphysically (might be something to do with Centre of Mass calculations).
 
 # Technicalities / Theory
 
@@ -82,9 +82,6 @@ A destronoi node with depth 14 (so $2^{14} = 16,384$ fragments) uses ~400mb of R
 
 # Current Disadvantages / Downsides
 
-- Interior / Exterior Texture support only works for meshes with flat exterior surfaces rn
--> actually don't know how to fix... (currently the code uses a shader and matches surfaces by checking normals... maybe there's another way to detect if a face corresponds to an external surface in a shader...)
-
 - CreateConvexShape doesn't create perfect collisionshapes for complex fragments - e.g. if you have some jagged edge of a body that's just been destroyed, the collisionshape may "smooth over" the spiky bits (sometimes quite significantly).
 -> perhaps could create a function which creates a more accurate collisionShape, and not use CreateConvexShape?
 
@@ -97,6 +94,11 @@ A destronoi node with depth 14 (so $2^{14} = 16,384$ fragments) uses ~400mb of R
 -> make a gdscript port
 
 - Only supports RigidBodies with 1 meshInstance & 1 collisionShape
+-> add support for multiple mesh children
+
+# Misc
+
+If you'd like to keep the addon up to date with the newest commits as they are made, then you can make a submodule in your addons/ directory and then sparse checkout this repo (so you miss out the project.godot and example scene files so godot doesn't get confused at having a project within a project). But of course be aware that there may occasionally be accidental / purposeful breaking changes, or bugs introduced etc.
 
 # Conventions
 
