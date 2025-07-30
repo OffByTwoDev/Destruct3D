@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
-namespace Fractonoi;
+namespace Destruct3D;
 
 public struct UVwithSurface
 {

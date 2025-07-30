@@ -2,7 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
-namespace Fractonoi;
+namespace Destruct3D;
 
 // none laterality applies only to a root node
 public enum Laterality

@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using System;
 
-namespace Fractonoi;
+namespace Destruct3D;
 
 // anytime you create or destroy a destronoi node
 // find the (1) binarytreemap which represents the topmost ancestor of said created or destroyed destronoiNode

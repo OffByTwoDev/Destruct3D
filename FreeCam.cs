@@ -1,6 +1,6 @@
 using Godot;
 
-namespace CDestronoi;
+namespace Destruct3D;
 
 public partial class FreeCam : Camera3D
 {

@@ -1,7 +1,7 @@
 using Godot;
 using System;
 
-namespace CDestronoi;
+namespace Destruct3D;
 
 public partial class ExampleScene : Node3D
 {

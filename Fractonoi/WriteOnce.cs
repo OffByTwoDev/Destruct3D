@@ -1,6 +1,6 @@
 using Godot;
 
-namespace Fractonoi;
+namespace Destruct3D;
 
 public class WriteOnce<T>
 {

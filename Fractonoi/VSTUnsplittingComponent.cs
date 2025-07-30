@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Fractonoi;
+namespace Destruct3D;
 
 /// <summary>
 /// used for reverse fragmentation (i.e. combining a group of destronoiNodes back into one of their parent nodes)

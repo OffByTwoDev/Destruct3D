@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace Fractonoi;
+namespace Destruct3D;
 
 // the area3d uses the collisionshape3d
 // this script uses values from the meshinstance3d
