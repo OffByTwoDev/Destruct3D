@@ -12,6 +12,7 @@ namespace Destruct3D;
 // so make sure the collisionshape3d and meshinstance3d child of this area3d represent the same thing
 
 // smaller mesh instance corresponds to the deeper explosion
+[GlobalClass]
 public partial class VSTSplittingComponent : Area3D
 {
 	[Export] private MeshInstance3D explosionMeshSmall;
@@ -29,14 +30,14 @@ public partial class VSTSplittingComponent : Area3D
 	private float explosionDistancesSmall;
 	private float explosionDistancesLarge;
 
-	[Export] private bool DebugPrints = false;
+	private bool DebugPrints = false;
 	/// <summary>if true, the secondary explosion has a randomly coloured material (random for each explosion, i.e. one colour per explosion not per fragment)</summary>
-	[Export] private bool DebugMaterialsOnSecondaryExplosion = false;
+	private bool DebugMaterialsOnSecondaryExplosion = false;
 
 	// material to set for fragments
 	private StandardMaterial3D fragmentMaterial = new();
 
-	[Export] public StandardMaterial3D debugMaterial;
+	public StandardMaterial3D debugMaterial;
 
 	/// <summary>
 	/// used by IsAdjacentEstimatorOverlap. determines how much each aabb grows before testing for intersection.
@@ -44,6 +45,8 @@ public partial class VSTSplittingComponent : Area3D
 	private const float ADJACENCY_ESTIMATOR_ABSOLUTE_GROWTH = 0.05f;
 
 	private bool suppressCDestronoiWarnings = false;
+
+	[Export] private bool useParticleEffectsUponDisintegration = false;
 
 	public override void _Ready()
 	{
@@ -146,23 +149,30 @@ public partial class VSTSplittingComponent : Area3D
 		}
 	}
 
-	private static async void Disintegrate(DestructibleBody3D destructibleBody3D)
+	private async void Disintegrate(DestructibleBody3D destructibleBody3D)
 	{
-		PackedScene scene = ResourceLoader.Load<PackedScene>(((Resource)destructibleBody3D.GetScript()).ResourcePath + destructibleBody3D.CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH);
-		Node instantiatedScene = scene.Instantiate();
-		destructibleBody3D.fragmentContainer.AddChild(instantiatedScene);
-		GpuParticles3D emitter = instantiatedScene.GetChild(0) as GpuParticles3D;
-		emitter.OneShot = true;
-		destructibleBody3D.meshInstance.Visible = false;
-		destructibleBody3D.LinearDamp = 1000f;
+		if (useParticleEffectsUponDisintegration)
+		{
+			PackedScene scene = ResourceLoader.Load<PackedScene>(((Resource)destructibleBody3D.GetScript()).ResourcePath + destructibleBody3D.CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH);
+			Node instantiatedScene = scene.Instantiate();
+			destructibleBody3D.fragmentContainer.AddChild(instantiatedScene);
+			GpuParticles3D emitter = instantiatedScene.GetChild(0) as GpuParticles3D;
+			emitter.OneShot = true;
+			destructibleBody3D.meshInstance.Visible = false;
+			destructibleBody3D.LinearDamp = 1000f;
 
-		emitter.GlobalPosition = destructibleBody3D.GlobalPosition;
+			emitter.GlobalPosition = destructibleBody3D.GlobalPosition;
 
-		destructibleBody3D.Deactivate();
+			destructibleBody3D.Deactivate();
 
-		emitter.Restart();
-		await Task.Delay(5_000);
-		emitter.QueueFree();
+			emitter.Restart();
+			await Task.Delay(5_000);
+			emitter.QueueFree();
+		}
+		else
+		{
+			destructibleBody3D.Deactivate();
+		}
 	}
 
 	/// <summary>
@@ -232,7 +242,7 @@ public partial class VSTSplittingComponent : Area3D
 
 		if (!originalVSTRoot.childrenChanged)
 		{
-			GD.PushWarning($"i didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.\n. I'm just gonna set children changed to true and hope it fixes it lmao... (it seems to for now at least)\n fragmentsToRemove = {fragmentsToRemove.Count}");
+			GD.PushWarning($"I didnt expect this to be possible. if this vstroot has no changed children, then i would expect fragmentsToRemove.Count to be 0 above, and hence for the program to early return before this point.\n. I'm just gonna set children changed to true and hope it fixes it lmao... (it seems to for now at least)\n fragmentsToRemove = {fragmentsToRemove.Count}");
 
 			originalVSTRoot.childrenChanged = true;
 			// return;

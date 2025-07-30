@@ -4,6 +4,8 @@ using System;
 
 namespace Destruct3D;
 
+// this is a static helper class and is not needed to be attached to a node or anything in the scene tree
+
 // notes: currently meshes arent consistently oriented
 // and ofc like the original outside material isnt kept at all 
 
@@ -23,7 +25,7 @@ public static class MeshPruning
 	/// <summary>
 	/// takes in a list of meshes and combines them into 1 mesh. if <paramref name="hasTexturedMaterial"/> is true, then UVs are mapped correctly so a non uniform texture can be displayed.
 	/// </summary>
-    public static MeshInstance3D CombineMeshesAndPrune( List<MeshInstance3D> meshInstances,
+	public static MeshInstance3D CombineMeshesAndPrune( List<MeshInstance3D> meshInstances,
 														bool hasTexturedMaterial,
 														MaterialRegistry materialRegistry,
 														Material fragmentMaterial,
@@ -178,8 +180,8 @@ public static class MeshPruning
 															Vector3 bitangent,
 															float TextureScale)
 	{
-        // Function to convert 3D point to 2D UV in triangle plane
-        Vector2 GetUV(Vector3 p)
+		// Function to convert 3D point to 2D UV in triangle plane
+		Vector2 GetUV(Vector3 p)
 		{
 			Vector3 local = p - origin;
 			return new Vector2(local.Dot(tangent), local.Dot(bitangent)) * new Vector2(1.0f/TextureScale, 1.0f/TextureScale);

@@ -2,6 +2,8 @@ using Godot;
 
 namespace Destruct3D;
 
+// just used for permanentLeft / Right fields in VSTNode so that they can only be written to once (and they can't be readonly as they have to be initialised outside of the constructor due to the logic of the bisecting etc)
+
 public class WriteOnce<T>
 {
 	private T _value;

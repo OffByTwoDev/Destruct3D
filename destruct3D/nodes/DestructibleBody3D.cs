@@ -33,8 +33,8 @@ public partial class DestructibleBody3D : RigidBody3D
 	public Material originalUntexturedMaterial;
 	public MaterialRegistry materialRegistry;
 	public ShaderMaterial shaderMaterial;
-	[Export] private NodePath CUSTOM_MATERIAL_SHADER_PATH = "res://addons/CDestronoi-Submodule/Destruct3D/materials/CustomMaterials.gdshader";
-	private NodePath  CUSTOM_MATERIAL_SHADER_RELATIVE_PATH = "/../materials/CustomMaterials.gdshader";
+	// path of the material shader relative to the location of this script
+	private readonly NodePath  CUSTOM_MATERIAL_SHADER_RELATIVE_PATH = "/../../CustomMaterials.gdshader";
 	// this must agree with the shader, specifically "uniform vec3 exteriorSurfaceNormals[100];"
 	private const int MAX_NUMBER_OF_EXTERIOR_SURFACES = 100;
 	public readonly float TextureScale = 10.0f;
@@ -59,7 +59,7 @@ public partial class DestructibleBody3D : RigidBody3D
 	// particle effects
 	// the path of the particle_effects .tscn relative to the path of this script.
 	// this is probably fragile. The reason I'm doing this is so I can still use a submodule of this repo, without breaking PackedScene loadings. (if there's a better method feel free to make a github issue)
-	public NodePath CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH = "/../particle_effects/DisintegrationParticleEffects.tscn";
+	public readonly NodePath CUSTOM_PARTICLE_EFFECTS_SCENE_RELATIVE_PATH = "/../../particle_effects/DisintegrationParticleEffects.tscn";
 
 	// required for godot
 	public DestructibleBody3D() { }

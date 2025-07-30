@@ -15,6 +15,7 @@ namespace Destruct3D;
 /// and then reinstantiate that node (with its whole original mesh intact).
 /// This component takes an input destructibleBody3D and does exactly that
 /// </remarks>
+[GlobalClass]
 public partial class VSTUnsplittingComponent : Node
 {
 	[Export] public int unexplosionLevelsToGoUp = 2;
@@ -44,7 +45,6 @@ public partial class VSTUnsplittingComponent : Node
 			await Unsplit(fragmentToUnexplode, defaultTransform);
 		}
 	}
-	
 	/// <summary>
 	/// interpolates all children of a parent node to <paramref name="destructibleBody3D"/> towards reversedExplosionCentre
 	/// </summary>
@@ -190,6 +190,3 @@ public partial class VSTUnsplittingComponent : Node
 		}
 	}
 }
-
-
-
