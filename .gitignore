@@ -30,3 +30,6 @@ mono_crash.*.json
 #extra stuff
 .gameplay_movies/
 *.tmp
+
+# we want godot to ignore this submodule when its inside another repo, but we don't want to include a root level gdignore in the repo unnecessarily
+/.gdignore
