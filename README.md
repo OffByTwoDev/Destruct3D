@@ -1,4 +1,23 @@
-# Multi Scale Procedural Destruction in Godot
+<h1 align="center">
+    Multi Scale Procedural Destruction in Godot
+</h1>
+<p align="center">
+    <a href="/LICENSE" alt="License">
+      <img src="https://img.shields.io/badge/License-MIT-blue.svg"/></a>
+    <picture><img src="https://img.shields.io/github/commit-activity/m/OffByTwoDev/Destruct3D"/></picture>
+    <a href="https://dotnet.microsoft.com/en-us/languages/csharp" alt="About C#">
+      <img src="https://img.shields.io/badge/C%23-512BD4?logo=dotnet&logoColor=white"/></a>
+    <a href="https://godotengine.org/download/archive/4.4.1-stable/" alt="About Godot 4.4.1 stable">
+      <img src="https://img.shields.io/badge/Godot%20Engine-v4.4.1-478CBF?logo=godotengine&logoColor=fff&style=flat"/></a>
+    <a href="https://github.com/OffByTwoDev/Destruct3D/releases" alt="Download latest release">
+        <img alt="GitHub Release" src="https://img.shields.io/github/v/release/OffByTwoDev/Destruct3D?include_prereleases"></a>
+</p>
+<p align="center">
+    <picture><img src="https://img.shields.io/github/languages/code-size/OffByTwoDev/Destruct3D"/></picture>
+    <picture><img src="https://img.shields.io/github/repo-size/OffByTwoDev/Destruct3D"/></picture>
+    <a href="https://www.conventionalcommits.org/en/v1.0.0/" alt="Conventional Commits">
+      <img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?style=flat-square&logo=conventionalcommits"/></a>
+</p>
 
 A Godot addon written in C# that generates fragments on startup, and removes these fragments in a customisable way, in realtime.
 
@@ -11,6 +30,8 @@ No knowledge of C# is needed to use the plugin or customise the basic behaviour.
 Note: Jolt is highly recommended when using this plugin. Using the default engine leads to fragments oscillating unphysically (might be something to do with Centre of Mass calculations).
 
 # Instructions
+
+I made a youtube tutorial video [here](https://www.youtube.com/watch?v=ZPqBXGLUaAQ). The first ~20 minutes are the tutorial, and the second ~20 minutes are an explanation of the code and logic.
 
 ### Instructions to create a destructible object
 
@@ -68,7 +89,7 @@ I created a manager node (called Destruct3DDepthManager) which can set the treeH
 
 Making a very large mesh into a DestructibleBody3D will not work very well, as you would need a very deep tree in order to see medium to small scale destruction. It's much better to work modularly and add destruction to smaller parts of your scene like boxes, walls, etc.
 
-To be quantitative: if your object has volume $V = L^3$ for an approx length scale $L$, then the binary tree splits this into volumes of $\frac{V}{2^d}$, which have length scales of $\bigg(\frac{V}{2^d}\bigg)^{1/3} = \frac{L}{2^{d/3}}$. So if you want to be able to free the smallest fragments from a DestructibleBody3D, VSTSplittingComponent needs to have an Area3d with radius of approx $\frac{L}{2^{d/3}}$ or bigger. This estimate can also serve as a guide for the depths different sized objects need to be able to produce similar sized fragments. e.g. a 3m object with tree depth 8 will produce similar sized fragments to a 10m object with tree depth 12 (both approx 0.5m in length).
+<!-- To be quantitative: if your object has volume $V = L^3$ for an approx length scale $L$, then the binary tree splits this into volumes of $\frac{V}{2^d}$, which have length scales of $\bigg(\frac{V}{2^d}\bigg)^{1/3} = \frac{L}{2^{d/3}}$. So if you want to be able to free the smallest fragments from a DestructibleBody3D, VSTSplittingComponent needs to have an Area3d with radius of approx $\frac{L}{2^{d/3}}$ or bigger. This estimate can also serve as a guide for the depths different sized objects need to be able to produce similar sized fragments. e.g. a 3m object with tree depth 8 will produce similar sized fragments to a 10m object with tree depth 12 (both approx 0.5m in length). -->
 
 The plugin can deal with many more fragments than what I've suggested above (seems usable at $2^{12} = 4096$ or even more fragments). There are some issues going this high though
 - Some warnings (which are by default suppressed) may occur during startup and runtime. They don't seem to negatively impact the plugin (I think it might be something to do with the Bisect() function finding it difficult to split very small meshes)
@@ -99,41 +120,3 @@ A DestructibleBody3D with depth 14 (so $2^{14} = 16,384$ fragments) uses ~400mb 
 # Misc
 
 If you'd like to keep the addon up to date with the newest commits as they are made, then you can make a submodule in your addons/ directory and then sparse checkout this repo (so you miss out the project.godot and example scene files so godot doesn't get confused at having a project within a project). But of course be aware that there may occasionally be accidental / purposeful breaking changes, or bugs introduced etc.
-
-# Conventions
-
-## Commit Types
-
-- **`feat`**: A new feature
-- **`fix`**: A bug fix
-- **`docs`**: Documentation-only changes
-- **`notes`**: Adding dev-notes / diary entries
-- **`style`**: Code style changes (whitespace, formatting, etc. — no code behavior change)
-- **`refactor`**: A code change that neither fixes a bug nor adds a feature
-- **`perf`**: A code change that improves performance
-- **`test`**: Adding or correcting tests
-- **`build`**: Changes to the build system or dependencies (e.g. addons)
-- **`ci`**: Changes to CI configuration or scripts (e.g. GitHub Actions, Travis)
-
-## Branch Names
-
-Branch names can follow the same names, but are formatted like
-- **`feat/adding-x-from-y`**
-- **`fix-enemymeshes/removing-extraneous-faces`**
-
-(as **`:`**, **`()`** etc would have to be escaped and branch names cannot have whitespace.)
-
-## Example Messages
-
-```bash
-feat(bvh): implement initial bounding volume hierarchy generation
-fix(plot): correct axis scaling in star visualisation
-docs: update README with usage instructions
-build: update python_requirements.txt
-```
-
-## Sources
-
-This project follows the [Conventional Commits specification v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/#summary).
-
-The commit types listed above are from the [Angular Commit Message Guidelines](https://github.com/angular/angular/blob/22b96b9/CONTRIBUTING.md#-commit-message-guidelines).
